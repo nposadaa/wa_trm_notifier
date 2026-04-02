@@ -39,9 +39,10 @@ Establish the core logic for the project by building a Python script that scrape
     1. Send an HTTP GET request to `https://www.dolar-colombia.com/` with a standard User-Agent header.
     2. Parse the HTML using `BeautifulSoup`.
     3. Extract the TRM numeric value using the `span.exchange-rate` selector.
-    4. Extract the date from the `value` attribute of `input.input-datepicker`.
+    4. Extract the date from the `value` attribute of `input.input-datepicker` (e.g., `2026-04-02`).
     5. Clean the numeric string (remove commas) and convert to a float.
-    6. Print the results in a structured format (JSON or plain text).
+    6. **Freshness Check**: Ensure the extracted date is valid for the current run period (reporting the date alongside the value).
+    7. Print the results in a structured format (JSON or plain text).
   </action>
   <verify>python scraper.py</verify>
   <done>The script runs and prints a value like {"trm": 3675.81, "date": "2026-04-02"}.</done>
