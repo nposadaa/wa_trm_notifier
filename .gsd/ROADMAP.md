@@ -12,26 +12,26 @@
 ## Phases
 
 ### Phase 1: Local Foundation & Scraper
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Build a robust Python scraper to get TRM data from the web.
-- [ ] Set up Python environment.
-- [ ] Implement scraper for `dolar-colombia.com`.
-- [ ] Local testing of output.
+- [x] Set up Python environment.
+- [x] Implement scraper for `dolar-colombia.com`.
+- [x] Local testing of output.
 
-### Phase 2: WhatsApp Cloud API Integration
+### Phase 2: 1-on-1 API Handshake & Template Registration
 **Status**: ⬜ Not Started
-**Objective**: Connect the script to the Meta Cloud API to send notifications.
-- [ ] Configure Meta Developer App.
-- [ ] Verify message template ("Today's TRM is {{1}}").
-- [ ] Implement `send_message` logic in Python.
-- [ ] Test notification delivery to your personal chat.
+**Objective**: Connect to the Meta Cloud API and send a "Hello World" notification to your test number.
+- [ ] Configure Meta Developer App credentials (`.env`).
+- [ ] Register and verify a TRM-specific Message Template.
+- [ ] Implement `whatsapp_client.py` for 1-on-1 messaging.
+- [ ] Test delivery to your test phone number.
 
-### Phase 3: Group Connectivity
+### Phase 3: Group Integration & Feasibility Check
 **Status**: ⬜ Not Started
-**Objective**: Map and send to your target WhatsApp Groups.
-- [ ] Retrieve Group IDs using the Groups API.
-- [ ] Update config to include target group list.
-- [ ] Test group broadcasting.
+**Objective**: Determine the best path for group messaging based on your Meta account business status.
+- [ ] Research/Test the Groups API with your current credentials.
+- [ ] Pivot to 1-on-1 broadcasting or "Community" if direct group messaging is restricted.
+- [ ] Update config to support multiple recipients/groups.
 
 ### Phase 4: Automation & Deployment (GitHub Actions)
 **Status**: ⬜ Not Started

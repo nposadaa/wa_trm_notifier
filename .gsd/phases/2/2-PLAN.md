@@ -4,10 +4,10 @@ plan: 1
 wave: 1
 ---
 
-# Plan 2.1: WhatsApp API Handshake
+# Plan 2.1: 1-on-1 WhatsApp API Handshake
 
 ## Objective
-Establish a successful connection between our Python code and the Meta WhatsApp Cloud API. We will start by sending a test message to a single phone number to verify authentication and basic messaging functionality.
+Establish a successful connection between our Python code and the Meta WhatsApp Cloud API. We will start by sending a test message to your personal test phone number to verify authentication and basic messaging functionality before investigating group options.
 
 ## Context
 - .gsd/SPEC.md

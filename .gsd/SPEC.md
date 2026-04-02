@@ -21,8 +21,9 @@ A daily, automated "heartbeat" service that provides the USD/COP exchange rate (
 - **WhatsApp Group Members**: Receive the daily briefing.
 
 ## Constraints
-- **Meta API Restrictions**: Requires a verified Message Template for proactive (morning) notifications.
-- **GitHub Actions Limits**: Must stay within the free tier usage (plenty for this 1-run-per-day task).
+- **Meta Business Verification**: Official WhatsApp Group Messaging requires a verified Meta Business Account. If your account is unverified, we may need to pivot to a 1-on-1 direct message notification model or investigate alternatives.
+- **Message Templates**: Proactive (first) notifications require an approved Message Template from Meta.
+- **Execution Schedule**: GitHub Actions runs on a cron schedule with a free-tier limit of 2,000 minutes per month (more than enough for this project).
 - **Official API only**: We avoid "grey market" libraries to prevent phone number bans.
 
 ## Success Criteria
