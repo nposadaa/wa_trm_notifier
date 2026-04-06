@@ -4,48 +4,51 @@ plan: 1
 wave: 1
 ---
 
-# Plan 4.1: Wrapper Script + File Logging
+# Plan 4.1: Cloud VM Provisioning + Environment Setup
 
 ## Objective
-Create a batch wrapper that activates the venv and runs main.py, plus add file-based logging so unattended runs can be monitored.
+Provision an Oracle Cloud Always Free VM and configure it with Python, Playwright, and Xvfb for headless-display browser automation.
 
 ## Context
-- main.py
-- broadcaster.py
 - .gsd/phases/4/RESEARCH.md
+- requirements.txt
 
 ## Tasks
 
 <task type="auto">
-  <name>Create run_notifier.bat</name>
-  <files>run_notifier.bat</files>
+  <name>Provision Oracle Cloud VM</name>
   <action>
-    Create a Windows batch script at project root that:
-    1. cd to the project directory using absolute path
-    2. Activates the Python venv
-    3. Runs `python main.py`
-    4. Appends stdout/stderr to `logs/notifier.log` with timestamp
-    5. Creates `logs/` directory if missing
+    Guide user through Oracle Cloud Console:
+    1. Sign up at cloud.oracle.com (free account)
+    2. Create Compute Instance: Shape = Ampere A1 (1 OCPU, 6GB RAM), Image = Ubuntu 22.04
+    3. Generate SSH key pair, download private key
+    4. Note public IP address
   </action>
-  <verify>run_notifier.bat exists and contains valid batch commands; run it once manually</verify>
-  <done>Batch file runs main.py successfully when double-clicked or called from cmd</done>
+  <verify>SSH into VM: ssh -i key.pem ubuntu@{IP}</verify>
+  <done>Can SSH into running Ubuntu VM</done>
 </task>
 
 <task type="auto">
-  <name>Add file logging to main.py</name>
-  <files>main.py</files>
+  <name>Install Dependencies on VM</name>
+  <files>requirements.txt</files>
   <action>
-    Add Python logging that writes to both console AND `logs/notifier_YYYY-MM-DD.log`.
-    - Use Python logging module with dual handlers (StreamHandler + FileHandler)
-    - Log format: `[YYYY-MM-DD HH:MM:SS] LEVEL: message`
-    - Create logs/ dir if not exists
-    - Add logs/ to .gitignore
+    SSH into VM and run:
+    ```bash
+    sudo apt update && sudo apt upgrade -y
+    sudo apt install -y python3-pip xvfb git
+    git clone https://github.com/nposadaa/wa_trm_notifier.git
+    cd wa_trm_notifier
+    pip3 install -r requirements.txt
+    playwright install chromium
+    playwright install-deps
+    ```
   </action>
-  <verify>Run main.py and check that logs/notifier_YYYY-MM-DD.log was created with output</verify>
-  <done>Log file created with timestamped entries matching console output</done>
+  <verify>xvfb-run python3 -c "from playwright.sync_api import sync_playwright; print('OK')"</verify>
+  <done>Playwright + Xvfb installed, import succeeds</done>
 </task>
 
 ## Success Criteria
-- [ ] run_notifier.bat executes pipeline end-to-end
-- [ ] Log file created in logs/ with timestamped output
-- [ ] logs/ directory in .gitignore
+- [ ] Oracle Cloud VM running Ubuntu
+- [ ] SSH access working
+- [ ] Python3, Playwright, Xvfb installed
+- [ ] Repo cloned on VM

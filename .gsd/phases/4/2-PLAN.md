@@ -5,45 +5,68 @@ wave: 2
 dependencies: ["4.1"]
 ---
 
-# Plan 4.2: Windows Scheduled Task
+# Plan 4.2: WhatsApp Session Transfer + Cron Scheduling
 
 ## Objective
-Register a Windows Scheduled Task that runs run_notifier.bat every weekday at 7:00 AM COT.
+Transfer the WhatsApp session from local PC to the cloud VM, verify it works, and set up a daily cron job at 7:00 AM COT.
 
 ## Context
-- run_notifier.bat (created in Plan 4.1)
 - .gsd/phases/4/RESEARCH.md
+- broadcaster.py
+- main.py
 
 ## Tasks
 
 <task type="auto">
-  <name>Register Scheduled Task</name>
-  <files>run_notifier.bat</files>
+  <name>Transfer WhatsApp Session</name>
   <action>
-    Use PowerShell to create a Windows Scheduled Task:
-    - Name: "TRM_Notifier_Daily"
-    - Trigger: Daily at 7:00 AM
-    - Action: Run run_notifier.bat
-    - Condition: Run only when user is logged on (display needed for Playwright)
-    - Settings: Allow task to be run on demand, do not stop if runs longer than 3 days
+    Option A — session transfer:
+    1. On local PC: zip whatsapp_session/ folder
+    2. SCP to VM: scp -i key.pem session.zip ubuntu@{IP}:~/wa_trm_notifier/
+    3. Unzip on VM
+    4. Test: xvfb-run python3 broadcaster.py --discovery
+    
+    Option B — if session doesn't transfer:
+    1. Install noVNC or use SSH X11 forwarding
+    2. Run broadcaster.py --discovery in headed mode
+    3. Scan QR code via VNC
+    4. Session now persisted on VM
   </action>
-  <verify>Get-ScheduledTask -TaskName "TRM_Notifier_Daily" returns the task info</verify>
-  <done>Task visible in Task Scheduler, next run time shows 7:00 AM tomorrow</done>
+  <verify>xvfb-run python3 broadcaster.py --discovery shows chat list without QR scan</verify>
+  <done>WhatsApp session active on VM, discovery mode lists chats</done>
 </task>
 
 <task type="auto">
-  <name>Update ROADMAP and DECISIONS</name>
-  <files>.gsd/ROADMAP.md, .gsd/DECISIONS.md</files>
+  <name>Configure Cron + File Logging</name>
+  <files>main.py</files>
   <action>
-    - Update ROADMAP Phase 4 to reflect Windows Task Scheduler (not GitHub Actions)
-    - Add DEC-008: Windows Task Scheduler chosen over GitHub Actions
-    - Update README.md with scheduling instructions
+    1. Add Python logging to main.py (dual: console + logs/notifier_YYYY-MM-DD.log)
+    2. Create logs/ dir, add to .gitignore
+    3. Set up cron on VM:
+       crontab -e
+       0 12 * * 1-5 cd /home/ubuntu/wa_trm_notifier && xvfb-run python3 main.py >> logs/cron.log 2>&1
+       (12:00 UTC = 7:00 AM COT, weekdays only)
+    4. Commit logging changes, push to GitHub
   </action>
-  <verify>grep "Task Scheduler" .gsd/ROADMAP.md returns match</verify>
-  <done>All docs reflect the actual deployment strategy</done>
+  <verify>crontab -l shows the scheduled job; logs/ directory exists</verify>
+  <done>Cron registered. Next morning, log file shows successful TRM broadcast.</done>
+</task>
+
+<task type="auto">
+  <name>Update Documentation</name>
+  <files>.gsd/ROADMAP.md, .gsd/DECISIONS.md, README.md</files>
+  <action>
+    - Add DEC-008: Oracle Cloud chosen for deployment
+    - Add DEC-009: Xvfb solves headless display requirement
+    - Update ROADMAP Phase 4 status
+    - Update README with cloud deployment section
+  </action>
+  <verify>grep "Oracle" README.md returns match</verify>
+  <done>All docs reflect cloud deployment strategy</done>
 </task>
 
 ## Success Criteria
-- [ ] Scheduled task registered and visible in Task Scheduler
-- [ ] Task configured for 7:00 AM daily, user-logged-on only
-- [ ] ROADMAP, DECISIONS, README updated
+- [ ] WhatsApp session working on cloud VM
+- [ ] Cron job registered for 7:00 AM COT (12:00 UTC)
+- [ ] File logging active
+- [ ] Next-day verification: message sent automatically
