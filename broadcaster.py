@@ -42,10 +42,15 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # Selector for the side panel (chat list)
             page.wait_for_selector('div[aria-label="Chat list"]', timeout=60000)
             print("Login successful or session restored!")
-        except Exception as e:
-            print("Timeout waiting for chat list. Please ensure you are logged in.")
+        except Exception:
+            print("\n--- LOGIN REQUIRED ---")
+            print("Timeout waiting for chat list. Saving QR code screenshot to 'qr.png'...")
+            page.screenshot(path="qr.png")
+            print("Action needed: Copy 'qr.png' to your local machine and scan it.")
+            print("Command (local): gcloud compute scp trm-notifier:~/wa_trm_notifier/qr.png . --zone=us-central1-a")
             context.close()
             return
+
 
         if discovery_mode:
             print("\n--- DISCOVERY MODE ---")
