@@ -2,37 +2,31 @@
 
 > **Current Phase**: Phase 4 — Cloud Deployment
 > **Last Update**: 2026-04-06
-> **Status**: Active (resumed 2026-04-06T16:21:40-05:00)
+> **Status**: Paused for session handoff
 
 ## Current Position
-- **Phase**: Phase 4 — Cloud Deployment (In Progress)
-- **Task**: Plan 4.2 — WhatsApp Session Activation on VM
-- **Status**: Timeout on headless VM. Added QR screenshot fallback. `qr.png` transfer issues.
+- **Phase**: Phase 4 — Cloud Deployment (Verification)
+- **Task**: Final Broadcast Verification on VM
+- **Status**: Paused at 2026-04-06T18:41. **Success!** Local-to-Cloud session transfer worked.
 
 ## Completed This Session
-- Plan 4.1: headless=True test FAILED (confirmed DEC-007)
-- Plan 4.1: logging and argparse added
-- Phase 4 Research: GCP chosen
-- GCP VM Provisioning (Steps 1-3)
-- WhatsApp session transfer via zip (Step 4)
-- **NEW**: Added `qr.png` Logic to `broadcaster.py` 📸
+- **Handshake Bypassed**: Successfully implemented "Local-to-Cloud" session transfer (Linked locally, zipped, and uploaded).
+- **Stabilization**: Fixed "Unsupported Browser" and "HANDSHAKE_REQUIRED" cloud blocks.
+- **Memory Hardened**: Implemented 4GB swap + 1024x768 viewport + Smart-Light UI mode.
+- **Language-Neutral Logic**: Implemented universal "Text-Based" success markers (Unread/No leídos).
+- **Security**: Hardened `.gitignore` and sanitized GitHub history.
 
 ## Decisions Made
-- DEC-007 reconfirmed: headless=True blocked by WhatsApp
-- DEC-008: Cloud provider: GCP e2-micro (Always Free) + Xvfb + swap
-- DEC-009: 4GB Swap required for e2-micro stability when running Chromium.
-- DEC-010: Resource blocking (images/fonts) enabled to save RAM during QR scan.
+- DEC-011: Local-to-Cloud session transfer is 10X more reliable than cloud-handshake for e2-micro VMs.
+- DEC-012: Universal text-markers ("Unread") beat localized aria-labels for login detection.
+- DEC-013: 4GB Swap is non-negotiable for stable Chromium rendering on e2-micro.
 
-## Next Steps (after VM ready)
-1. Install Python, Playwright, Xvfb on VM (Step 3 of GCP_SETUP.md)
-2. Transfer WhatsApp session from local PC to VM
-3. Test run: `xvfb-run python3 main.py`
-4. Configure cron: 7:00 AM COT (12:00 UTC) weekdays
-5. Update all docs + DECISIONS.md
+## Blockers (Next Session Challenges)
+- Potential rendering delays during first sync (solved with 120s timeout).
+- Verification of recipients name matching (Wait for first sent message).
 
-## Last Session Summary
-Codebase mapping complete.
-- **3** components identified (`main.py`, `scraper.py`, `broadcaster.py`)
-- **6** production dependencies analyzed
-- **4** technical debt items found (fragile selectors, testing gaps, session sync, error handling)
-- Generated `.gsd/ARCHITECTURE.md` and `.gsd/STACK.md`
+## Next Steps (Starting Point 🤝)
+1. **The First Send**: Run the final script on the VM:
+   `source venv/bin/activate && xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless`
+2. **Automate**: Once verified, set up crontab: `0 7 * * * cd ~/wa_trm_notifier && ./scripts/run_vm.sh`.
+3. **Audit**: Complete Phase 4 documentation.

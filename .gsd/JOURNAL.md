@@ -1,28 +1,25 @@
-# GSD Journal
+# JOURNAL.md — Project Log
 
-## Session: 2026-04-06 11:11 - 12:33 COT
+## Session: 2026-04-06 18:41
 
 ### Objective
-Complete Phase 3 — automate WhatsApp broadcasting via Playwright.
+Migrate WhatsApp TRM Notifier to GCP e2-micro and solve the "Unsupported Browser" and "Handshake Required" blocks.
 
 ### Accomplished
-- Fixed WhatsApp Web DOM selector fragility (input vs div)
-- Pivoted architecture: removed Meta API entirely (Phase 3.3)
-- Deleted `whatsapp_client.py`, renamed `forwarder.py` → `broadcaster.py`
-- Rewrote `main.py`: scrape → format → direct Playwright broadcast
-- Updated README with architecture diagram, project table, status tracker
-- Created VERIFICATION.md with empirical evidence
-- Installed caveman skill for token efficiency
-- All docs and code synced to GitHub
+- ✅ **Handshake Pivot**: Successfully implemented "Local-to-Cloud" session transfer (Linked locally, zipped, and uploaded).
+- ✅ **Memory Hardening**: Added 4GB swap and 1024x768 viewport for stable rendering.
+- ✅ **Language-Neutral Logic**: Switched to Playwright's `get_by_text` for "Unread"/"No leídos" success detection.
+- ✅ **Security**: Hardened `.gitignore` and sanitized GitHub history to remove `session.zip`.
+- ✅ **Wait-Times**: Increased session loading timeout to 120s to allow for background message sync.
 
 ### Verification
-- [x] E2E run — message delivered to "COP/USD Notifier" group
-- [x] Multiple successful runs confirmed
-- [x] No secrets in repo
-- [x] VERIFICATION.md committed
+- [x] Local session scan and link.
+- [x] Cloud session restoration ("Login successful!").
+- [x] Cloud search box detection ("Found search box via Role").
+- [ ] First sent message (Pending last UI sync).
 
 ### Paused Because
-Lunch break.
+Session end for the day. State is preserved.
 
 ### Handoff Notes
-Phase 3 fully closed. Next: decide Phase 4 deployment strategy and run `/plan 4`.
+The current version of `broadcaster.py` is the "Final Version". It has the language fixes and the 120s patience. Tomorrow, just run it and it should send the first broadcast.

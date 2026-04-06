@@ -57,15 +57,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             Object.defineProperty(navigator, 'languages', {get: () => ['es-419', 'es', 'en-US', 'en']});
         """)
         
-        # --- MINIMALIST MODE: Animations only ---
-        page.add_init_script("""
-            const style = document.createElement('style');
-            style.innerHTML = `
-                * { transition: none !important; animation: none !important; }
-            `;
-            document.head.appendChild(style);
-        """)
-        
         # --- Memory Saver: Block images, fonts, and media ---
         def route_handler(route):
             if route.request.resource_type in ["image", "font", "media"]:
@@ -81,16 +72,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # Wait for the chat list to load (indicator of login)
         print("Waiting for WhatsApp Web to load. If this is your first run, please scan the QR code.")
         
-        # --- UNIVERSAL LOGIN DETECTION (Language-Agnostic) ---
+        # --- LOGIN DETECTION ---
         try:
-            print("Checking session status (Waiting for dashboard markers)...")
-            # Wait for ANY sign of a logged-in dashboard (Filters like Unread/No leídos, or a Textbox)
-            # This is much more resilient than specific aria-labels
-            page.get_by_text("Unread", exact=False).or_(
-                page.get_by_text("No leídos", exact=False)
-            ).or_(
-                page.get_by_role("textbox")
-            ).first.wait_for(timeout=120000)
+            print("Checking session status (Waiting for Chat Pane to appear)...")
+            # #pane-side is the universal container for the chat list
+            page.wait_for_selector('#pane-side, [data-testid="chat-list-search-filtered"]', timeout=120000)
             print("Login successful or session restored!")
         except Exception:
             print("\n--- LOGIN REQUIRED ---")
