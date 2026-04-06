@@ -45,20 +45,29 @@ nohup xvfb-run --server-args="-screen 0 1280x1024x24" python3 main.py --headless
 
 # Store PID
 PID=$!
-echo "Process started with PID: $PID"
-echo "Waiting 30 seconds for initial load..."
-sleep 30
+echo "Process started (PID: $PID). Watching for QR..."
 
-# 5. Check if QR was generated
+# 5. POLLING for QR (Much faster than fixed sleep)
+for i in {1..30}; do
+    if [ -f "qr.png" ] || grep -q "Login successful" logs/vm_run.log; then
+        break
+    fi
+    echo -n "."
+    sleep 2
+done
+echo ""
+
+# 6. Final Status
 if [ -f "qr.png" ]; then
-    echo ""
     echo "------------------------------------------------"
-    echo "✨ QR CODE READY!"
+    echo "✨ QR CODE IS READY! (valid for <20s)"
     echo "------------------------------------------------"
-    echo "Download it using your Browser SSH 'Download file' button:"
+    echo "DOWNLOAD NOW via Browser SSH 'Download file' button:"
     echo "Path: $PROJECT_DIR/qr.png"
     echo "------------------------------------------------"
+elif grep -q "Login successful" logs/vm_run.log; then
+    echo "✅ Already logged in! Check logs/vm_run.log for results."
 else
-    echo "Still loading or failed. Check logs/vm_run.log"
-    tail -n 20 logs/vm_run.log
+    echo "❌ Timeout or error. Check logs/vm_run.log"
+    tail -n 10 logs/vm_run.log
 fi
