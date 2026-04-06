@@ -28,7 +28,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             user_data_dir=USER_DATA_DIR,
             headless=headless,
             user_agent=USER_AGENT,
-            viewport={'width': 800, 'height': 600},
+            viewport={'width': 1024, 'height': 768},
             # --- Anti-Detection: Locality matching ---
             timezone_id="America/Bogota",
             locale="es-419",
@@ -57,14 +57,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             Object.defineProperty(navigator, 'languages', {get: () => ['es-419', 'es', 'en-US', 'en']});
         """)
         
-        # --- SMART-LIGHT MODE: Hide heavy UI but keep Search visible ---
+        # --- MINIMALIST MODE: Animations only ---
         page.add_init_script("""
             const style = document.createElement('style');
             style.innerHTML = `
-                img, [style*="background-image"], canvas:not([data-ref]) { display: none !important; }
                 * { transition: none !important; animation: none !important; }
-                /* Ensure search and chat areas remain visible */
-                div[data-testid="search-container"], div[data-tab="3"] { display: block !important; visibility: visible !important; }
             `;
             document.head.appendChild(style);
         """)
@@ -191,15 +188,43 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 'div[aria-label="Search input textbox"]'
             ]
 
-            for selector in selectors_to_try:
-                try:
-                    search_box = page.wait_for_selector(selector, state="visible", timeout=3000)
-                    if search_box:
-                        break
-                except Exception:
-                    continue
-                    
+            # --- METHOD A: Playwright Roles (Most Resilient) ---
+            try:
+                # Try finding by role/placeholder
+                search_box = page.get_by_placeholder("Search or start a new chat")
+                if not search_box.is_visible():
+                    search_box = page.get_by_label("Search input textbox")
+                
+                if search_box and search_box.is_visible(timeout=3000):
+                    print("Found search box via Role/Label.")
+                else:
+                    search_box = None
+            except:
+                search_box = None
+
+            # --- METHOD B: Selector Fallbacks ---
             if not search_box:
+                for selector in selectors_to_try:
+                    try:
+                        search_box = page.wait_for_selector(selector, state="visible", timeout=2000)
+                        if search_box:
+                            print(f"Found search box via selector: {selector}")
+                            break
+                    except Exception:
+                        continue
+                
+            # --- METHOD C: DOM AUDIT (If all else fails) ---
+            if not search_box:
+                print("DEBUG: All search selectors failed. Auditing DOM inputs...")
+                try:
+                    # Find any inputs or contenteditables that might be search boxes
+                    inputs = page.query_selector_all("input, div[contenteditable]")
+                    for i, inp in enumerate(inputs):
+                        placeholder = inp.get_attribute("placeholder") or "None"
+                        label = inp.get_attribute("aria-label") or "None"
+                        print(f"  Input {i}: Placeholder='{placeholder}', Label='{label}'")
+                except: pass
+                
                 print("CRITICAL: Main search box not found. The WhatsApp Web DOM has changed.")
                 continue
                 
