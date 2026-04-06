@@ -5,4 +5,5 @@ __pycache__/
 .env
 recipients.json
 whatsapp_session/
+logs/
 *.log
