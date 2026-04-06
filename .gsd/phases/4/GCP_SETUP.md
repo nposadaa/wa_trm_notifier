@@ -78,36 +78,38 @@ playwright install-deps
 
 ---
 
-## Step 4: Run & Activate (The QR Scan)
+## Step 4: Run & Activate (Memory-Safe)
 
-To get things running and logged in:
+To prevent the VM from crashing due to low RAM (OOM), we now use a background execution script with resource blocking.
 
-1. **Wait for login**:
-   Make sure you are in the project folder and the venv is active:
-   ```bash
-   cd ~/wa_trm_notifier
-   chmod +x scripts/run_vm.sh
-   ./scripts/run_vm.sh
-   ```
+1.  **Sync & Start**:
+    Ensure you are in the project folder and run the new helper script:
+    ```bash
+    cd ~/wa_trm_notifier
+    git pull
+    chmod +x scripts/run_vm.sh
+    ./scripts/run_vm.sh
+    ```
+    *Note: This script will automatically increase your swap to 4GB if needed.*
 
-2. **Wait for "LOGIN REQUIRED"**:
-   - Open a **NEW PowerShell/Terminal** on your **LOCAL computer**.
-   - Run the command to copy the QR code from the VM to your laptop:
-     ```powershell
-     gcloud compute scp trm-notifier:~/wa_trm_notifier/qr.png . --zone=us-central1-a
-     ```
-   - Open `qr.png` on your computer and scan it with your phone (WhatsApp → Linked Devices).
+2.  **Download the QR Code**:
+    Since `gcloud` is not installed localy, use the Browser SSH features:
+    - Click the **Gear icon (⚙️)** in the top-right of your Browser SSH window.
+    - Select **Download file**.
+    - Enter the path: `/home/nposadaa/wa_trm_notifier/qr.png`
+    - Open the downloaded `qr.png` on your laptop and scan it.
 
-3. **Verify Success**:
-   - Once scanned, the script on the VM should complete automatically and send the TRM message.
+3.  **Check Logs**:
+    If it fails or you want to see what's happening in the background:
+    ```bash
+    tail -f logs/vm_run.log
+    ```
 
 ---
 
-## Step 5: Automation (Cron)
+## Step 5: Troubleshooting "Black Screenshots"
 
-Schedule the daily broadcast (7:00 AM COT = 12:00 UTC, Weekdays):
-1. Run `crontab -e` on the VM.
-2. Add this line:
-   ```cron
-   0 12 * * 1-5 /usr/bin/xvfb-run --server-args="-screen 0 1280x1024x24" /home/$USER/wa_trm_notifier/venv/bin/python3 /home/$USER/wa_trm_notifier/main.py --headless >> /home/$USER/wa_trm_notifier/logs/cron.log 2>&1
-   ```
+If you are still getting black screens or timeouts:
+1.  **Check error_page.png**: Download `/home/nposadaa/wa_trm_notifier/error_page.png` via the same Gear icon method.
+2.  **WhatsApp Structure**: If WhatsApp changed its layout, we may need to update the selectors in `broadcaster.py`.
+3.  **Restart VM**: If the system is extremely sluggish, use the **RESET** button in the GCP Console.

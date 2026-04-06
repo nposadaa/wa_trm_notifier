@@ -19,8 +19,9 @@
 
 ## Decisions Made
 - DEC-007 reconfirmed: headless=True blocked by WhatsApp
-- Cloud provider: GCP e2-micro (Always Free) + Xvfb + swap
-- Oracle Cloud rejected (signup error from Colombia)
+- DEC-008: Cloud provider: GCP e2-micro (Always Free) + Xvfb + swap
+- DEC-009: 4GB Swap required for e2-micro stability when running Chromium.
+- DEC-010: Resource blocking (images/fonts) enabled to save RAM during QR scan.
 
 ## Next Steps (after VM ready)
 1. Install Python, Playwright, Xvfb on VM (Step 3 of GCP_SETUP.md)

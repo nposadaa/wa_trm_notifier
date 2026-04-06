@@ -20,7 +20,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
     Otherwise, it loops through recipients, finds their chat, and sends `message_text`.
     """
     with sync_playwright() as p:
-        # Launch persistent context with fixed viewport
+        # Launch persistent context with fixed viewport and OOM-prevention flags
         print(f"Launching browser with session at {USER_DATA_DIR}...")
         context = p.chromium.launch_persistent_context(
             user_data_dir=USER_DATA_DIR,
@@ -31,13 +31,26 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 "--disable-dev-shm-usage",
                 "--no-sandbox",
                 "--disable-gpu",
-                # "--single-process", # Disabled single-process as it can cause rendering issues on some VMs
                 "--disable-extensions",
-                "--no-zygote"
+                "--no-zygote",
+                "--js-flags='--max-old-space-size=512'", # Limit JS heap to save RAM
+                "--disable-setuid-sandbox",
+                "--no-first-run",
+                "--disable-background-networking"
             ]
         )
         
         page = context.new_page()
+        
+        # --- Memory Saver: Block images, fonts, and media ---
+        def route_handler(route):
+            if route.request.resource_type in ["image", "font", "media"]:
+                route.abort()
+            else:
+                route.continue_()
+                
+        page.route("**/*", route_handler)
+        
         stealth = Stealth()
         stealth.apply_stealth_sync(page)
         
@@ -54,24 +67,46 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print("Login successful or session restored!")
         except Exception:
             print("\n--- LOGIN REQUIRED ---")
+            print(f"Current Page: {page.title()}")
             print("Timeout waiting for chat list. Looking for QR code...")
             try:
-                # Specifically wait for the QR code canvas/div
-                qr_selector = 'div[data-ref]'
-                page.wait_for_selector(qr_selector, state="visible", timeout=30000)
-                print("QR code detected. Waiting 3s for full render...")
-                time.sleep(3) # Ensure the barcode is fully drawn
+                # Resilient QR Selectors (canvas is usually the most stable)
+                qr_selectors = [
+                    'div[data-ref]', 
+                    'canvas', 
+                    '[data-testid="qrcode-container"]',
+                    'div[aria-label="Scan me!"]'
+                ]
+                
+                qr_found = False
+                for sel in qr_selectors:
+                    try:
+                        print(f"Checking for selector: {sel}...")
+                        page.wait_for_selector(sel, state="visible", timeout=15000)
+                        qr_found = True
+                        break
+                    except:
+                        continue
+
+                if not qr_found:
+                    raise Exception("None of the standard QR selectors appeared.")
+
+                print("QR code detected. Waiting 5s for full render...")
+                time.sleep(5) # Give it extra time on slow VM
                 
                 qr_path = "qr.png"
                 page.screenshot(path=qr_path)
                 print(f"QR code screenshot saved to '{qr_path}'.")
                 print("Action needed: Copy 'qr.png' to your local machine and scan it.")
-                print("\nCommand (local):")
-                print(f"gcloud compute scp trm-notifier:~/wa_trm_notifier/{qr_path} . --zone=us-central1-a")
             except Exception as e:
                 print(f"Failed to find QR code: {e}")
                 print("Saving emergency full page screenshot to 'error_page.png'...")
                 page.screenshot(path="error_page.png", full_page=True)
+                # Print page text for diagnostic in terminal
+                try:
+                    text = page.inner_text("body")[:500]
+                    print(f"Page Preview Text: {text}...")
+                except: pass
             
             context.close()
             return
