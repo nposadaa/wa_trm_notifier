@@ -28,7 +28,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             user_data_dir=USER_DATA_DIR,
             headless=headless,
             user_agent=USER_AGENT,
-            viewport={'width': 1280, 'height': 800},
+            viewport={'width': 800, 'height': 600},
             # --- Anti-Detection: Locality matching ---
             timezone_id="America/Bogota",
             locale="es-419",
@@ -43,17 +43,29 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 "--js-flags='--max-old-space-size=512'", 
                 "--disable-setuid-sandbox",
                 "--no-first-run",
-                "--disable-background-networking"
+                "--disable-background-networking",
+                "--disable-web-security"
             ]
         )
         
         page = context.new_page()
         
-        # --- HARDENING: Manual Navigator Overrides ---
+        # --- HARDENING & STEALTH: Manual Navigator Overrides ---
         page.add_init_script("""
             Object.defineProperty(navigator, 'webdriver', {get: () => false});
             Object.defineProperty(navigator, 'platform', {get: () => 'Win32'});
             Object.defineProperty(navigator, 'languages', {get: () => ['es-419', 'es', 'en-US', 'en']});
+        """)
+        
+        # --- SUPER-LIGHT MODE: Hide heavy UI elements (Avatars, Icons, Animations) ---
+        # This drastically reduces the RAM needed during 'Search' and 'Scroll'
+        page.add_init_script("""
+            const style = document.createElement('style');
+            style.innerHTML = `
+                img, [style*="background-image"], canvas:not([data-ref]), ._1869n, ._2p6m9 { display: none !important; }
+                * { transition: none !important; animation: none !important; }
+            `;
+            document.head.appendChild(style);
         """)
         
         # --- Memory Saver: Block images, fonts, and media ---
