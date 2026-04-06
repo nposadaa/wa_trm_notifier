@@ -34,12 +34,9 @@
 - `.gsd/WHATSAPP_TEMPLATES.md`: Reference for the required dashboard setup.
 
 ## Last Session Summary
-- **Sprint Success**: Executed Phase 2 integration. Successfully performed a full scrape-and-send cycle using the `trm_daily_official` template.
-- **Infrastructure Ready**: 
-    - `whatsapp_client.py` supports dynamic template parameters.
-    - `main.py` orchestrates the "Scrape -> Send" loop.
-    - Meta template `trm_daily_official` is Active and verified.
-- **Bug Fixed**: Resolved language code mismatch (switched from `en_US` to `en`).
+- **Research Success**: Determined that Meta's Cloud API does NOT support standard WhatsApp groups.
+- **Pivot**: Decision made to implement a "Multi-Recipient Support" model using `recipients.json`.
+- **Planning**: Created `3.1-PLAN.md` to handle configuration and the broadcasting loop in `main.py`.
 
 ## In-Progress Work
 - Phase 2 Documentation: `2.2-SUMMARY.md` created.
