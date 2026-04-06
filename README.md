@@ -7,7 +7,7 @@ In Colombia, the USD/COP exchange rate is a critical business and social metric.
 
 ## ✨ Key Features
 - **Automated Scraper**: Robust Python-based scraper for `dolar-colombia.com`.
-- **Browser Automation**: Uses **Playwright** to drive WhatsApp Web, enabling direct forwarding to standard groups and contacts.
+- **Browser Automation**: Uses **Playwright** to drive WhatsApp Web, enabling direct native messaging to standard groups and contacts without hitting Meta Developer restrictions.
 - **Cloud Native**: Designed for server deployment (GitHub Actions transition incoming).
 - **Zero-Cost Implementation**: Runs entirely within the free tiers of Python tooling.
 
@@ -18,6 +18,8 @@ In Colombia, the USD/COP exchange rate is a critical business and social metric.
 
 ## 📁 Project Structure
 - `scraper.py`: Core logic for retrieving TRM data.
+- `broadcaster.py`: Playwright script to natively search groups and type the message.
+- `main.py`: Orchestrator linking the scraper to the broadcaster.
 - `.github/workflows/`: Automation scripts for daily notification triggers.
 - `.gsd/`: Internal project specification and methodology (Get Shit Done).
 
@@ -36,7 +38,7 @@ In Colombia, the USD/COP exchange rate is a critical business and social metric.
 3. **Configure Recipients**: Edit `recipients.json` to map WhatsApp Chat names.
 4. **First Run (QR Scan)**:
    ```bash
-   py forwarder.py --discovery
+   py broadcaster.py --discovery
    ```
 5. **Run Entire Pipeline**:
    ```bash

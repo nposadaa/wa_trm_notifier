@@ -1,12 +1,6 @@
 import os
 from scraper import scrape_trm
-from whatsapp_client import WhatsAppClient
-from dotenv import load_dotenv
-from forwarder import run_forwarder
-import time
-
-# Load credentials
-load_dotenv()
+from broadcaster import run_broadcaster
 
 def main():
     print("--- Starting TRM Notifier ---")
@@ -23,36 +17,18 @@ def main():
     trm_date = trm_data["date"]
     print(f"Scraped TRM: {trm_value} for date: {trm_date}")
 
-    # 2. Prepare the WhatsApp Client
-    client = WhatsAppClient()
-    recipient = os.getenv("RECIPIENT_PHONE_NUMBER")
-    
-    # 3. Send the dynamic message
-    # Template params: {{1}} = date, {{2}} = trm
-    template_name = "trm_daily_official" 
-    params = [trm_date, trm_value]
-    
-    if not all([client.access_token, client.phone_number_id, recipient]):
-        print("Error: Missing credentials or recipient in .env file.")
-        return
+    # 2. Format the Message
+    # We use some nice emojis to mimic the old template
+    message_text = f"📈 *TRM Oficial - {trm_date}*\n\n💵 Valor: ${trm_value:,.2f} COP. Source www.dolar-colombia.com"
+    print("\nPrepared Message:")
+    print(message_text)
+    print("")
 
-    success = client.send_template_message(
-        recipient_number=recipient,
-        template_name=template_name,
-        language_code="en",
-        params=params
-    )
+    # 3. Broadcast using Playwright
+    print("Invoking Playwright Broadcaster to send to groups...")
+    run_broadcaster(message_text, headless=False, discovery_mode=False)
     
-    if success:
-        print("API message sent to Admin successfully!")
-        print("Waiting 15 seconds to ensure message is received on device before forwarding...")
-        time.sleep(15)
-        
-        print("Invoking Playwright Forwarder to broadcast to groups...")
-        run_forwarder(headless=False, discovery_mode=False)
-        print("Task completed successfully!")
-    else:
-        print("Task failed during message submission.")
+    print("Task completed successfully!")
 
 if __name__ == "__main__":
     main()
