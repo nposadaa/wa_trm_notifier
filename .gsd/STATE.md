@@ -1,30 +1,29 @@
 # STATE.md — Project Memory
 
-> **Current Phase**: Phase 4 — Automation & Deployment (next)
+> **Current Phase**: Phase 4 — Cloud Deployment
 > **Last Update**: 2026-04-06
-> **Status**: Paused at 2026-04-06T12:33 COT
+> **Status**: Executing Plan 4.2 — waiting for GCP VM provisioning
 
 ## Current Position
-- **Phase**: Phase 3 — ✅ Complete
-- **Task**: All Phase 3 tasks done
-- **Status**: Paused. Phase 4 not yet started.
+- **Phase**: Phase 4 — Cloud Deployment (In Progress)
+- **Task**: Plan 4.2 — Provision GCP VM
+- **Status**: User setting up GCP e2-micro VM. Waiting for SSH confirmation.
 
-## Last Session Summary
-- **Phase 3.3 Complete**: Pivoted from Meta API forwarding to direct Playwright broadcasting.
-- Deleted `whatsapp_client.py`, renamed `forwarder.py` → `broadcaster.py`.
-- `main.py` now: scrape → format message → Playwright types into each chat → Enter.
-- E2E verified multiple times: message sent to "COP/USD Notifier" group successfully.
-- VERIFICATION.md created and committed.
-- README.md fully rewritten with architecture diagram and status.
-- Caveman skill installed.
+## Completed This Session
+- Plan 4.1: headless=True test FAILED — confirmed DEC-007
+- Plan 4.1: file logging added (dual console + logs/ dir)
+- Plan 4.1: argparse CLI added (--headless, --discovery flags)
+- Research: 10+ cloud providers evaluated
+- Decision: GCP e2-micro (Always Free) chosen after Oracle signup failed
 
-## Known Limitations
-- Emojis in `recipients.json` names cause encoding issues — use plain text only.
-- `headless=True` blocked by WhatsApp anti-automation — must run `headless=False`.
-- WhatsApp Web DOM selectors may change; fallback arrays mitigate risk.
+## Decisions Made
+- DEC-007 reconfirmed: headless=True blocked by WhatsApp
+- Cloud provider: GCP e2-micro (Always Free) + Xvfb + swap
+- Oracle Cloud rejected (signup error from Colombia)
 
-## Next Steps
-1. **Phase 4**: Decide deployment strategy (Windows Task Scheduler vs VPS vs hybrid).
-2. **Add recipients**: Expand `recipients.json` with more groups/contacts.
-3. **Plan Phase 4**: Run `/plan 4` to create execution plans.
-
+## Next Steps (after VM ready)
+1. Install Python, Playwright, Xvfb on VM (Step 3 of GCP_SETUP.md)
+2. Transfer WhatsApp session from local PC to VM
+3. Test run: `xvfb-run python3 main.py`
+4. Configure cron: 7:00 AM COT (12:00 UTC) weekdays
+5. Update all docs + DECISIONS.md
