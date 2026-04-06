@@ -35,12 +35,12 @@
 - [x] Refactor `forwarder.py` to `broadcaster.py`, directly injecting formatted strings into the chat inputs.
 - [x] Final E2E test verifying end-to-end direct delivery.
 
-### Phase 4: Cloud Deployment (Oracle Cloud + Xvfb)
-**Status**: 🚧 Planned
-**Objective**: Deploy to Oracle Cloud Always Free VM for daily autonomous runs.
-- [ ] Provision Oracle Cloud VM (Ubuntu ARM, Always Free).
-- [ ] Install Python3, Playwright, Xvfb on VM.
-- [ ] Transfer WhatsApp session from local PC to VM.
+### Phase 4: Cloud Deployment (GCP + Xvfb)
+**Status**: 🚧 In Progress
+**Objective**: Deploy to GCP Always Free VM for daily autonomous runs.
+- [x] Provision GCP VM (e2-micro, us-central1).
+- [x] Install Python3, Playwright, Xvfb on VM.
+- [x] Transfer WhatsApp session from local PC to VM.
 - [ ] Configure cron job for 7:00 AM COT (12:00 UTC).
 - [ ] Add file logging for unattended monitoring.
 - [ ] Update all documentation.

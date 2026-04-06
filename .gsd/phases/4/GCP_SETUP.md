@@ -14,7 +14,7 @@
 | **Region** | `us-central1` (Iowa) — free tier eligible |
 | **Zone** | `us-central1-a` |
 | **Machine type** | `e2-micro` (2 vCPU, 1 GB) |
-| **Boot disk** | Click **Change** → Ubuntu 22.04 LTS, 30 GB standard |
+| **Boot disk** | Click **Change** → Ubuntu 22.04 LTS, **x86/64 amd64** (NOT Minimal, NOT Arm64), 30 GB standard |
 | **Firewall** | Check "Allow HTTP" (not strictly needed but useful) |
 
 6. Expand **Advanced options** → **Networking** → ensure external IP = **Ephemeral** (default)
