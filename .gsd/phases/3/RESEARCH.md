@@ -11,18 +11,23 @@ The goal was to investigate the best path for broadcasting TRM updates to WhatsA
 - Standard WhatsApp groups (the ones users create manually) are entirely inaccessible via the Business API for sending messages.
 - Any service claiming to allow this typically uses "unofficial" (scraping-based) methods that carry a high risk of permanent phone number bans.
 
-### 2. Proposed Pivot: Individual Broadcasting
-Since we cannot post to a group, the next best alternative is to send the same template message to a list of individual recipients. 
+### 2. Initial Pivot: Individual Broadcasting (Phase 3.1)
+Since we cannot post to a group, the next best alternative was to send the same template message to a list of individual recipients via the API. 
+**Status**: Skipped. The user explicitly wants group messaging.
 
-- **Pros**: 100% official, uses existing `whatsapp_client.py` logic, no risk of bans.
-- **Cons**: Recipients receive messages in their private chat rather than a group.
-- **Limit**: Unverified accounts can send to ~250 unique conversations every 24 hours (plenty for this project).
+### 3. Ultimate Pivot: Playwright Hybrid Automation (Phase 3.2)
+We decided to bypass API limitations by automating the WhatsApp Web UI.
+- We use the Meta API to send the TRM notification to the admin.
+- We use `forwarder.py` (Playwright) to find that message and native-forward it to target groups.
+- **Pros**: Achieves actual Group posting.
+- **Cons**: Requires keeping a machine/action authenticated on WhatsApp Web via QR code. Viable but fragile to UI DOM changes.
 
 ## Recommended Technical Path
 
-1.  **Storage**: Move from a single `RECIPIENT_PHONE_NUMBER` in `.env` to a `recipients.json` file to manage multiple contacts easily.
-2.  **Orchestration**: Update `main.py` to iterate through the JSON list and call `client.send_template_message` for each.
-3.  **Opt-in Management (v1)**: Users must be added manually to the JSON file by the admin.
+1.  **Storage**: Use a `recipients.json` file to map exact names of target Groups and Contacts exactly as they appear in the UI.
+2.  **Orchestration Hybrid**: 
+    - `main.py` scrapes data and triggers the official API to send it to the admin device.
+    - `main.py` immediately executes `forwarder.py` (Playwright) which searches for that message and clicks "Forward" to all entries in `recipients.json`.
 
 ## Unresolved Questions
-- Should we investigate "WhatsApp Channels"? (Likely too public/complex for this use case, but an option for pure broadcasting).
+- Will WhatsApp Web DOM updates randomly break the Playwright selectors? (We must ensure selectors are as resilient as possible).

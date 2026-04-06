@@ -3,3 +3,6 @@ venv/
 __pycache__/
 *.pyc
 .env
+recipients.json
+whatsapp_session/
+*.log

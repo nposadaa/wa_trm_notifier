@@ -5,9 +5,9 @@
 
 ## Must-Haves (from SPEC)
 - [x] Automating Scraping logic (Python)
-- [x] Integration with WhatsApp Business Cloud API
+- [x] Integration with WhatsApp Playwright Automation (Browser bypass for groups)
 - [ ] Automated execution on a schedule (GitHub Actions)
-- [ ] Group broadcast functionality
+- [ ] Native forwarding to multiple recipients/groups
 
 ## Phases
 
@@ -26,12 +26,13 @@
 - [x] Implement `whatsapp_client.py` for 1-on-1 messaging.
 - [x] Test delivery to your test phone number.
 
-### Phase 3: Group Integration & Feasibility Check
-**Status**: ⬜ Not Started
-**Objective**: Determine the best path for group messaging based on your Meta account business status.
-- [ ] Research/Test the Groups API with your current credentials.
-- [ ] Pivot to 1-on-1 broadcasting or "Community" if direct group messaging is restricted.
-- [ ] Update config to support multiple recipients/groups.
+### Phase 3: Playwright Forwarding Automation
+**Status**: 🚧 In Progress
+**Objective**: Automate WhatsApp Web using Python + Playwright to overcome official API group limitations.
+- [x] Setup Playwright and Stealth context.
+- [x] Initialize persistent WhatsApp session via manual QR scan.
+- [ ] Implement robust "Search & Forward" UI automation targeting `recipients.json`.
+- [ ] Link `main.py` scraper pipeline directly to the forwarder.
 
 ### Phase 4: Automation & Deployment (GitHub Actions)
 **Status**: ⬜ Not Started
