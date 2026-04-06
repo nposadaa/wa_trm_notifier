@@ -20,11 +20,15 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
     Otherwise, it loops through recipients, finds their chat, and sends `message_text`.
     """
     with sync_playwright() as p:
+        # Define a modern User Agent to prevent the "Unsupported Browser" error
+        USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+
         # Launch persistent context with fixed viewport and OOM-prevention flags
         print(f"Launching browser with session at {USER_DATA_DIR}...")
         context = p.chromium.launch_persistent_context(
             user_data_dir=USER_DATA_DIR,
             headless=headless,
+            user_agent=USER_AGENT,
             viewport={'width': 1280, 'height': 800},
             args=[
                 "--start-maximized",
