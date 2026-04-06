@@ -78,9 +78,36 @@ playwright install-deps
 
 ---
 
-## Step 4: Tell Me When Done
+## Step 4: Run & Activate (The QR Scan)
 
-Tell me when Step 3 completes. Then we:
-1. Transfer WhatsApp session
-2. Test run with Xvfb
-3. Set up cron job
+To get things running and logged in:
+
+1. **Wait for login**:
+   Make sure you are in the project folder and the venv is active:
+   ```bash
+   cd ~/wa_trm_notifier
+   chmod +x scripts/run_vm.sh
+   ./scripts/run_vm.sh
+   ```
+
+2. **Wait for "LOGIN REQUIRED"**:
+   - Open a **NEW PowerShell/Terminal** on your **LOCAL computer**.
+   - Run the command to copy the QR code from the VM to your laptop:
+     ```powershell
+     gcloud compute scp trm-notifier:~/wa_trm_notifier/qr.png . --zone=us-central1-a
+     ```
+   - Open `qr.png` on your computer and scan it with your phone (WhatsApp → Linked Devices).
+
+3. **Verify Success**:
+   - Once scanned, the script on the VM should complete automatically and send the TRM message.
+
+---
+
+## Step 5: Automation (Cron)
+
+Schedule the daily broadcast (7:00 AM COT = 12:00 UTC, Weekdays):
+1. Run `crontab -e` on the VM.
+2. Add this line:
+   ```cron
+   0 12 * * 1-5 /usr/bin/xvfb-run --server-args="-screen 0 1280x1024x24" /home/$USER/wa_trm_notifier/venv/bin/python3 /home/$USER/wa_trm_notifier/main.py --headless >> /home/$USER/wa_trm_notifier/logs/cron.log 2>&1
+   ```

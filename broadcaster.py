@@ -20,17 +20,18 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
     Otherwise, it loops through recipients, finds their chat, and sends `message_text`.
     """
     with sync_playwright() as p:
-        # Launch persistent context
+        # Launch persistent context with fixed viewport
         print(f"Launching browser with session at {USER_DATA_DIR}...")
         context = p.chromium.launch_persistent_context(
             user_data_dir=USER_DATA_DIR,
             headless=headless,
+            viewport={'width': 1280, 'height': 800},
             args=[
                 "--start-maximized",
                 "--disable-dev-shm-usage",
                 "--no-sandbox",
                 "--disable-gpu",
-                "--single-process", # Lower RAM, higher potential for crashes
+                # "--single-process", # Disabled single-process as it can cause rendering issues on some VMs
                 "--disable-extensions",
                 "--no-zygote"
             ]
@@ -48,14 +49,30 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         
         try:
             # Selector for the side panel (chat list)
-            page.wait_for_selector('div[aria-label="Chat list"]', timeout=60000)
+            print("Checking if already logged in...")
+            page.wait_for_selector('div[aria-label="Chat list"]', timeout=20000)
             print("Login successful or session restored!")
         except Exception:
             print("\n--- LOGIN REQUIRED ---")
-            print("Timeout waiting for chat list. Saving QR code screenshot to 'qr.png'...")
-            page.screenshot(path="qr.png")
-            print("Action needed: Copy 'qr.png' to your local machine and scan it.")
-            print("Command (local): gcloud compute scp trm-notifier:~/wa_trm_notifier/qr.png . --zone=us-central1-a")
+            print("Timeout waiting for chat list. Looking for QR code...")
+            try:
+                # Specifically wait for the QR code canvas/div
+                qr_selector = 'div[data-ref]'
+                page.wait_for_selector(qr_selector, state="visible", timeout=30000)
+                print("QR code detected. Waiting 3s for full render...")
+                time.sleep(3) # Ensure the barcode is fully drawn
+                
+                qr_path = "qr.png"
+                page.screenshot(path=qr_path)
+                print(f"QR code screenshot saved to '{qr_path}'.")
+                print("Action needed: Copy 'qr.png' to your local machine and scan it.")
+                print("\nCommand (local):")
+                print(f"gcloud compute scp trm-notifier:~/wa_trm_notifier/{qr_path} . --zone=us-central1-a")
+            except Exception as e:
+                print(f"Failed to find QR code: {e}")
+                print("Saving emergency full page screenshot to 'error_page.png'...")
+                page.screenshot(path="error_page.png", full_page=True)
+            
             context.close()
             return
 
