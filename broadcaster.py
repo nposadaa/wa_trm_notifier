@@ -201,11 +201,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print("CRITICAL: Main search box not found. The WhatsApp Web DOM has changed.")
                 continue
                 
-            # Clear search box and type the recipient name carefully
-            search_box.fill("")
-            time.sleep(0.5)
-            search_box.type(name, delay=50) # typing like a human
-            time.sleep(2) # wait for results to populate
+            # Use fill() instead of type() to save memory on 1GB VM
+            search_box.fill(name)
+            time.sleep(3) # wait for results to populate
             
             # 2. Click the chat in the search results pane
             # Often it appears in a pane with `span[title="Chat Name"]`
