@@ -1,13 +1,13 @@
 # STATE.md — Project Memory
 
-> **Current Phase**: Phase 3 — Group Integration & Feasibility Check
+> **Current Phase**: Phase 3 — ✅ Complete
 > **Last Update**: 2026-04-06
-> **Status**: Active (resumed 2026-04-06T11:11:16-05:00)
+> **Status**: Phase 3.3 Complete. Ready for Phase 4.
 
 ## Current Position
-- **Phase**: Phase 3 — Group Integration & Feasibility Check
-- **Task**: Multi-Recipient Support (Plan 3.1)
-- **Status**: Phase 2 Verified (2026-04-06). Ready for Phase 3 Execution.
+- **Phase**: Phase 3 — Direct Playwright Broadcast (Complete)
+- **Task**: All tasks complete
+- **Status**: E2E verified (2026-04-06T12:18).
 
 ## Last Session Summary
 - **Sprint Success**: Completed the `api-handshake` sprint. Successfully sent a "Hello World" message to the user's verified number via the Meta Cloud API.
@@ -34,14 +34,12 @@
 - `.gsd/WHATSAPP_TEMPLATES.md`: Reference for the required dashboard setup.
 
 ## Last Session Summary
-- **UI Research**: Realized WhatsApp Web UI DOM changes make 'forwarding' brittle.
-- **Major Pivot (Phase 3.3)**: Decided to bypass the Meta API entirely. The scraper will feed text directly to a Playwright `broadcaster.py`, which will directly type and send the message to each recipient in `recipients.json`.
-
-## In-Progress Work
-- Creating and gathering approvals for `.gsd/phases/3/3.3-PLAN.md`.
-- Stripping `whatsapp_client.py` and Meta credentials from `.env`.
+- **Phase 3.3 Complete**: Pivoted from Meta API forwarding to direct Playwright broadcasting.
+- Deleted `whatsapp_client.py`, renamed `forwarder.py` → `broadcaster.py`.
+- `main.py` now: scrape → format message → Playwright types into each chat → Enter.
+- E2E verified: message sent to "COP/USD Notifier" group successfully.
+- Note: emojis in `recipients.json` names cause encoding issues — use plain text names only.
 
 ## Next Steps
-1. **Approval**: Wait for user approval of Phase 3.3 Plan.
-2. **Refactor**: Remove API code, rename `forwarder.py` to `broadcaster.py`, construct the message internally.
-3. **End-to-End Test**: Execute `py main.py` using the new direct-input automation.
+1. **Phase 4**: Automate via GitHub Actions or VPS for daily 7AM runs.
+2. **Add more recipients** to `recipients.json` as needed.
