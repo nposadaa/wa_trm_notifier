@@ -57,13 +57,14 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             Object.defineProperty(navigator, 'languages', {get: () => ['es-419', 'es', 'en-US', 'en']});
         """)
         
-        # --- SUPER-LIGHT MODE: Hide heavy UI elements (Avatars, Icons, Animations) ---
-        # This drastically reduces the RAM needed during 'Search' and 'Scroll'
+        # --- SMART-LIGHT MODE: Hide heavy UI but keep Search visible ---
         page.add_init_script("""
             const style = document.createElement('style');
             style.innerHTML = `
-                img, [style*="background-image"], canvas:not([data-ref]), ._1869n, ._2p6m9 { display: none !important; }
+                img, [style*="background-image"], canvas:not([data-ref]) { display: none !important; }
                 * { transition: none !important; animation: none !important; }
+                /* Ensure search and chat areas remain visible */
+                div[data-testid="search-container"], div[data-tab="3"] { display: block !important; visibility: visible !important; }
             `;
             document.head.appendChild(style);
         """)
@@ -182,10 +183,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # 1. Focus the main search box
             search_box = None
             selectors_to_try = [
+                'div[data-testid="search-container"] input',
+                'div[contenteditable="true"][data-tab="3"]',
                 'input[data-tab="3"]',
                 'input[placeholder="Search or start a new chat"]',
                 'input[aria-label="Search or start a new chat"]',
-                'div[contenteditable="true"][data-tab="3"]', # legacy fallback
                 'div[aria-label="Search input textbox"]'
             ]
 
