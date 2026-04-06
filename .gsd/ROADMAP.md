@@ -35,12 +35,12 @@
 - [x] Refactor `forwarder.py` to `broadcaster.py`, directly injecting formatted strings into the chat inputs.
 - [x] Final E2E test verifying end-to-end direct delivery.
 
-### Phase 4: Automation & Deployment (GitHub Actions)
-**Status**: ⬜ Not Started
-**Objective**: Move the service to the cloud for daily autonomous runs.
-- [ ] Create `.github/workflows/daily_notifier.yml`.
-- [ ] Set up GitHub Secrets for API tokens.
-- [ ] Verify 7:00 AM cron schedule.
-- [ ] Documentation for future updates.
+### Phase 4: Local Automation (Windows Task Scheduler)
+**Status**: 🚧 Planned
+**Objective**: Automate daily execution via Windows Task Scheduler.
+- [ ] Create `run_notifier.bat` wrapper script with file logging.
+- [ ] Add Python file logging (dual: console + log file).
+- [ ] Register Windows Scheduled Task for 7:00 AM daily.
+- [ ] Update all documentation.
 
 
