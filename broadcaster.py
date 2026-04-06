@@ -270,38 +270,46 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             time.sleep(1.5)
 
             # 3. Focus the chat input box (bottom bar of right pane)
-            print(f"Typing message to {name}...")
-            chat_box_selectors = [
-                'div[aria-label="Type a message"]',
-                'div[title="Type a message"]',
-                'p.selectable-text.copyable-text',
-                'div[contenteditable="true"][data-tab="10"]'
-            ]
-            
+            print(f"Finding input box for {name}...")
             chat_box = None
-            for sel in chat_box_selectors:
-                try:
-                    # Look inside the main panel to make sure we don't grab something else
-                    chat_box = page.wait_for_selector(f'#main {sel}', state="visible", timeout=2000)
-                    if chat_box: break
-                except:
-                    # fallback to generic query
+            
+            # --- Method A: Role-based (Most Resilient) ---
+            try:
+                # Try finding by localized role in the #main area
+                chat_box = page.locator('#main').get_by_role("textbox", name="Type a message").or_(
+                    page.locator('#main').get_by_role("textbox", name="Escribe un mensaje")
+                ).first
+                
+                if chat_box.is_visible(timeout=5000):
+                    print("Found chat box via Role.")
+                else: chat_box = None
+            except: chat_box = None
+
+            # --- Method B: Selector Fallbacks ---
+            if not chat_box:
+                chat_box_selectors = [
+                    'footer div[contenteditable="true"]',
+                    '#main div[aria-label="Type a message"]',
+                    '#main div[aria-label="Escribe un mensaje"]',
+                    'p.selectable-text.copyable-text'
+                ]
+                for sel in chat_box_selectors:
                     try:
-                        chat_box = page.wait_for_selector(sel, state="visible", timeout=1000)
-                        if chat_box: break
+                        chat_box = page.wait_for_selector(sel, state="visible", timeout=2000)
+                        if chat_box: 
+                            print(f"Found chat box via selector: {sel}")
+                            break
                     except: continue
-                    
+
             if not chat_box:
                  print(f"Could not find the chat input box for {name}.")
                  continue
                  
             # 4. Fill message and send
-            chat_box.fill("")
-            # In Playwright, .fill() handles text nicely including newlines. 
             chat_box.fill(message_text)
             time.sleep(1) # Breathe
             chat_box.press("Enter")
-            print(f"Sent message to {name}!")
+            print(f"✅ SUCCESS: Sent message to {name}!")
             time.sleep(2) # Wait a bit before moving to next person
 
         print("\nAll recipients processed. Closing session.")
