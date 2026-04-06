@@ -5,67 +5,59 @@ wave: 2
 dependencies: ["4.1"]
 ---
 
-# Plan 4.2: Cloud Deployment
+# Plan 4.2: Cloud Deployment (GCP Pivot)
 
 ## Objective
-Deploy to cloud based on headless test results from Plan 4.1.
+Deploy the TRM Notifier to a GCP e2-micro VM using stable "Local-to-Cloud" session transfer.
 
 ## Context
-- .gsd/phases/4/RESEARCH.md
-- .gsd/phases/4/1-PLAN.md results
+- .gsd/phases/4/GCP_SETUP.md (Finalized)
+- Pivot from Oracle to GCP due to availability and bot-detection bypass requirements.
+
+## Progress
+- [x] Provision GCP VM (e2-micro, Ubuntu 22.04 LTS).
+- [x] Configure 4GB Swap for memory stability.
+- [x] Implement "Local-to-Cloud" session transfer (Linked locally, zipped, and uploaded).
+- [x] Harden `broadcaster.py` with multi-language (Spanish) and role-based searching.
+- [/] Verify first cloud broadcast (Final UI sync pending).
+- [ ] Configure daily Cron job (7:00 AM COT).
 
 ## Tasks
 
 <task type="auto">
-  <name>Provision Cloud VM</name>
+  <name>Provision & Stabilize GCP VM</name>
   <action>
-    Provision Oracle Cloud Always Free VM:
-    1. Sign up at cloud.oracle.com
-    2. Create Compute Instance: Ampere A1 (1 OCPU, 6GB RAM), Ubuntu 22.04
-    3. SSH key pair setup
-    4. Install: python3, pip, playwright, playwright-deps
-    5. If headless=True failed: also install xvfb
-    6. Clone repo, pip install -r requirements.txt, playwright install chromium
+    1. Create e2-micro instance in us-central1-a.
+    2. Add 4GB swap to prevent OOM crashes.
+    3. Install: python3, pip, xvfb, playwright.
+    4. Clone repo and setup venv.
   </action>
-  <verify>SSH into VM, run: python3 -c "from playwright.sync_api import sync_playwright; print('OK')"</verify>
-  <done>VM running with all dependencies installed</done>
+  <done>VM running with 4GB swap and all dependencies installed</done>
 </task>
 
 <task type="auto">
-  <name>Session Setup + Cron</name>
+  <name>Session Transfer & UI Sync</name>
   <action>
-    Session setup on VM:
-    - Option A (headless=True works): transfer storageState JSON from local
-    - Option B (headless=False needed): install noVNC, scan QR via browser
-    
-    Cron setup:
-    - crontab -e
-    - If headless: `0 12 * * 1-5 cd ~/wa_trm_notifier && python3 main.py --headless`
-    - If Xvfb: `0 12 * * 1-5 cd ~/wa_trm_notifier && xvfb-run python3 main.py`
-    - Redirect output: >> logs/cron.log 2>&1
-    - 12:00 UTC = 7:00 AM COT, weekdays only
+    1. Link WhatsApp locally on laptop.
+    2. Zip `whatsapp_session/` and upload to VM.
+    3. Update `broadcaster.py` with "Universal" text-based login detection.
+    4. Implement "Smart-Light" rendering and 1024x768 viewport.
   </action>
-  <verify>crontab -l shows job; next morning check logs/cron.log for success</verify>
-  <done>Automated daily broadcast running from cloud</done>
+  <done>WhatsApp session active and searchable on VM</done>
 </task>
 
 <task type="auto">
-  <name>Update All Documentation</name>
-  <files>.gsd/ROADMAP.md, .gsd/DECISIONS.md, README.md</files>
+  <name>Automation & Handover</name>
   <action>
-    - Add DEC-008: Cloud provider choice + rationale
-    - Add DEC-009: headless mode decision (based on test results)
-    - Mark Phase 4 complete in ROADMAP
-    - Add cloud deployment section to README
-    - Git push all changes
+    1. Test run: `xvfb-run ... main.py --headless`.
+    2. Register crontab: `0 7 * * * ... ./scripts/run_vm.sh`.
+    3. Final doc audit.
   </action>
-  <verify>grep "Oracle\|cloud\|deploy" README.md returns matches</verify>
-  <done>All docs reflect final deployment architecture</done>
+  <done>Automated daily broadcast running from GCP cloud</done>
 </task>
 
 ## Success Criteria
-- [ ] Cloud VM provisioned and running
-- [ ] WhatsApp session active on VM
-- [ ] Cron job registered for 7:00 AM COT
-- [ ] Next-day verification: message sent automatically from cloud
-- [ ] All documentation updated
+- [x] GCP VM provisioned and stable (Swap active).
+- [x] WhatsApp session successfully transferred ("Login successful!").
+- [/] First cloud send confirmed (Wait for tomorrow).
+- [ ] Cron job registered for 7:00 AM COT.

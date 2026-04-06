@@ -27,6 +27,6 @@
 
 ## Next Steps (Starting Point 🤝)
 1. **The First Send**: Run the final script on the VM:
-   `source venv/bin/activate && xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless`
+   `cd ~/wa_trm_notifier && git pull && source venv/bin/activate && xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless`
 2. **Automate**: Once verified, set up crontab: `0 7 * * * cd ~/wa_trm_notifier && ./scripts/run_vm.sh`.
 3. **Audit**: Complete Phase 4 documentation.

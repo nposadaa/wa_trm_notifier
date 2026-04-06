@@ -1,56 +1,21 @@
 # Phase 4 Research: Cloud Deployment (Final)
 
-## Confirmed: headless=True BLOCKED by WhatsApp
-Tested 2026-04-06. Script ran but message not delivered. Need headless=False + Xvfb.
+## Pivot: GCP e2-micro (Always Free)
+Despite the 1GB RAM limitation, GCP us-central1 was chosen due to instant availability. Memory was stabilized using a 4GB swap file and optimized browser resource blocking.
 
-## All Options Ranked
+## Headless Block Bypass
+- **DEC-011**: confirmed `headless: True` is flagged by WhatsApp.
+- **Solution**: `xvfb-run` + `headless: False` with Advanced Stealth (navigator spoofs).
 
-### FREE TIER (Always Free)
+## Session Activation Strategy
+- **Option A (Success)**: Local-to-Cloud Session Transfer. 
+Linking explicitly on a local machine and transferring the `whatsapp_session` folder via ZIP bypasses the cloud-IP handshake block.
 
-| Provider | RAM | CPU | Storage | Xvfb OK? | Notes |
-|----------|-----|-----|---------|----------|-------|
-| **Oracle Cloud** | 24 GB (ARM) | 4 OCPU | 200 GB | Yes | Best free. "Out of capacity" risk |
-| **Google Cloud** | 1 GB | shared | 30 GB | Tight | e2-micro. 1GB may OOM with Chromium |
+## RAM/CPU Stability (Verified)
+- **4GB Swap**: Prevents OOM crashes on e2-micro.
+- **1024x768 Viewport**: Ensures Desktop layout for search box detection.
+- **Resource Blocking**: Aborting "image", "font", and "media" requests saves ~200MB RAM.
 
-### FREE TIER (12 months only)
-
-| Provider | RAM | CPU | Storage | Notes |
-|----------|-----|-----|---------|-------|
-| **AWS EC2** | 1 GB | 1 vCPU | 30 GB | t2.micro. Charges after 12 months |
-| **Azure** | 1 GB | 1 vCPU | 64 GB | B2pts. Charges after 12 months |
-
-### PAID (Budget)
-
-| Provider | Cost | RAM | Notes |
-|----------|------|-----|-------|
-| **IONOS** | ~$2/mo | 1 GB | Cheap but tight RAM |
-| **RackNerd** | ~$2/mo | 1 GB | Annual promos via LowEndBox |
-| **Vultr** | $2.50/mo | 512 MB | Too little RAM |
-| **DigitalOcean** | $4/mo | 512 MB | Reliable but expensive for this |
-| **Contabo** | $5/mo | 4 GB | Overkill but solid |
-| **Hetzner** | $4/mo | 2 GB | Great value, no free tier |
-
-### NOT VIABLE
-
-| Provider | Why |
-|----------|-----|
-| Railway | No free tier. $5/mo min |
-| Fly.io | No real free tier anymore |
-| Render | Cron = paid. Free tier sleeps |
-| PythonAnywhere | Can't run Playwright/browser |
-| GitHub Actions | Ephemeral. No persistent session + no display |
-
-## RAM Requirement
-Chromium + Xvfb needs **min 1.5-2 GB RAM** to not OOM.
-- Oracle (24GB) = massive overkill, perfect
-- GCP e2-micro (1GB) = risky, may crash
-- Budget VPS (1GB) = need swap file
-
-## Recommendation
-
-| Priority | Provider | Cost | Why |
-|----------|----------|------|-----|
-| 1st | **Oracle Cloud** | $0 | 24GB RAM, always free, best specs |
-| 2nd | **Hetzner** | $4/mo | Reliable, 2GB RAM, great network |
-| 3rd | **Contabo** | $5/mo | 4GB RAM, cheap for the specs |
-| Fallback | **AWS EC2** | $0 (12mo) | Buys time, swap needed for 1GB |
+## Localization
+- Spanish (es-419) detected on VM browser.
+- Selectors updated to be language-aware ("Unread" / "No leídos").
