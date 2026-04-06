@@ -2,6 +2,8 @@ import os
 from scraper import scrape_trm
 from whatsapp_client import WhatsAppClient
 from dotenv import load_dotenv
+from forwarder import run_forwarder
+import time
 
 # Load credentials
 load_dotenv()
@@ -42,6 +44,12 @@ def main():
     )
     
     if success:
+        print("API message sent to Admin successfully!")
+        print("Waiting 15 seconds to ensure message is received on device before forwarding...")
+        time.sleep(15)
+        
+        print("Invoking Playwright Forwarder to broadcast to groups...")
+        run_forwarder(headless=False, discovery_mode=False)
         print("Task completed successfully!")
     else:
         print("Task failed during message submission.")
