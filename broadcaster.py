@@ -25,7 +25,15 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         context = p.chromium.launch_persistent_context(
             user_data_dir=USER_DATA_DIR,
             headless=headless,
-            args=["--start-maximized"]
+            args=[
+                "--start-maximized",
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
+                "--disable-gpu",
+                "--single-process", # Lower RAM, higher potential for crashes
+                "--disable-extensions",
+                "--no-zygote"
+            ]
         )
         
         page = context.new_page()
