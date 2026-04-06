@@ -233,16 +233,36 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             time.sleep(3) # wait for results to populate
             
             # 2. Click the chat in the search results pane
-            # Often it appears in a pane with `span[title="Chat Name"]`
+            print(f"Finding results for: {name}...")
+            chat_found = False
+            
+            # --- Result Method A: Exact Title Match ---
             try:
-                chat_title = page.locator(f'span[title="{name}"]')
-                chat_title.first.click(timeout=5000)
-                time.sleep(1.5) # Wait for right pane to load
-            except Exception as e:
+                # Use a specific locator for the chat title to avoid clicking profile pics
+                chat_title = page.locator(f'span[title="{name}"], [aria-label="{name}"]')
+                if chat_title.first.is_visible(timeout=5000):
+                    chat_title.first.click()
+                    chat_found = True
+                    print(f"Clicked {name} via Title/Label.")
+            except: pass
+
+            # --- Result Method B: Text-Based Match (Robust for Special Chars) ---
+            if not chat_found:
+                try:
+                    # Look for the name anywhere in the sidebar results
+                    result = page.get_by_text(name, exact=False).first
+                    if result.is_visible(timeout=3000):
+                        result.click()
+                        chat_found = True
+                        print(f"Clicked {name} via Text Match.")
+                except: pass
+
+            if not chat_found:
                 print(f"Could not find chat in search results for: {name}. Skipping.")
-                # Clear search so it doesn't pollute next iteration
-                search_box.fill("")
                 continue
+
+            # Wait for right pane to load
+            time.sleep(1.5)
 
             # 3. Focus the chat input box (bottom bar of right pane)
             print(f"Typing message to {name}...")
