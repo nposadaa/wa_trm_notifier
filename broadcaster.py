@@ -81,11 +81,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # Wait for the chat list to load (indicator of login)
         print("Waiting for WhatsApp Web to load. If this is your first run, please scan the QR code.")
         
-        # --- PATIENT LOGIN DETECTION ---
+        # --- MULTI-LANGUAGE LOGIN DETECTION ---
         try:
-            # Check for chat list (Waiting up to 120s for splash screen to disappear)
-            print("Checking session status (Waiting for messages to download)...")
-            page.wait_for_selector('div[aria-label="Chat list"]', timeout=120000)
+            print("Checking session status (Waiting for dashboard)...")
+            # Look for English, Spanish, or universal markers
+            page.wait_for_selector('div[aria-label="Chat list"], div[aria-label="Lista de chats"], div[data-testid="search"]', timeout=120000)
             print("Login successful or session restored!")
         except Exception:
             print("\n--- LOGIN REQUIRED ---")
