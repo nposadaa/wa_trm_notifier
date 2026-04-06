@@ -64,20 +64,21 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # Wait for the chat list to load (indicator of login)
         print("Waiting for WhatsApp Web to load. If this is your first run, please scan the QR code.")
         
+        # --- FASTER LOGIN DETECTION ---
         try:
-            # Selector for the side panel (chat list)
-            print("Checking if already logged in...")
-            page.wait_for_selector('div[aria-label="Chat list"]', timeout=20000)
+            # Check for chat list briefly (5s instead of 20s)
+            print("Checking session status...")
+            page.wait_for_selector('div[aria-label="Chat list"]', timeout=5000)
             print("Login successful or session restored!")
         except Exception:
             print("\n--- LOGIN REQUIRED ---")
             print(f"Current Page: {page.title()}")
-            print("Timeout waiting for chat list. Looking for QR code...")
+            print("Looking for QR code FAST...")
             try:
-                # Resilient QR Selectors (canvas is usually the most stable)
+                # Prioritize 'canvas' as it's the fastest and most stable
                 qr_selectors = [
-                    'div[data-ref]', 
                     'canvas', 
+                    'div[data-ref]', 
                     '[data-testid="qrcode-container"]',
                     'div[aria-label="Scan me!"]'
                 ]
@@ -85,32 +86,26 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 qr_found = False
                 for sel in qr_selectors:
                     try:
-                        print(f"Checking for selector: {sel}...")
-                        page.wait_for_selector(sel, state="visible", timeout=15000)
+                        # Use short timeout per selector to find it quickly
+                        page.wait_for_selector(sel, state="visible", timeout=8000)
                         qr_found = True
                         break
                     except:
                         continue
 
                 if not qr_found:
-                    raise Exception("None of the standard QR selectors appeared.")
+                    raise Exception("QR selectors not found in time.")
 
-                print("QR code detected. Waiting 5s for full render...")
-                time.sleep(5) # Give it extra time on slow VM
+                print("⚡ QR CODE IS LIVE! Saving immediately...")
+                time.sleep(2) # Reduced from 5s to 2s
                 
                 qr_path = "qr.png"
                 page.screenshot(path=qr_path)
-                print(f"QR code screenshot saved to '{qr_path}'.")
-                print("Action needed: Copy 'qr.png' to your local machine and scan it.")
+                print(f"!!! DOWNLOAD AND SCAN {qr_path} NOW !!!")
             except Exception as e:
                 print(f"Failed to find QR code: {e}")
                 print("Saving emergency full page screenshot to 'error_page.png'...")
                 page.screenshot(path="error_page.png", full_page=True)
-                # Print page text for diagnostic in terminal
-                try:
-                    text = page.inner_text("body")[:500]
-                    print(f"Page Preview Text: {text}...")
-                except: pass
             
             context.close()
             return
