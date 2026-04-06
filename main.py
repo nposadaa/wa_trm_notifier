@@ -37,6 +37,7 @@ def main():
     success = client.send_template_message(
         recipient_number=recipient,
         template_name=template_name,
+        language_code="en",
         params=params
     )
     

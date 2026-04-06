@@ -1,11 +1,11 @@
 # ROADMAP.md
 
-> **Current Phase**: Phase 0 — Initialization
+> **Current Phase**: Phase 3 — Group Integration & Feasibility Check
 > **Milestone**: v1.0 — Daily TRM Broadcast
 
 ## Must-Haves (from SPEC)
-- [ ] Automating Scraping logic (Python)
-- [ ] Integration with WhatsApp Business Cloud API
+- [x] Automating Scraping logic (Python)
+- [x] Integration with WhatsApp Business Cloud API
 - [ ] Automated execution on a schedule (GitHub Actions)
 - [ ] Group broadcast functionality
 
@@ -19,12 +19,12 @@
 - [x] Local testing of output.
 
 ### Phase 2: 1-on-1 API Handshake & Template Registration
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Connect to the Meta Cloud API and send a "Hello World" notification to your test number.
-- [ ] Configure Meta Developer App credentials (`.env`).
-- [ ] Register and verify a TRM-specific Message Template.
-- [ ] Implement `whatsapp_client.py` for 1-on-1 messaging.
-- [ ] Test delivery to your test phone number.
+- [x] Configure Meta Developer App credentials (`.env`).
+- [x] Register and verify a TRM-specific Message Template.
+- [x] Implement `whatsapp_client.py` for 1-on-1 messaging.
+- [x] Test delivery to your test phone number.
 
 ### Phase 3: Group Integration & Feasibility Check
 **Status**: ⬜ Not Started
