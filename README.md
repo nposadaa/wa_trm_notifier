@@ -1,15 +1,24 @@
 # 🚀 WhatsApp TRM Notifier
 
-An automated daily service that tracking the Colombian Peso (COP) to USD exchange rate (TRM) and broadcasts notifications directly to configured WhatsApp groups.
+An automated daily service that scrapes the Colombian Peso (COP) to USD exchange rate (TRM) and broadcasts notifications directly to configured WhatsApp groups and contacts.
 
 ## 🌟 Vision
-In Colombia, the USD/COP exchange rate is a critical business and social metric. This project provides a reliable, "set-it-and-forget-it" heartbeat service that keeps stakeholders informed every morning at 7:00 AM.
+In Colombia, the USD/COP exchange rate is a critical business and social metric. This project provides a reliable, "set-it-and-forget-it" heartbeat service that keeps stakeholders informed every morning.
+
+## 🏗 Architecture
+```
+dolar-colombia.com → scraper.py → main.py → broadcaster.py → WhatsApp Web (Playwright)
+```
+1. **Scraper** fetches the official TRM from `dolar-colombia.com`.
+2. **Main** formats a clean message string with the date and value.
+3. **Broadcaster** opens WhatsApp Web via Playwright, searches for each recipient, types the message, and sends.
 
 ## ✨ Key Features
 - **Automated Scraper**: Robust Python-based scraper for `dolar-colombia.com`.
-- **Browser Automation**: Uses **Playwright** to drive WhatsApp Web, enabling direct native messaging to standard groups and contacts without hitting Meta Developer restrictions.
-- **Cloud Native**: Designed for server deployment (GitHub Actions transition incoming).
-- **Zero-Cost Implementation**: Runs entirely within the free tiers of Python tooling.
+- **Direct Browser Broadcast**: Uses **Playwright** to natively type and send messages on WhatsApp Web — no Meta API or business account needed.
+- **Multi-Recipient**: Configurable list of groups/contacts via `recipients.json`.
+- **Persistent Session**: QR code scan needed only once; session persists across runs.
+- **Zero-Cost**: No paid APIs. Runs entirely with free Python tooling.
 
 ## 🛠 Tech Stack
 - **Language**: Python 3.10+
@@ -17,16 +26,19 @@ In Colombia, the USD/COP exchange rate is a critical business and social metric.
 - **Messaging**: WhatsApp Web (Playwright Automation)
 
 ## 📁 Project Structure
-- `scraper.py`: Core logic for retrieving TRM data.
-- `broadcaster.py`: Playwright script to natively search groups and type the message.
-- `main.py`: Orchestrator linking the scraper to the broadcaster.
-- `.github/workflows/`: Automation scripts for daily notification triggers.
-- `.gsd/`: Internal project specification and methodology (Get Shit Done).
+| File | Purpose |
+|------|---------|
+| `main.py` | Orchestrator: scrape → format → broadcast |
+| `scraper.py` | Fetches TRM data from dolar-colombia.com |
+| `broadcaster.py` | Playwright automation for WhatsApp Web |
+| `recipients.json` | List of WhatsApp chats to send to |
+| `.gsd/` | Project planning & methodology docs |
 
-## 🚀 Getting Started (Quick Start)
-1. **Clone the repository**:
+## 🚀 Getting Started
+1. **Clone**:
    ```bash
    git clone https://github.com/nposadaa/wa_trm_notifier.git
+   cd wa_trm_notifier
    ```
 2. **Setup Environment**:
    ```bash
@@ -35,15 +47,31 @@ In Colombia, the USD/COP exchange rate is a critical business and social metric.
    pip install -r requirements.txt
    playwright install chromium
    ```
-3. **Configure Recipients**: Edit `recipients.json` to map WhatsApp Chat names.
-4. **First Run (QR Scan)**:
+3. **Configure Recipients** — edit `recipients.json`:
+   ```json
+   {
+     "recipients": [
+       { "name": "My Group Name", "type": "group" },
+       { "name": "Contact Name", "type": "contact" }
+     ]
+   }
+   ```
+   > ⚠️ Names must match exactly as they appear in WhatsApp. No emojis.
+
+4. **First Run (QR Scan)** — scan once to establish session:
    ```bash
    py broadcaster.py --discovery
    ```
-5. **Run Entire Pipeline**:
+5. **Run Pipeline**:
    ```bash
    py main.py
    ```
 
+## 📊 Status
+- ✅ Phase 1: Scraper — Complete
+- ✅ Phase 2: API Handshake — Complete (deprecated in Phase 3.3)
+- ✅ Phase 3: Direct Playwright Broadcast — Complete
+- ⬜ Phase 4: Cloud Automation (GitHub Actions / VPS)
+
 ---
-*Developed with the **Get Shit Done (GSD)** methodology.*
+*Built with the **Get Shit Done (GSD)** methodology.*
