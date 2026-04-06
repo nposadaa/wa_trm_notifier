@@ -2,7 +2,6 @@ import os
 import time
 import json
 from playwright.sync_api import sync_playwright
-from playwright_stealth import Stealth
 from dotenv import load_dotenv
 
 # Load env variables
@@ -23,13 +22,17 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # Define a modern User Agent to prevent the "Unsupported Browser" error
         USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
-        # Launch persistent context with fixed viewport and OOM-prevention flags
-        print(f"Launching browser with session at {USER_DATA_DIR}...")
+        # Launch persistent context with ADVANCED HARDENING
+        print(f"Launching hardened browser with session at {USER_DATA_DIR}...")
         context = p.chromium.launch_persistent_context(
             user_data_dir=USER_DATA_DIR,
             headless=headless,
             user_agent=USER_AGENT,
             viewport={'width': 1280, 'height': 800},
+            # --- Anti-Detection: Locality matching ---
+            timezone_id="America/Bogota",
+            locale="es-419",
+            # --- Memory & OOM flags ---
             args=[
                 "--start-maximized",
                 "--disable-dev-shm-usage",
@@ -37,7 +40,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 "--disable-gpu",
                 "--disable-extensions",
                 "--no-zygote",
-                "--js-flags='--max-old-space-size=512'", # Limit JS heap to save RAM
+                "--js-flags='--max-old-space-size=512'", 
                 "--disable-setuid-sandbox",
                 "--no-first-run",
                 "--disable-background-networking"
@@ -45,6 +48,13 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         )
         
         page = context.new_page()
+        
+        # --- HARDENING: Manual Navigator Overrides ---
+        page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => false});
+            Object.defineProperty(navigator, 'platform', {get: () => 'Win32'});
+            Object.defineProperty(navigator, 'languages', {get: () => ['es-419', 'es', 'en-US', 'en']});
+        """)
         
         # --- Memory Saver: Block images, fonts, and media ---
         def route_handler(route):
@@ -54,9 +64,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 route.continue_()
                 
         page.route("**/*", route_handler)
-        
-        stealth = Stealth()
-        stealth.apply_stealth_sync(page)
         
         print(f"Navigating to {WHATSAPP_URL}...")
         page.goto(WHATSAPP_URL)
