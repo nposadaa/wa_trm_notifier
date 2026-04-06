@@ -72,7 +72,15 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print("Login successful or session restored!")
         except Exception:
             print("\n--- LOGIN REQUIRED ---")
-            print(f"Current Page: {page.title()}")
+            print(f"Current Page: {page.title()} | URL: {page.url}")
+            
+            # DIAGNOSTIC: What is actually on the screen?
+            try:
+                debug_text = page.inner_text("body")[:400].replace("\n", " ")
+                print(f"DEBUG: Screen Content: {debug_text}")
+            except: 
+                pass
+
             print("Looking for QR code FAST...")
             try:
                 # Prioritize 'canvas' as it's the fastest and most stable
