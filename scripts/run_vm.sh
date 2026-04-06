@@ -4,6 +4,7 @@
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR"
+mkdir -p logs
 
 # 1. ENSURE 4GB SWAP (Critical for stability)
 # Only run if swap is less than 3GB
