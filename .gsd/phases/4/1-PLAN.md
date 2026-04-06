@@ -4,51 +4,47 @@ plan: 1
 wave: 1
 ---
 
-# Plan 4.1: Cloud VM Provisioning + Environment Setup
+# Plan 4.1: Headless Test + File Logging
 
 ## Objective
-Provision an Oracle Cloud Always Free VM and configure it with Python, Playwright, and Xvfb for headless-display browser automation.
+Test if headless=True works for production after session is established. Add file logging for unattended monitoring.
 
 ## Context
 - .gsd/phases/4/RESEARCH.md
-- requirements.txt
+- broadcaster.py
+- main.py
 
 ## Tasks
 
 <task type="auto">
-  <name>Provision Oracle Cloud VM</name>
+  <name>Test headless=True locally</name>
+  <files>broadcaster.py, main.py</files>
   <action>
-    Guide user through Oracle Cloud Console:
-    1. Sign up at cloud.oracle.com (free account)
-    2. Create Compute Instance: Shape = Ampere A1 (1 OCPU, 6GB RAM), Image = Ubuntu 22.04
-    3. Generate SSH key pair, download private key
-    4. Note public IP address
+    1. Add a CLI flag to main.py: `--headless` (default False for dev, True for prod)
+    2. Pass headless flag through to run_broadcaster()
+    3. Run: `py main.py --headless`
+    4. Check if message arrives in WhatsApp group
+    5. If fails: document error, keep headless=False as requirement
+    6. If works: update DEC-007 to "headless=True works for production"
   </action>
-  <verify>SSH into VM: ssh -i key.pem ubuntu@{IP}</verify>
-  <done>Can SSH into running Ubuntu VM</done>
+  <verify>Run `py main.py --headless` and confirm message delivered to group</verify>
+  <done>Headless mode either confirmed working or confirmed blocked (documented)</done>
 </task>
 
 <task type="auto">
-  <name>Install Dependencies on VM</name>
-  <files>requirements.txt</files>
+  <name>Add file logging</name>
+  <files>main.py</files>
   <action>
-    SSH into VM and run:
-    ```bash
-    sudo apt update && sudo apt upgrade -y
-    sudo apt install -y python3-pip xvfb git
-    git clone https://github.com/nposadaa/wa_trm_notifier.git
-    cd wa_trm_notifier
-    pip3 install -r requirements.txt
-    playwright install chromium
-    playwright install-deps
-    ```
+    1. Add Python logging: dual handler (console + logs/notifier_YYYY-MM-DD.log)
+    2. Format: [YYYY-MM-DD HH:MM:SS] LEVEL: message
+    3. Create logs/ dir if not exists
+    4. Add logs/ to .gitignore
   </action>
-  <verify>xvfb-run python3 -c "from playwright.sync_api import sync_playwright; print('OK')"</verify>
-  <done>Playwright + Xvfb installed, import succeeds</done>
+  <verify>Run main.py, check logs/ contains today's log file with output</verify>
+  <done>Log file created with timestamped entries</done>
 </task>
 
 ## Success Criteria
-- [ ] Oracle Cloud VM running Ubuntu
-- [ ] SSH access working
-- [ ] Python3, Playwright, Xvfb installed
-- [ ] Repo cloned on VM
+- [ ] headless=True tested and result documented
+- [ ] File logging active in logs/ directory
+- [ ] logs/ in .gitignore

@@ -5,68 +5,67 @@ wave: 2
 dependencies: ["4.1"]
 ---
 
-# Plan 4.2: WhatsApp Session Transfer + Cron Scheduling
+# Plan 4.2: Cloud Deployment
 
 ## Objective
-Transfer the WhatsApp session from local PC to the cloud VM, verify it works, and set up a daily cron job at 7:00 AM COT.
+Deploy to cloud based on headless test results from Plan 4.1.
 
 ## Context
 - .gsd/phases/4/RESEARCH.md
-- broadcaster.py
-- main.py
+- .gsd/phases/4/1-PLAN.md results
 
 ## Tasks
 
 <task type="auto">
-  <name>Transfer WhatsApp Session</name>
+  <name>Provision Cloud VM</name>
   <action>
-    Option A — session transfer:
-    1. On local PC: zip whatsapp_session/ folder
-    2. SCP to VM: scp -i key.pem session.zip ubuntu@{IP}:~/wa_trm_notifier/
-    3. Unzip on VM
-    4. Test: xvfb-run python3 broadcaster.py --discovery
+    Provision Oracle Cloud Always Free VM:
+    1. Sign up at cloud.oracle.com
+    2. Create Compute Instance: Ampere A1 (1 OCPU, 6GB RAM), Ubuntu 22.04
+    3. SSH key pair setup
+    4. Install: python3, pip, playwright, playwright-deps
+    5. If headless=True failed: also install xvfb
+    6. Clone repo, pip install -r requirements.txt, playwright install chromium
+  </action>
+  <verify>SSH into VM, run: python3 -c "from playwright.sync_api import sync_playwright; print('OK')"</verify>
+  <done>VM running with all dependencies installed</done>
+</task>
+
+<task type="auto">
+  <name>Session Setup + Cron</name>
+  <action>
+    Session setup on VM:
+    - Option A (headless=True works): transfer storageState JSON from local
+    - Option B (headless=False needed): install noVNC, scan QR via browser
     
-    Option B — if session doesn't transfer:
-    1. Install noVNC or use SSH X11 forwarding
-    2. Run broadcaster.py --discovery in headed mode
-    3. Scan QR code via VNC
-    4. Session now persisted on VM
+    Cron setup:
+    - crontab -e
+    - If headless: `0 12 * * 1-5 cd ~/wa_trm_notifier && python3 main.py --headless`
+    - If Xvfb: `0 12 * * 1-5 cd ~/wa_trm_notifier && xvfb-run python3 main.py`
+    - Redirect output: >> logs/cron.log 2>&1
+    - 12:00 UTC = 7:00 AM COT, weekdays only
   </action>
-  <verify>xvfb-run python3 broadcaster.py --discovery shows chat list without QR scan</verify>
-  <done>WhatsApp session active on VM, discovery mode lists chats</done>
+  <verify>crontab -l shows job; next morning check logs/cron.log for success</verify>
+  <done>Automated daily broadcast running from cloud</done>
 </task>
 
 <task type="auto">
-  <name>Configure Cron + File Logging</name>
-  <files>main.py</files>
-  <action>
-    1. Add Python logging to main.py (dual: console + logs/notifier_YYYY-MM-DD.log)
-    2. Create logs/ dir, add to .gitignore
-    3. Set up cron on VM:
-       crontab -e
-       0 12 * * 1-5 cd /home/ubuntu/wa_trm_notifier && xvfb-run python3 main.py >> logs/cron.log 2>&1
-       (12:00 UTC = 7:00 AM COT, weekdays only)
-    4. Commit logging changes, push to GitHub
-  </action>
-  <verify>crontab -l shows the scheduled job; logs/ directory exists</verify>
-  <done>Cron registered. Next morning, log file shows successful TRM broadcast.</done>
-</task>
-
-<task type="auto">
-  <name>Update Documentation</name>
+  <name>Update All Documentation</name>
   <files>.gsd/ROADMAP.md, .gsd/DECISIONS.md, README.md</files>
   <action>
-    - Add DEC-008: Oracle Cloud chosen for deployment
-    - Add DEC-009: Xvfb solves headless display requirement
-    - Update ROADMAP Phase 4 status
-    - Update README with cloud deployment section
+    - Add DEC-008: Cloud provider choice + rationale
+    - Add DEC-009: headless mode decision (based on test results)
+    - Mark Phase 4 complete in ROADMAP
+    - Add cloud deployment section to README
+    - Git push all changes
   </action>
-  <verify>grep "Oracle" README.md returns match</verify>
-  <done>All docs reflect cloud deployment strategy</done>
+  <verify>grep "Oracle\|cloud\|deploy" README.md returns matches</verify>
+  <done>All docs reflect final deployment architecture</done>
 </task>
 
 ## Success Criteria
-- [ ] WhatsApp session working on cloud VM
-- [ ] Cron job registered for 7:00 AM COT (12:00 UTC)
-- [ ] File logging active
-- [ ] Next-day verification: message sent automatically
+- [ ] Cloud VM provisioned and running
+- [ ] WhatsApp session active on VM
+- [ ] Cron job registered for 7:00 AM COT
+- [ ] Next-day verification: message sent automatically from cloud
+- [ ] All documentation updated

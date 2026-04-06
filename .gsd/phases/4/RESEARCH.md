@@ -1,66 +1,65 @@
-# Phase 4 Research: Cloud Deployment Options
+# Phase 4 Research: Cloud Deployment (Revised)
 
-## Core Constraints (from DEC-007)
-- Playwright needs `headless=False` (WhatsApp blocks headless)
-- Persistent `./whatsapp_session/` directory required
-- QR code scan needed once, then session reused
-- Script runs ~2 min per execution
+## Key Insight: headless=True May Work in Production
 
-## Solution: Xvfb (X Virtual Framebuffer)
-Linux tool that creates a **virtual display**. Lets `headless=False` work on servers with no monitor.
-Command: `xvfb-run python main.py` — that simple.
+DEC-007 stated headless=False required. But that was for initial testing.
+Research shows: **after session is established** with QR scan, `headless=True` + `playwright-stealth` can work for subsequent automated runs.
 
-## Cloud Options Ranked
+## Strategy: Try headless=True First
 
-| Provider | Cost | RAM | Storage | Always-On | Xvfb | Verdict |
-|----------|------|-----|---------|-----------|------|---------|
-| **Oracle Cloud (Always Free)** | $0 | 24 GB (ARM) | 200 GB | Yes | Yes | **BEST** |
-| **Google Cloud (e2-micro)** | $0 | 1 GB | 30 GB | Yes | Yes | Viable but tight |
-| **AWS EC2 (t2.micro)** | $0 (12 months) | 1 GB | 30 GB | 12 months only | Yes | Not permanent |
-| **DigitalOcean** | $4/mo | 512 MB | 10 GB | Yes | Yes | Cheap paid option |
-| **AWS Lightsail** | $3.50/mo | 512 MB | 20 GB | Yes | Yes | Cheap paid option |
+### Step 1: Local Test
+- Change `headless=True` in broadcaster.py
+- Run `py main.py` locally
+- If message sends → headless works → GitHub Actions viable
+- If blocked → fall back to Xvfb on VPS
 
-## Recommendation: Oracle Cloud (Always Free)
+### Why This Matters
 
-**Why Oracle:**
-- Truly always free (not time-limited like AWS)
-- ARM Ampere A1: up to 4 OCPUs, 24 GB RAM — massive overkill for this script
-- 200 GB storage — no session persistence issues
-- Ubuntu available — easy Playwright + Xvfb setup
+| If headless=True works | If headless=True fails |
+|----------------------|----------------------|
+| GitHub Actions viable | Need VPS + Xvfb |
+| Free (2000 min/mo) | Oracle Cloud (free) |
+| Zero maintenance | Server maintenance |
+| Session via GitHub Secret | Session on disk |
 
-**Caveat:** "Out of Capacity" errors common in popular regions. May need to try different region.
+## Option A: GitHub Actions (if headless=True works)
 
-## Fallback: Google Cloud e2-micro
-- 1 GB RAM tight but enough for Chromium + Xvfb
-- Truly always free
-- More reliable availability than Oracle
-
-## Implementation Architecture (Cloud)
-
+Architecture:
 ```
-Oracle Cloud VM (Ubuntu 22.04 ARM)
+GitHub Actions (cron 12:00 UTC = 7AM COT)
   |
-  +-- cron (7:00 AM COT = 12:00 UTC)
-  |     |
-  |     +-- xvfb-run python3 main.py
-  |           |
-  |           +-- scraper.py (fetch TRM)
-  |           +-- broadcaster.py (Playwright + WhatsApp Web)
-  |
-  +-- ./whatsapp_session/ (persistent on disk)
-  +-- ./logs/ (daily log files)
+  +-- Restore storageState from GitHub Secret
+  +-- pip install + playwright install
+  +-- python main.py (headless=True)
+  +-- Save updated storageState back to artifact/secret
 ```
 
-### Setup Steps
-1. Provision Oracle Cloud Always Free VM (Ubuntu, ARM)
-2. Install Python3, pip, Playwright, Xvfb
-3. Clone repo, install requirements
-4. Transfer `whatsapp_session/` from local PC to VM
-5. One-time: run with VNC/noVNC to verify session works (or re-scan QR)
-6. Set up cron job: `0 12 * * * cd /home/ubuntu/wa_trm_notifier && xvfb-run python3 main.py >> logs/cron.log 2>&1`
+### Session Persistence Strategy
+- Save `browserContext.storageState()` as JSON after each run
+- Store as GitHub Actions artifact or encrypted secret
+- Restore at start of each run
+- Note: `launchPersistentContext` directory too large for secrets
+  → Use `storageState` (cookies + localStorage only) instead
 
-### Session Transfer Strategy
-- Zip `whatsapp_session/` from local Windows
-- SCP to VM
-- Test if session transfers across OS (Chromium profile should be cross-platform)
-- If not: install noVNC on VM, connect browser, scan QR once
+### Risks
+- Different IP each run → WhatsApp may re-request QR
+- Runner fingerprint differs from local → detection possible
+- Session expiry unknown
+
+## Option B: Oracle Cloud VPS (fallback)
+
+Same as previous research — Xvfb + cron on Always Free VM.
+Only needed if headless=True fails.
+
+## Option C: Oracle Cloud VPS + headless=True (hybrid)
+
+- VPS gives persistent filesystem + consistent IP
+- headless=True means no Xvfb needed
+- Simplest cloud option if headless works
+
+## Recommendation
+
+1. **Test headless=True locally first** (5 min)
+2. If works → try **Option C** (VPS + headless, no Xvfb)
+3. If fails → use **Option B** (VPS + Xvfb)
+4. Option A (GitHub Actions) too risky due to IP rotation + ephemeral env
