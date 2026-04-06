@@ -26,13 +26,14 @@
 - [x] Implement `whatsapp_client.py` for 1-on-1 messaging.
 - [x] Test delivery to your test phone number.
 
-### Phase 3: Playwright Forwarding Automation
+### Phase 3: Direct Playwright Broadcast Pivot (Phase 3.3)
 **Status**: 🚧 In Progress
-**Objective**: Automate WhatsApp Web using Python + Playwright to overcome official API group limitations.
+**Objective**: Automate WhatsApp Web using Python + Playwright to completely bypass the Meta Cloud API.
 - [x] Setup Playwright and Stealth context.
 - [x] Initialize persistent WhatsApp session via manual QR scan.
-- [ ] Implement robust "Search & Forward" UI automation targeting `recipients.json`.
-- [ ] Link `main.py` scraper pipeline directly to the forwarder.
+- [ ] Remove Meta API dependency (`whatsapp_client.py`).
+- [ ] Refactor `forwarder.py` to `broadcaster.py`, directly injecting formatted strings into the chat inputs.
+- [ ] Final E2E test verifying end-to-end direct delivery.
 
 ### Phase 4: Automation & Deployment (GitHub Actions)
 **Status**: ⬜ Not Started

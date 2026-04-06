@@ -34,15 +34,14 @@
 - `.gsd/WHATSAPP_TEMPLATES.md`: Reference for the required dashboard setup.
 
 ## Last Session Summary
-- **Research Success**: Determined that Meta's Cloud API does NOT support standard WhatsApp groups.
-- **Pivot**: Decision made to implement a Playwright-based forwarding service (`forwarder.py`) reading from `recipients.json`.
-- **Progress**: Setup environment, initialized `forwarder.py` with persistence, and successfully completed the local manual QR scan.
+- **UI Research**: Realized WhatsApp Web UI DOM changes make 'forwarding' brittle.
+- **Major Pivot (Phase 3.3)**: Decided to bypass the Meta API entirely. The scraper will feed text directly to a Playwright `broadcaster.py`, which will directly type and send the message to each recipient in `recipients.json`.
 
 ## In-Progress Work
-- Phase 3.2 Documentation: `forwarder.py` core launched.
-- Roadmap: Phase 3 pivot documented and tracked.
+- Creating and gathering approvals for `.gsd/phases/3/3.3-PLAN.md`.
+- Stripping `whatsapp_client.py` and Meta credentials from `.env`.
 
 ## Next Steps
-1. **Refine Automation**: Tweak the DOM selectors in `forwarder.py` to ensure "Search & Forward" UI interactions work reliably.
-2. **Integration**: Link `main.py` to trigger the `whatsapp_client.py` API (which sends to our own device) and then immediately pass control to `forwarder.py` to broadcast it out.
-3. **End-to-End Test**: Test the whole loop with `main.py` -> `whatsapp_client.py` -> `forwarder.py`.
+1. **Approval**: Wait for user approval of Phase 3.3 Plan.
+2. **Refactor**: Remove API code, rename `forwarder.py` to `broadcaster.py`, construct the message internally.
+3. **End-to-End Test**: Execute `py main.py` using the new direct-input automation.
