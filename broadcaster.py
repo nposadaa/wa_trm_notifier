@@ -47,13 +47,18 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 "--disable-dev-shm-usage",
                 "--no-sandbox",
                 "--disable-gpu",
-                "--disable-extensions",
+                "--disable-3d-apis",
+                "--disable-webgl",
+                "--disable-software-rasterizer",
                 "--no-zygote",
                 "--js-flags='--max-old-space-size=512'", 
                 "--disable-setuid-sandbox",
                 "--no-first-run",
                 "--disable-background-networking",
-                "--disable-web-security"
+                "--disable-web-security",
+                "--password-store=basic",
+                "--use-mock-keychain",
+                "--disable-features=IsolateOrigins,site-per-process"
             ]
         )
         
@@ -222,18 +227,20 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                  continue
 
                 
-            # Use hybrid trigger (DEC-008): fill() + Enter
-            print(f"Executing search for: {name} (using stable locator)...")
+            # Use keyboard-only trigger (DEC-016) to bypass GPU-desync on clicks
+            print(f"Executing keyboard-only search for: {name}...")
             try:
-                search_box.click() # Ensure focus
-                search_box.fill("") # Clear
-                # Short sleep to let the UI react to the clear
+                search_box.focus() 
+                # Robust clear using keyboard
+                page.keyboard.press("Control+A")
+                page.keyboard.press("Backspace")
                 time.sleep(0.5)
-                search_box.fill(name) # Instant paste
-                time.sleep(0.8)
-                search_box.press("Enter") # Wake up the React engine
+                # Type characters with tiny delay to satisfy React listeners on slow VM
+                page.keyboard.type(name, delay=50) 
+                time.sleep(1.0)
+                page.keyboard.press("Enter")
             except Exception as e:
-                print(f"Search box interaction failed: {e}. Trying secondary enter...")
+                print(f"Search box keyboard interaction failed: {e}. Trying raw press...")
                 page.keyboard.press("Enter")
             
             # 2. Click the chat in the search results pane (Retry Loop)

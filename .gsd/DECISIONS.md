@@ -74,12 +74,12 @@
 - **Rationale**: Slow VMs often kill the browser process before the last message uploads via WebSockets.
 - **Status**: Active
 
-## DEC-011: Deep Hardening (Rendering & 3D Disabling)
+## DEC-011: Rendering & 3D Disabling (Re-Activated)
 - **Date**: 2026-04-08
-- **Phase**: 4.2
+- **Phase**: 4.3
 - **Decision**: Disable 3D APIs, WebGL, and hardware acceleration via flags.
-- **Status**: Deprecated (replaced by **DEC-014**)
-- **Rationale**: Too aggressive; suspected of breaking Service Worker rendering and causing `net::ERR_FAILED` loops.
+- **Rationale**: Re-activated after proving that removing these flags caused immediate GPU stalls on the e2-micro VM, even in headless mode. 
+- **Status**: Active
 
 ## DEC-012: Pre-flight SingletonLock Cleanup
 - **Date**: 2026-04-08
@@ -108,4 +108,11 @@
 - **Decision**: Use `#side div[contenteditable="true"]` instead of `get_by_placeholder`.
 - **Rationale**: Placeholders disappear after typing, making lazy locators invalid during the `Enter` press step. Structural CSS remains stable.
 - **Relation**: Fixes the implementation of **DEC-008**.
+- **Status**: Active
+
+## DEC-016: Keyboard-First Interaction (No-Mouse Search)
+- **Date**: 2026-04-08
+- **Phase**: 4.4
+- **Decision**: Use `focus()` and `page.keyboard.type()` instead of `click()` and `fill()` for the search box.
+- **Rationale**: Mouse-click actions (`click()`) were timing out despite the element being "stable," indicating a desync between Playwright and the VM's graphics compositor. Keyboard events are processed by the browser's core logic and are more reliable on overloaded hardware.
 - **Status**: Active
