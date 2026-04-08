@@ -64,7 +64,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 "--disable-web-security",
                 "--password-store=basic",
                 "--use-mock-keychain",
-                "--disable-features=IsolateOrigins,site-per-process"
+                "--disable-features=IsolateOrigins,site-per-process",
+                "--unlimited-storage"
             ]
         )
         
