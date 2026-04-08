@@ -2,7 +2,7 @@ import os
 import time
 import json
 from playwright.sync_api import sync_playwright
-from browser_config import get_browser_context
+from browser_config import get_browser_context, clean_browser_locks, apply_stealth_overrides
 from dotenv import load_dotenv
 
 # Load env variables
@@ -19,17 +19,14 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
     If discovery_mode is True, it will print the names of available chats.
     Otherwise, it loops through recipients, finds their chat, and sends `message_text`.
     """
+    clean_browser_locks()
     with sync_playwright() as p:
         # --- Browser Initialization ---
         context = get_browser_context(p, headless=headless)
         page = context.new_page()
         
         # --- HARDENING & STEALTH: Manual Navigator Overrides ---
-        page.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', {get: () => false});
-            Object.defineProperty(navigator, 'platform', {get: () => 'Win32'});
-            Object.defineProperty(navigator, 'languages', {get: () => ['es-419', 'es', 'en-US', 'en']});
-        """)
+        apply_stealth_overrides(page)
         
         # (DEC-014: Resource filtering disabled for stability)
 

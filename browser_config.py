@@ -51,3 +51,11 @@ def get_browser_context(playwright, headless=True):
         args=args
     )
     return context
+
+def apply_stealth_overrides(page):
+    """Injects JavaScript to normalize the browser fingerprint and prevent bot detection."""
+    page.add_init_script("""
+        Object.defineProperty(navigator, 'webdriver', {get: () => false});
+        Object.defineProperty(navigator, 'platform', {get: () => 'Win32'});
+        Object.defineProperty(navigator, 'languages', {get: () => ['es-419', 'es', 'en-US', 'en']});
+    """)

@@ -1,7 +1,7 @@
 import time
 import argparse
 from playwright.sync_api import sync_playwright
-from browser_config import clean_browser_locks, get_browser_context
+from browser_config import clean_browser_locks, get_browser_context, apply_stealth_overrides
 
 def main():
     parser = argparse.ArgumentParser(description="WhatsApp CLI Authenticator")
@@ -19,6 +19,7 @@ def main():
     with sync_playwright() as p:
         context = get_browser_context(p, headless=args.headless)
         page = context.pages[0]
+        apply_stealth_overrides(page)
         
         print("Navigating to WhatsApp Web...")
         page.goto("https://web.whatsapp.com/", timeout=120000, wait_until="domcontentloaded")
