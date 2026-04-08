@@ -65,6 +65,10 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 route.continue_()
                 
         page.route("**/*", route_handler)
+
+        # --- Console Mirroring (DEC-009) ---
+        # Mirrors browser-level errors/warnings to VM console for remote diagnostics
+        page.on("console", lambda msg: print(f"[BROWSER-LOG] {msg.type.upper()}: {msg.text}") if msg.type in ["error", "warning"] else None)
         
         print(f"Navigating to {WHATSAPP_URL}...")
         page.goto(WHATSAPP_URL)
@@ -245,38 +249,57 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print("CRITICAL: Main search box not found. The WhatsApp Web DOM has changed.")
                 continue
                 
-            # Use fill() instead of type() to save memory on 1GB VM
-            search_box.fill(name)
-            time.sleep(3) # wait for results to populate
+            # Use hybrid trigger (DEC-008): fill() + Enter
+            print(f"Executing hybrid search for: {name}...")
+            search_box.click() # Ensure focus
+            search_box.fill("") # Clear previous
+            search_box.fill(name) # Instant paste (memory safe)
+            time.sleep(0.5)
+            search_box.press("Enter") # Wake up the React search engine
             
-            # 2. Click the chat in the search results pane
-            print(f"Finding results for: {name}...")
+            # 2. Click the chat in the search results pane (Retry Loop)
+            print(f"Auditing results for: {name}...")
             chat_found = False
             
-            # --- Result Method A: Exact Title Match ---
-            try:
-                # Use a specific locator for the chat title to avoid clicking profile pics
-                chat_title = page.locator(f'span[title="{name}"], [aria-label="{name}"]')
-                if chat_title.first.is_visible(timeout=5000):
-                    chat_title.first.click()
-                    chat_found = True
-                    print(f"Clicked {name} via Title/Label.")
-            except: pass
-
-            # --- Result Method B: Text-Based Match (Robust for Special Chars) ---
-            if not chat_found:
+            # Give the VM up to 15s for the sidebar to populate
+            for attempt in range(3):
+                # --- Result Method A: Exact Title Match ---
                 try:
-                    # Look for the name anywhere in the sidebar results
-                    result = page.get_by_text(name, exact=False).first
-                    if result.is_visible(timeout=3000):
-                        result.click()
+                    chat_title = page.locator(f'span[title="{name}"], [aria-label="{name}"]').first
+                    if chat_title.is_visible(timeout=4000):
+                        chat_title.click()
                         chat_found = True
-                        print(f"Clicked {name} via Text Match.")
+                        print(f"SUCCESS: Clicked {name} via Sidebar match ({attempt+1}/3).")
+                        break
                 except: pass
-
+    
+                # --- Result Method B: Flexible Text Match ---
+                if not chat_found:
+                    try:
+                        result = page.get_by_text(name, exact=False).first
+                        if result.is_visible(timeout=2000):
+                            result.click()
+                            chat_found = True
+                            print(f"SUCCESS: Clicked {name} via Text fallback ({attempt+1}/3).")
+                            break
+                    except: pass
+                
+                if not chat_found:
+                    print(f"Attempt {attempt+1}/3: Result not visible. Auditing current sidebar items...")
+                    # DIAGNOSTIC AUDIT: What is actually in the sidebar?
+                    try:
+                        items = page.query_selector_all('span[title]')
+                        titles = [f"'{i.get_attribute('title')}'" for i in items[:5]]
+                        print(f"  DEBUG: Visible Sidebar Items: {', '.join(titles)}")
+                    except: pass
+                    time.sleep(4)
+            
             if not chat_found:
-                print(f"Could not find chat in search results for: {name}. Skipping.")
+                print(f"CRITICAL: Search failed for '{name}'. Saving search_failed.png")
+                page.screenshot(path=f"diag_search_failed_{name.replace('/', '_')}.png")
                 continue
+
+
 
             # Wait for right pane to load
             time.sleep(1.5)

@@ -22,4 +22,17 @@ Migrate WhatsApp TRM Notifier to GCP e2-micro and solve the "Unsupported Browser
 Session end for the day. State is preserved.
 
 ### Handoff Notes
-The current version of `broadcaster.py` is the "Final Version". It has the language fixes and the 120s patience. Tomorrow, just run it and it should send the first broadcast.
+## Session: 2026-04-08 14:49
+### Objective
+Stabilize VM execution and add deep diagnostics for remote debugging.
+
+### Accomplished
+- ✅ **Splash Loop**: Implemented a state-aware loop in `broadcaster.py` to handle initial VM lag (DEC-009).
+- ✅ **Hybrid Search**: Reverted to `fill()` for memory safety but added `Enter` as a React trigger (DEC-008).
+- ✅ **Console Mirroring**: Enabled browser-to-stdout console logging for root-cause analysis on the VM.
+- ✅ **Delivery Hardening**: Added explicit Send Button clicks and a 10s post-broadcast safety buffer (DEC-010).
+- ✅ **Documentation**: Recorded DEC-008 through DEC-010 in the official Decision Log.
+
+### Handoff Notes
+Ready for final VM verification. If any step fails, the logs will now contain `[BROWSER-LOG]` prefixes and a `DEBUG: Visible Sidebar Items` audit for immediate pinpointing of issues.
+
