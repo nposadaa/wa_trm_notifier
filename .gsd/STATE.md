@@ -2,69 +2,53 @@
 
 > **Current Phase**: Phase 4 — Cloud Deployment
 > **Last Update**: 2026-04-08
-> **Status**: Active (resumed 2026-04-08T16:33-05:00)
+> **Status**: Active
 
 ## Current Position
 - **Phase**: Phase 4 — Cloud Deployment (Stabilization & Scheduling)
-- **Task**: Re-verify first live send with DEC-018 fix
-- **Status**: Paused — DEC-018 fix committed and pushed. Re-run on VM is the immediate next action.
+- **Task**: Final live execution of the headless Broadcaster
+- **Status**: Structural blockers resolved. Awaiting user verification on VM.
 
 ## Last Session Summary
-- First live VM run executed. Login ✅ Search ✅ Chat opened ✅ — but message send ❌.
-- Root cause identified: `chat_box.fill()` bypasses React synthetic events on WhatsApp Web's contenteditable div. Send button never activated.
-- Fix applied: replaced `fill()` with `page.keyboard.type(delay=30)` — same keyboard-first pattern as DEC-016 (search), now extended to message composition (DEC-018).
-- PROJECT_RULES.md updated: DECISIONS.md gate now canonical rule — no technical decision committed without DEC-NNN entry.
-- All 3 commits pushed to GitHub (origin/master synced).
+- Discovered and diagnosed a critical Chromium constraint: **Cross-OS Cryptography**. Zipped sessions from Windows DPAPI cannot be decrypted by Linux Ext4 Chrome, causing immediate 400 Bad Requests and access blocks.
+- **Solution Executed (DEC-020)**: Architecture was split into two modules (`auth.py` and `broadcaster.py`) supported by `browser_config.py`.
+- `auth.py` now runs strictly on the VM to capture the headless QR code, avoiding cross-OS contamination entirely.
+- `broadcaster.py` was stripped of its interactive QR logic, making it a rugged headless-only execution worker.
+- Documented Cron workflow securely in `CRON_SETUP.md`.
 
 ## In-Progress Work
-- `broadcaster.py` — DEC-018 fix applied and committed. Re-verification on VM pending.
-- No uncommitted changes. Working tree clean.
+- None. Codebase is clean. The system is structurally ready for the production Cron test.
 
 ## Files of Interest
-- `broadcaster.py` lines 329–380 — message composition + send + checkmark verification logic
-- `.gsd/DECISIONS.md` — DEC-001 through DEC-018 fully documented
-- `scripts/run_vm.sh` — the VM launch wrapper (use this for background runs post-verification)
-- `recipients.json` — contains `"COP/USD Notifier"` (gitignored, exists only on VM and locally)
+- `broadcaster.py` — Native headless payload loop.
+- `auth.py` — Dedicated UI / headless server session capturer.
+- `browser_config.py` — Hardware limitation (e2-micro) hardening.
+- `docs/SESSION_TRANSFER.md` — The guide defining how Chromium keys restrict OS transfers.
+- `.gsd/DECISIONS.md` — DEC-019 to DEC-020 fully documented.
 
 ## Context Dump
 
-### Exact VM Run Command (Next Session Start)
+### Exact VM Run Command (For the upcoming session test)
 ```bash
-cd ~/wa_trm_notifier
-git pull
-pkill -f Xvfb || true
-pkill -f chromium || true
-rm -f ~/wa_trm_notifier/whatsapp_session/SingletonLock
-source venv/bin/activate
 xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless
 ```
 
-### Expected Success Log (Post-DEC-018)
+### Expected Success Log
 ```
-Login successful! Chat pane found.
+[config] Launching Playwright browser (headless=True) with session at ./whatsapp_session...
+Session fully stabilized. Waiting 5s for React UI to settle...
+Loaded 1 recipients from recipients.json.
+--- Processing: COP/USD Notifier ---
 Executing keyboard-only search for: COP/USD Notifier...
-SUCCESS: Clicked COP/USD Notifier via Sidebar match (1/3).
-Found chat box via Role.
+SUCCESS: Clicked COP/USD Notifier via Text fallback
+Found chat box successfully.
 Typing message to COP/USD Notifier...
-Clicking Send button icon...          ← NEW: button now activates
-[Ns] Delivery Confirmed: Checkmark detected.
+Send button icon not visible. Forcing focus and Enter key...
+Verifying delivery to COP/USD Notifier...
 ✅ SUCCESS: Sent message to COP/USD Notifier!
 ```
 
-### What Was Tried This Session
-- `fill()` for message composition → FAILED (React event bypass, Send button never visible)
-- `keyboard.type(delay=30)` → Applied, NOT yet verified on VM
-
-### Data Security Confirmed
-- `.env` → gitignored ✅
-- `recipients.json` → gitignored ✅
-- `whatsapp_session/` → gitignored ✅
-- `session.zip` → gitignored ✅
-- `logs/` + `*.png` → gitignored ✅
-
 ## Next Steps
-1. `git pull` on VM + run command above → verify `Clicking Send button icon...` appears
-2. Once first send confirmed → set up cron: `0 7 * * * cd ~/wa_trm_notifier && ./scripts/run_vm.sh`
-3. Add log rotation (`logrotate` or simple cron daily cleanup)
-4. Mark Phase 4 complete via `/complete-milestone`
-
+1. User tests `main.py` execution natively on the VM after generating `qr.png` via `auth.py`.
+2. Confirm empirical delivery checkmarks function smoothly without memory stall timeouts.
+3. Mark Phase 4 complete via `/complete-milestone` and close the sprint.

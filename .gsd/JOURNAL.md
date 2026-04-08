@@ -1,5 +1,28 @@
 # JOURNAL.md — Project Log
 
+## Session: 2026-04-08 18:45 (COT)
+
+### Objective
+Diagnose and completely resolve the fatal "400 Bad Request" and "Storage Persistence Denied" errors that occurred continuously after cross-OS `whatsapp_session` transfers.
+
+### Accomplished
+- ✅ **Diagnosed Chromium DPAPI Cryptography Limit**: Traced the `aquire-persistent-storage-denied` loop to Linux Chromium failing to decrypt a Windows LevelDB AES-encrypted profile. Confirmed cross-OS zipped Chromium profiles are inherently defunct.
+- ✅ **Architectural Split (DEC-020)**: Decoupled `broadcaster.py` into two distinctly purposed scripts. 
+    1. Built `auth.py` for headless native Linux session generation on the VM (user pulls `qr.png` securely via SCP to bypass the OS-transfer cryptography limit entirely).
+    2. Streamlined `broadcaster.py` strictly into a robust worker that hard-fails on unauthorized sessions.
+- ✅ **Cron Setup**: Drafted `CRON_SETUP.md` outlining the wrapper execution requirements and UTC timezone offsets for reliable background operations.
+- ✅ **Vigilance Policy Added**: Appended an "Architectural Consciousness Clause" to `PROJECT_RULES.md` to formally restrict unchecked patching that damages sibling execution environments.
+
+### Verification
+- [x] Tested headless `auth.py` natively on GCP via `xvfb-run`.
+- [x] Secured `qr.png` locally via SCP and successfully tied natively-encrypted credentials into the server DB.
+- [ ] Final `main.py` worker execution.
+
+### Paused Because
+Awaiting final test from the user on the VM before officially locking in Phase 4.
+
+---
+
 ## Session: 2026-04-06 18:41
 
 ### Objective
