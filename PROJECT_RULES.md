@@ -151,6 +151,7 @@ type(scope): description
 - One task = one commit
 - Verify before commit
 - Scope = phase number for phase work (e.g., `feat(phase-1): ...`)
+- **Decision gate**: Any commit that introduces a technical decision (new approach, tool choice, architecture change, workaround) MUST have a matching `DEC-NNN` entry in `.gsd/DECISIONS.md` committed in the same or prior commit. No exceptions.
 
 ---
 
@@ -252,6 +253,7 @@ After each task  → Commit + update STATE.md
 After each wave  → State snapshot
 After 3 failures → State dump + fresh session
 Before "Done"    → Empirical proof captured
+Before commit    → If decision made → DEC-NNN in DECISIONS.md
 ```
 
 ---
