@@ -318,14 +318,34 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                  continue
                  
             # 4. Fill message and send
+            print(f"Typing message to {name}...")
+            chat_box.click() # Ensure focus
             chat_box.fill(message_text)
-            time.sleep(1) # Breathe
-            chat_box.press("Enter")
-            print(f"✅ SUCCESS: Sent message to {name}!")
-            time.sleep(2) # Wait a bit before moving to next person
+            time.sleep(1.5) # Let the UI react to the text
+            
+            # --- Robust Send Method ---
+            try:
+                # Look for the Send button icon (data-testid="send")
+                send_button = page.locator('button:has(span[data-testid="send"]), [data-testid="send"]').first
+                if send_button.is_visible(timeout=3000):
+                    print("Clicking Send button icon...")
+                    send_button.click()
+                else:
+                    print("Send button icon not visible. Falling back to Enter key...")
+                    chat_box.press("Enter")
+            except Exception as e:
+                print(f"Send button error ({e}). Falling back to Enter key...")
+                chat_box.press("Enter")
 
-        print("\nAll recipients processed. Closing session.")
+            print(f"✅ SUCCESS: Sent message to {name}!")
+            # 5s wait between recipients to allow server sync
+            time.sleep(5) 
+
+        print("\nAll recipients processed. Final delivery buffer (10s)...")
+        # CRITICAL: Wait 10s to ensure the WebSocket actually uploads the data before we kill the browser
+        time.sleep(10)
         context.close()
+
 
 if __name__ == "__main__":
     import sys
