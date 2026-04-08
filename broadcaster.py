@@ -292,39 +292,19 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
 
             # 3. Focus the chat input box (bottom bar of right pane)
             print(f"Finding input box for {name}...")
-            chat_box = None
             
-            # --- Method A: Role-based (Most Resilient) ---
+            # --- Robust Unique Locator (Language Agnostic & Stable) ---
+            # Instead of relying on aria-labels that Lexical dynamically toggles,
+            # we target the contenteditable div in the main window.
+            box_handle = None
             try:
-                # Try finding by localized role in the #main area
-                chat_box = page.locator('#main').get_by_role("textbox", name="Type a message").or_(
-                    page.locator('#main').get_by_role("textbox", name="Escribe un mensaje")
-                ).first
-                
-                if chat_box.is_visible(timeout=5000):
-                    print("Found chat box via Role.")
-                else: chat_box = None
-            except: chat_box = None
-
-            # --- Method B: Selector Fallbacks ---
-            if not chat_box:
-                chat_box_selectors = [
-                    'footer div[contenteditable="true"]',
-                    '#main div[aria-label="Type a message"]',
-                    '#main div[aria-label="Escribe un mensaje"]',
-                    'p.selectable-text.copyable-text'
-                ]
-                for sel in chat_box_selectors:
-                    try:
-                        chat_box = page.wait_for_selector(sel, state="visible", timeout=2000)
-                        if chat_box: 
-                            print(f"Found chat box via selector: {sel}")
-                            break
-                    except: continue
-
-            if not chat_box:
-                 print(f"Could not find the chat input box for {name}.")
-                 continue
+                chat_box_locator = page.locator('#main div[contenteditable="true"], footer div[contenteditable="true"]').first
+                chat_box_locator.wait_for(state="visible", timeout=10000)
+                box_handle = chat_box_locator.element_handle(timeout=2000)
+                print("Found chat box successfully.")
+            except Exception as e:
+                print(f"Could not find the chat input box for {name}: {e}")
+                continue
                  
             # 4. Type message using keyboard events (DEC-018)
             # CRITICAL: chat_box.fill() bypasses React's synthetic event system.
@@ -332,12 +312,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # the aria-label or DOM. Using an element handle + page.keyboard prevents this.
             # Also, newlines (\n) must be typed as Shift+Enter to avoid premature sending.
             print(f"Typing message to {name}...")
-            
-            try:
-                box_handle = chat_box.element_handle(timeout=5000)
-            except Exception as e:
-                print(f"Failed to get element handle: {e}")
-                continue
                 
             # Click and force focus via JS to guarantee caret placement
             box_handle.click()
