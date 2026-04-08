@@ -72,59 +72,82 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # Wait for the chat list to load (indicator of login)
         print("Waiting for WhatsApp Web to load. If this is your first run, please scan the QR code.")
         
-        # --- LOGIN DETECTION ---
+        # --- LOGIN DETECTION & SYNC ---
         try:
-            print("Checking session status (Waiting for Chat Pane to appear)...")
-            # #pane-side is the universal container for the chat list
-            page.wait_for_selector('#pane-side, [data-testid="chat-list-search-filtered"]', timeout=120000)
+            print("Checking session status...")
+            # Detect initial state: Chat list, Loading screen, or Login page
+            # We wait for ANY of these to appear to know where we are.
+            sync_selectors = [
+                '#pane-side', 
+                '[data-testid="chat-list-search-filtered"]',
+                'text="Loading your chats"', 
+                'text="Cargando tus chats"',
+                'text="Keep your phone connected"',
+                'text="Mantén tu teléfono conectado"'
+            ]
+            
+            # Combine into a single selector string for wait_for_selector
+            combined_selector = ", ".join(sync_selectors)
+            page.wait_for_selector(combined_selector, timeout=120000)
+            
+            # Check specifically for the Sync/Loading screen
+            is_loading = page.get_by_text("Loading your chats").is_visible() or \
+                         page.get_by_text("Cargando tus chats").is_visible()
+            
+            if is_loading:
+                print("Syncing chats detected... Waiting for completion (this may take up to 5 mins on VM)...")
+                # Increase patience to 300s for the actual chat list to appear after sync
+                page.wait_for_selector('#pane-side', timeout=300000)
+                print("Sync complete!")
+            
             print("Login successful or session restored!")
         except Exception:
-            print("\n--- LOGIN REQUIRED ---")
-            print(f"Current Page: {page.title()} | URL: {page.url}")
-            
-            # DIAGNOSTIC: What is actually on the screen?
+            # Fallback: Is the "Log out" button visible? That's a 100% login confirmation
+            is_confirmed = False
             try:
-                debug_text = page.inner_text("body")[:400].replace("\n", " ")
-                print(f"DEBUG: Screen Content: {debug_text}")
-            except: 
-                pass
+                logout_element = page.get_by_text("Log out").or_(page.get_by_text("Cerrar sesión")).first
+                if logout_element.is_visible(timeout=5000):
+                    print("Login confirmed via Log-out marker fallback.")
+                    is_confirmed = True
+            except: pass
 
-            print("Looking for QR code FAST...")
-            try:
-                # Prioritize 'canvas' as it's the fastest and most stable
-                qr_selectors = [
-                    'canvas', 
-                    'div[data-ref]', 
-                    '[data-testid="qrcode-container"]',
-                    'div[aria-label="Scan me!"]'
-                ]
+            if not is_confirmed:
+                print("\n--- LOGIN REQUIRED ---")
+                print(f"Current Page: {page.title()} | URL: {page.url}")
                 
-                qr_found = False
-                for sel in qr_selectors:
-                    try:
-                        # Use short timeout per selector to find it quickly
-                        page.wait_for_selector(sel, state="visible", timeout=8000)
-                        qr_found = True
-                        break
-                    except:
-                        continue
+                # DIAGNOSTIC: What is actually on the screen?
+                try:
+                    debug_text = page.inner_text("body")[:400].replace("\n", " ")
+                    print(f"DEBUG: Screen Content: {debug_text}")
+                except: pass
 
-                if not qr_found:
-                    raise Exception("QR selectors not found in time.")
+                print("Looking for QR code FAST...")
+                try:
+                    qr_selectors = ['canvas', 'div[data-ref]', '[data-testid="qrcode-container"]']
+                    qr_found = False
+                    for sel in qr_selectors:
+                        try:
+                            page.wait_for_selector(sel, state="visible", timeout=8000)
+                            qr_found = True
+                            break
+                        except: continue
 
-                print("⚡ QR CODE IS LIVE! Saving immediately...")
-                time.sleep(2) # Reduced from 5s to 2s
+                    if not qr_found:
+                        raise Exception("QR selectors not found in time.")
+
+                    print("⚡ QR CODE IS LIVE! Saving immediately...")
+                    time.sleep(2)
+                    qr_path = "qr.png"
+                    page.screenshot(path=qr_path)
+                    print(f"!!! DOWNLOAD AND SCAN {qr_path} NOW !!!")
+                except Exception as e:
+                    print(f"Failed to find QR code: {e}")
+                    print("Saving emergency full page screenshot to 'error_page.png'...")
+                    page.screenshot(path="error_page.png", full_page=True)
                 
-                qr_path = "qr.png"
-                page.screenshot(path=qr_path)
-                print(f"!!! DOWNLOAD AND SCAN {qr_path} NOW !!!")
-            except Exception as e:
-                print(f"Failed to find QR code: {e}")
-                print("Saving emergency full page screenshot to 'error_page.png'...")
-                page.screenshot(path="error_page.png", full_page=True)
-            
-            context.close()
-            return
+                context.close()
+                return
+
 
 
         if discovery_mode:
