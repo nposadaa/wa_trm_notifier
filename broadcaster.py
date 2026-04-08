@@ -72,83 +72,86 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # Wait for the chat list to load (indicator of login)
         print("Waiting for WhatsApp Web to load. If this is your first run, please scan the QR code.")
         
-        # --- LOGIN DETECTION & SYNC ---
-        try:
-            print("Checking session status...")
-            # Detect initial state: Chat list, Loading screen, or Login page
-            # We wait for ANY of these to appear to know where we are.
-            sync_selectors = [
-                '#pane-side', 
-                '[data-testid="chat-list-search-filtered"]',
-                'text="Loading your chats"', 
-                'text="Cargando tus chats"',
-                'text="Keep your phone connected"',
-                'text="Mantén tu teléfono conectado"'
-            ]
+        # --- LOGIN DETECTION & SYNC (Robust Loop) ---
+        print("Checking session status (State-Aware Loop)...")
+        start_time = time.time()
+        # 4 minutes total for initial splash/render transition
+        MAX_INITIAL_WAIT = 240 
+        session_state = "INITIALIZING"
+        
+        while time.time() - start_time < MAX_INITIAL_WAIT:
+            elapsed = int(time.time() - start_time)
             
-            # Combine into a single selector string for wait_for_selector
-            combined_selector = ", ".join(sync_selectors)
-            page.wait_for_selector(combined_selector, timeout=120000)
+            # 1. SUCCESS MARKERS (Chat Pane)
+            if page.locator('#pane-side, [data-testid="chat-list-search-filtered"]').first.is_visible():
+                print(f"[{elapsed}s] Login successful! Chat pane found.")
+                session_state = "LOGGED_IN"
+                break
             
-            # Check specifically for the Sync/Loading screen
-            is_loading = page.get_by_text("Loading your chats").is_visible() or \
-                         page.get_by_text("Cargando tus chats").is_visible()
+            # 2. AUTHENTICATION MARKERS (Logout button)
+            # Sometimes the chat pane is slow, but the logo/logout is there
+            if page.get_by_text("Log out").or_(page.get_by_text("Cerrar sesión")).first.is_visible():
+                print(f"[{elapsed}s] Login confirmed via Logout marker.")
+                session_state = "LOGGED_IN"
+                break
+
+            # 3. SYNCING MARKERS
+            if page.get_by_text("Loading your chats").or_(page.get_by_text("Cargando tus chats")).first.is_visible():
+                print(f"[{elapsed}s] Syncing detected... extending wait (up to 5 mins).")
+                try:
+                    # Give it a long time to finish the data sync
+                    page.wait_for_selector('#pane-side', timeout=300000)
+                    session_state = "LOGGED_IN"
+                    break
+                except Exception:
+                    print(f"[{elapsed}s] Syncing still in progress or timed out. Re-checking markers...")
             
-            if is_loading:
-                print("Syncing chats detected... Waiting for completion (this may take up to 5 mins on VM)...")
-                # Increase patience to 300s for the actual chat list to appear after sync
-                page.wait_for_selector('#pane-side', timeout=300000)
-                print("Sync complete!")
+            # 4. QR CODE MARKERS (Login Required)
+            if page.locator('canvas, [data-testid="qrcode-container"]').first.is_visible():
+                session_state = "QR_REQUIRED"
+                break
             
-            print("Login successful or session restored!")
-        except Exception:
-            # Fallback: Is the "Log out" button visible? That's a 100% login confirmation
-            is_confirmed = False
+            # 5. SPLASH SCREEN (VM Lag or Initialization)
+            # If we see 'End-to-end encrypted' or 'WhatsApp' title, we are likely on splash
             try:
-                logout_element = page.get_by_text("Log out").or_(page.get_by_text("Cerrar sesión")).first
-                if logout_element.is_visible(timeout=5000):
-                    print("Login confirmed via Log-out marker fallback.")
-                    is_confirmed = True
+                screen_content = page.inner_text("body")[:1000]
+                if "End-to-end encrypted" in screen_content or "WhatsApp" in screen_content:
+                    if session_state != "SPLASH":
+                        print(f"[{elapsed}s] Splash screen detected (Logo/Encryption splash). Waiting for JS to render...")
+                        session_state = "SPLASH"
             except: pass
 
-            if not is_confirmed:
-                print("\n--- LOGIN REQUIRED ---")
-                print(f"Current Page: {page.title()} | URL: {page.url}")
-                
-                # DIAGNOSTIC: What is actually on the screen?
-                try:
-                    debug_text = page.inner_text("body")[:400].replace("\n", " ")
-                    print(f"DEBUG: Screen Content: {debug_text}")
-                except: pass
+            time.sleep(10) # 10s intervals to save e2-micro CPU
+            print(f"[{elapsed}s] Still initializing (Current State: {session_state})...")
 
-                print("Looking for QR code FAST...")
-                try:
-                    qr_selectors = ['canvas', 'div[data-ref]', '[data-testid="qrcode-container"]']
-                    qr_found = False
-                    for sel in qr_selectors:
-                        try:
-                            page.wait_for_selector(sel, state="visible", timeout=8000)
-                            qr_found = True
-                            break
-                        except: continue
+        # --- FINAL EVALUATION ---
+        if session_state == "QR_REQUIRED":
+            print("\n--- LOGIN REQUIRED ---")
+            print(f"Current Page: {page.title()} | URL: {page.url}")
+            
+            print("⚡ QR CODE IS LIVE! Saving immediately...")
+            try:
+                # Give it a tiny bit to breathe
+                time.sleep(2)
+                qr_path = "qr.png"
+                page.screenshot(path=qr_path)
+                print(f"!!! DOWNLOAD AND SCAN {qr_path} NOW !!!")
+            except Exception as e:
+                print(f"Failed to save QR screenshot: {e}")
+                page.screenshot(path="error_page.png", full_page=True)
+            
+            context.close()
+            return
+            
+        elif session_state != "LOGGED_IN":
+            print(f"\n--- SESSION TIMEOUT ({session_state}) ---")
+            print(f"Reached {MAX_INITIAL_WAIT}s without entering logged-in state.")
+            print("Saving diagnostic screenshot to 'error_page.png'...")
+            page.screenshot(path="error_page.png", full_page=True)
+            context.close()
+            return
 
-                    if not qr_found:
-                        raise Exception("QR selectors not found in time.")
-
-                    print("⚡ QR CODE IS LIVE! Saving immediately...")
-                    time.sleep(2)
-                    qr_path = "qr.png"
-                    page.screenshot(path=qr_path)
-                    print(f"!!! DOWNLOAD AND SCAN {qr_path} NOW !!!")
-                except Exception as e:
-                    print(f"Failed to find QR code: {e}")
-                    print("Saving emergency full page screenshot to 'error_page.png'...")
-                    page.screenshot(path="error_page.png", full_page=True)
-                
-                context.close()
-                return
-
-
+        print("Session fully stabilized.")
 
         if discovery_mode:
             print("\n--- DISCOVERY MODE ---")
