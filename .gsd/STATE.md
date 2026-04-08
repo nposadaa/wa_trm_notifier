@@ -1,44 +1,70 @@
 # STATE.md — Project Memory
 
 > **Current Phase**: Phase 4 — Cloud Deployment
-> **Last Update**: 2026-04-06
-> **Status**: Active (resumed 2026-04-08)
+> **Last Update**: 2026-04-08
+> **Status**: Paused (2026-04-08T21:30 UTC)
 
 ## Current Position
 - **Phase**: Phase 4 — Cloud Deployment (Stabilization & Scheduling)
-- **Task**: Final Verification & Cron Setup
-- **Status**: In Progress — Hardening Complete, Pending final delivery proof and automation.
+- **Task**: Re-verify first live send with DEC-018 fix
+- **Status**: Paused — DEC-018 fix committed and pushed. Re-run on VM is the immediate next action.
 
 ## Last Session Summary
-Successfully moved from "Failed Initialization" to "Fully Stabilized Broadcast" on GCP e2-micro. Resolved severe memory/GPU hangs and false-positive delivery reporting.
+- First live VM run executed. Login ✅ Search ✅ Chat opened ✅ — but message send ❌.
+- Root cause identified: `chat_box.fill()` bypasses React synthetic events on WhatsApp Web's contenteditable div. Send button never activated.
+- Fix applied: replaced `fill()` with `page.keyboard.type(delay=30)` — same keyboard-first pattern as DEC-016 (search), now extended to message composition (DEC-018).
+- PROJECT_RULES.md updated: DECISIONS.md gate now canonical rule — no technical decision committed without DEC-NNN entry.
+- All 3 commits pushed to GitHub (origin/master synced).
 
 ## In-Progress Work
-The core broadcaster is now "Steel-Plated" for VM environments.
-- **Verification Logic**: Checkmark-based auditing (DEC-017) ensures no false successes.
-- **Input Logic**: Keyboard-only interaction for both search AND message composition (DEC-016, DEC-018).
-- **Environment**: Keyring fixes and 3D shielding (DEC-011, DEC-012) fix persistence and GPU stalls.
-- **Status**: First VM run completed (2026-04-08). Login ✅, Search ✅, Chat found ✅. Send FAILED — root cause identified as `fill()` bypassing React events. Fix applied (DEC-018). Re-verification pending.
+- `broadcaster.py` — DEC-018 fix applied and committed. Re-verification on VM pending.
+- No uncommitted changes. Working tree clean.
+
+## Files of Interest
+- `broadcaster.py` lines 329–380 — message composition + send + checkmark verification logic
+- `.gsd/DECISIONS.md` — DEC-001 through DEC-018 fully documented
+- `scripts/run_vm.sh` — the VM launch wrapper (use this for background runs post-verification)
+- `recipients.json` — contains `"COP/USD Notifier"` (gitignored, exists only on VM and locally)
+
+## Context Dump
+
+### Exact VM Run Command (Next Session Start)
+```bash
+cd ~/wa_trm_notifier
+git pull
+pkill -f Xvfb || true
+pkill -f chromium || true
+rm -f ~/wa_trm_notifier/whatsapp_session/SingletonLock
+source venv/bin/activate
+xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless
+```
+
+### Expected Success Log (Post-DEC-018)
+```
+Login successful! Chat pane found.
+Executing keyboard-only search for: COP/USD Notifier...
+SUCCESS: Clicked COP/USD Notifier via Sidebar match (1/3).
+Found chat box via Role.
+Typing message to COP/USD Notifier...
+Clicking Send button icon...          ← NEW: button now activates
+[Ns] Delivery Confirmed: Checkmark detected.
+✅ SUCCESS: Sent message to COP/USD Notifier!
+```
+
+### What Was Tried This Session
+- `fill()` for message composition → FAILED (React event bypass, Send button never visible)
+- `keyboard.type(delay=30)` → Applied, NOT yet verified on VM
+
+### Data Security Confirmed
+- `.env` → gitignored ✅
+- `recipients.json` → gitignored ✅
+- `whatsapp_session/` → gitignored ✅
+- `session.zip` → gitignored ✅
+- `logs/` + `*.png` → gitignored ✅
 
 ## Next Steps
-1. **Re-verify Send**: Re-run on VM with DEC-018 fix — expect `Clicking Send button icon...` and `Delivery Confirmed: Checkmark detected.`
-2. **Cron Integration**: Map the `xvfb-run` command into a daily cron job on the VM.
-3. **Failure Notifications**: Implement a simple email/webhook fallback if the Checkmark Audit (DEC-017) fails.
-4. **Log Rotation**: Ensure `/logs` directory on VM doesn't saturate the disk.
+1. `git pull` on VM + run command above → verify `Clicking Send button icon...` appears
+2. Once first send confirmed → set up cron: `0 7 * * * cd ~/wa_trm_notifier && ./scripts/run_vm.sh`
+3. Add log rotation (`logrotate` or simple cron daily cleanup)
+4. Mark Phase 4 complete via `/complete-milestone`
 
-## Decisions Made
-- DEC-011: Local-to-Cloud session transfer is 10X more reliable than cloud-handshake for e2-micro VMs.
-- DEC-012: Universal text-markers ("Unread") beat localized aria-labels for login detection.
-- DEC-013: 4GB Swap is non-negotiable for stable Chromium rendering on e2-micro.
-- DEC-016: Keyboard-first interaction (`focus()` + `keyboard.type()`) bypasses mouse-lag hangs on VM.
-- DEC-017: Checkmark-based delivery audit prevents false-positive success reporting.
-- DEC-018: `keyboard.type()` required for message composition — `fill()` bypasses React synthetic events on contenteditable divs.
-
-## Blockers (Next Session Challenges)
-- Potential rendering delays during first sync (solved with 120s timeout).
-- Verification of recipients name matching (Wait for first sent message).
-
-## Next Steps (Starting Point 🤝)
-1. **The First Send**: Run the final script on the VM:
-   `cd ~/wa_trm_notifier && git pull && source venv/bin/activate && xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless`
-2. **Automate**: Once verified, set up crontab: `0 7 * * * cd ~/wa_trm_notifier && ./scripts/run_vm.sh`.
-3. **Audit**: Complete Phase 4 documentation.

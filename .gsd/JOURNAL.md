@@ -41,3 +41,39 @@ Achieve 100% reliable message delivery on GCP e2-micro by bypassing VM-specific 
 ### Paused Because
 Session end. Phase 4 is still IN PROGRESS. Code is ready, but scheduling (Cron) and final delivery verification remain.
 
+---
+
+## Session: 2026-04-08 16:03 (COT)
+
+### Objective
+Execute first live VM broadcast and achieve empirical delivery confirmation (checkmark in DOM).
+
+### Accomplished
+- ✅ **Resumed cleanly** via /resume — all context restored from STATE.md.
+- ✅ **First live VM run**: Login, search, and chat selection all working.
+- ✅ **Root cause found for send failure**: `chat_box.fill()` bypasses React synthetic events on contenteditable divs — WhatsApp never registers the text, Send button never activates.
+- ✅ **DEC-018 applied**: Replaced `fill()` with `page.keyboard.type(delay=30)`. Keyboard-first pattern now covers both search (DEC-016) and message composition (DEC-018).
+- ✅ **DECISIONS.md gate enforced**: PROJECT_RULES.md updated — no technical decision may be committed without a DEC-NNN entry. Canonical rule, model-agnostic.
+- ✅ **Data security audited**: All sensitive files (.env, recipients.json, whatsapp_session/, session.zip, logs/) confirmed gitignored.
+- ✅ **3 commits pushed to GitHub** (origin/master synced).
+
+### Verification
+- [x] Login on VM (23s — Splash → Chat pane detected).
+- [x] Search found "COP/USD Notifier" via Sidebar match.
+- [x] Chat input box found via Role.
+- [ ] Message send confirmed (Checkmark) — pending re-run with DEC-018 fix.
+
+### Paused Because
+Token budget nearing limit. State fully preserved. Next session starts with one VM command.
+
+### Handoff Notes
+**SINGLE NEXT ACTION**: On VM, run:
+```bash
+cd ~/wa_trm_notifier && git pull
+pkill -f Xvfb || true; pkill -f chromium || true
+rm -f ~/wa_trm_notifier/whatsapp_session/SingletonLock
+source venv/bin/activate
+xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless
+```
+Expect: `Clicking Send button icon...` then `Delivery Confirmed: Checkmark detected.`
+If that passes → set up cron → Phase 4 complete.
