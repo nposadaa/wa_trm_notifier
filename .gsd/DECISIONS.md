@@ -63,8 +63,8 @@
 - **Date**: 2026-04-08
 - **Phase**: 4.2
 - **Decision**: Disable all 3D APIs, WebGL, software rasterizer, and hardware canvas acceleration.
-- **Rationale**: The GCP e2-micro VM exhibited "GPU Stall" errors even in headless mode. Disabling these sub-systems saves CPU cycles and prevents rendering hangs.
-- **Status**: Active
+- **Status**: Deprecated (replaced by DEC-014)
+- **Rationale**: Proved too aggressive; likely broke Service Worker rendering or triggered bot-detection.
 
 ## DEC-012: Pre-flight SingletonLock Cleanup
 - **Date**: 2026-04-08
@@ -77,7 +77,15 @@
 - **Date**: 2026-04-08
 - **Phase**: 4.2
 - **Decision**: Set disk and media cache sizes to 1 byte.
-- **Rationale**: Prevents Chromium from thrashing the VM's disk (which is often slow standard HDD) and preserves IOPS for the core JS engine.
+- **Status**: Deprecated (replaced by DEC-014)
+- **Rationale**: Might have caused unnecessary overhead or network loops (net::ERR_FAILED) on slow VM.
+
+## DEC-014: Safe Stability Pivot (Standard Configuration)
+- **Date**: 2026-04-08
+- **Phase**: 4.3
+- **Decision**: Remove all resource-blocking interceptors and revert to a standard Chromium flag set. Add a 5-second "Settling Window" post-login.
+- **Rationale**: The previous configuration (DEC-011/DEC-013) caused catastrophic network loops (`net::ERR_FAILED`) and browser hangs. Priority shifted to "session safety" over "memory optimization."
 - **Status**: Active
+
 
 

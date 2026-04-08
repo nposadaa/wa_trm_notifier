@@ -47,25 +47,13 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 "--disable-dev-shm-usage",
                 "--no-sandbox",
                 "--disable-gpu",
-                "--disable-3d-apis",
-                "--disable-webgl",
-                "--disable-software-rasterizer",
-                "--disable-accelerated-2d-canvas",
-                "--disable-canvas-aa",
-                "--disable-2d-canvas-clip-aa",
-                "--disable-gl-drawing-for-tests",
                 "--disable-extensions",
                 "--no-zygote",
                 "--js-flags='--max-old-space-size=512'", 
                 "--disable-setuid-sandbox",
                 "--no-first-run",
                 "--disable-background-networking",
-                "--disable-web-security",
-                "--disk-cache-size=1",
-                "--media-cache-size=1",
-                "--disable-accelerated-video-decode",
-                "--disable-accelerated-mjpeg-decode",
-                "--disable-accelerated-video-encode"
+                "--disable-web-security"
             ]
         )
         
@@ -78,16 +66,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             Object.defineProperty(navigator, 'languages', {get: () => ['es-419', 'es', 'en-US', 'en']});
         """)
         
-        # --- Memory Saver: Block images, fonts, and media ---
-        def route_handler(route):
-            # Block only the heaviest non-essential assets
-            if route.request.resource_type in ["image", "font", "media"]:
-                route.abort()
-            else:
-                # Explicitly let scripts and manifests through to prevent net::ERR_FAILED loops
-                route.continue_()
-                
-        page.route("**/*", route_handler)
+        # (DEC-014: Resource filtering disabled for stability)
 
         # --- Console Mirroring (DEC-009) ---
         # Mirrors browser-level errors/warnings to VM console for remote diagnostics
@@ -151,7 +130,10 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             time.sleep(10) # 10s intervals to save e2-micro CPU
             print(f"[{elapsed}s] Still initializing (Current State: {session_state})...")
 
-        # --- FINAL EVALUATION ---
+        # --- SETTLING WINDOW (DEC-014) ---
+        if session_state == "LOGGED_IN":
+            print("Session fully stabilized. Waiting 5s for React UI to settle...")
+            time.sleep(5)
         if session_state == "QR_REQUIRED":
             print("\n--- LOGIN REQUIRED ---")
             print(f"Current Page: {page.title()} | URL: {page.url}")
