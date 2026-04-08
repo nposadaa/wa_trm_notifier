@@ -43,7 +43,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             headless=headless,
             user_agent=USER_AGENT,
             viewport={'width': 1024, 'height': 768},
-            permissions=['persistent-storage', 'notifications', 'background-sync'],
+            permissions=['notifications', 'background-sync'],
             # --- Anti-Detection: Locality matching ---
             timezone_id="America/Bogota",
             locale="es-419",
