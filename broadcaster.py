@@ -326,17 +326,26 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                  print(f"Could not find the chat input box for {name}.")
                  continue
                  
-            # 4. Fill message and send
+            # 4. Type message using keyboard events (DEC-018)
+            # CRITICAL: chat_box.fill() bypasses React's synthetic event system on
+            # contenteditable divs. WhatsApp never sees the text, so the Send button
+            # stays hidden and Enter sends nothing. page.keyboard.type() fires real
+            # keystroke events that React listens to, activating the Send button.
             print(f"Typing message to {name}...")
-            chat_box.click() # Ensure focus
-            chat_box.fill(message_text)
-            time.sleep(1.5) # Let the UI react to the text
-            
+            chat_box.click()  # Ensure focus
+            # Clear any residual text first
+            page.keyboard.press("Control+A")
+            page.keyboard.press("Backspace")
+            time.sleep(0.3)
+            # Type with small delay so React state updates keep up on slow VM
+            page.keyboard.type(message_text, delay=30)
+            time.sleep(1.5)  # Let React register the typed content
+
             # --- Robust Send Method (DEC-010 refined) ---
             try:
-                # 1. Try Send Button First
+                # 1. Try Send Button First (should now be visible after keyboard.type)
                 send_button = page.locator('button:has(span[data-testid="send"]), [data-testid="send"]').first
-                if send_button.is_visible(timeout=3000):
+                if send_button.is_visible(timeout=5000):
                     print("Clicking Send button icon...")
                     send_button.click()
                 else:
@@ -349,12 +358,12 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 page.keyboard.press("Enter")
 
             # --- Empirical Delivery Verification ---
-            # We wait up to 20s to see the 'Sent' checkmark appear.
+            # We wait up to 30s to see the 'Sent' checkmark appear (extra buffer for slow VM).
             # This prevents false positives on slow VMs.
             print(f"Verifying delivery to {name}...")
             delivery_verified = False
             
-            for v_sec in range(20):
+            for v_sec in range(30):
                 # SUCCESS: Found a single or double checkmark on the latest message
                 if page.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"]').last.is_visible(timeout=500):
                     print(f"[{v_sec}s] Delivery Confirmed: Checkmark detected.")
