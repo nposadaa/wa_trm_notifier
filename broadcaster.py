@@ -22,6 +22,15 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # Define a modern User Agent to prevent the "Unsupported Browser" error
         USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
+        # --- Pre-flight: Clear Browser Locks ---
+        # This solves the "persistence denied" error on VMs after abnormal exits
+        lock_path = os.path.join(USER_DATA_DIR, "SingletonLock")
+        if os.path.exists(lock_path):
+            try: 
+                os.remove(lock_path)
+                print("Cleaned up stale session lock.")
+            except: pass
+
         # Launch persistent context with ADVANCED HARDENING
         print(f"Launching hardened browser with session at {USER_DATA_DIR}...")
         context = p.chromium.launch_persistent_context(
@@ -38,13 +47,25 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 "--disable-dev-shm-usage",
                 "--no-sandbox",
                 "--disable-gpu",
+                "--disable-3d-apis",
+                "--disable-webgl",
+                "--disable-software-rasterizer",
+                "--disable-accelerated-2d-canvas",
+                "--disable-canvas-aa",
+                "--disable-2d-canvas-clip-aa",
+                "--disable-gl-drawing-for-tests",
                 "--disable-extensions",
                 "--no-zygote",
                 "--js-flags='--max-old-space-size=512'", 
                 "--disable-setuid-sandbox",
                 "--no-first-run",
                 "--disable-background-networking",
-                "--disable-web-security"
+                "--disable-web-security",
+                "--disk-cache-size=1",
+                "--media-cache-size=1",
+                "--disable-accelerated-video-decode",
+                "--disable-accelerated-mjpeg-decode",
+                "--disable-accelerated-video-encode"
             ]
         )
         
@@ -59,9 +80,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         
         # --- Memory Saver: Block images, fonts, and media ---
         def route_handler(route):
+            # Block only the heaviest non-essential assets
             if route.request.resource_type in ["image", "font", "media"]:
                 route.abort()
             else:
+                # Explicitly let scripts and manifests through to prevent net::ERR_FAILED loops
                 route.continue_()
                 
         page.route("**/*", route_handler)

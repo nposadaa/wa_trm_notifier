@@ -59,10 +59,25 @@
 - **Rationale**: Debugging headless runs on remote VMs is difficult. Console logs and DOM dumps at the moment of failure provide immediate root-cause evidence.
 - **Status**: Active
 
-## DEC-010: Delivery Safety Buffer
+## DEC-011: Deep Hardening (Rendering & 3D Disabling)
 - **Date**: 2026-04-08
-- **Phase**: 4.1
-- **Decision**: Add a 10-second sleep after all messages are processed before closing the context.
-- **Rationale**: Slow VMs often kill the browser process before the last message has finished uploading via WebSockets, even if the UI reports success.
+- **Phase**: 4.2
+- **Decision**: Disable all 3D APIs, WebGL, software rasterizer, and hardware canvas acceleration.
+- **Rationale**: The GCP e2-micro VM exhibited "GPU Stall" errors even in headless mode. Disabling these sub-systems saves CPU cycles and prevents rendering hangs.
 - **Status**: Active
+
+## DEC-012: Pre-flight SingletonLock Cleanup
+- **Date**: 2026-04-08
+- **Phase**: 4.2
+- **Decision**: Programmatically remove `SingletonLock` from the user data directory before launch.
+- **Rationale**: Fixed the "storage bucket persistence denied" error caused by abnormal browser exits on the VM.
+- **Status**: Active
+
+## DEC-013: Aggressive Resource Caching Limits
+- **Date**: 2026-04-08
+- **Phase**: 4.2
+- **Decision**: Set disk and media cache sizes to 1 byte.
+- **Rationale**: Prevents Chromium from thrashing the VM's disk (which is often slow standard HDD) and preserves IOPS for the core JS engine.
+- **Status**: Active
+
 
