@@ -59,13 +59,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 session_state = "LOGGED_IN"
                 break
             
-            # 2. AUTHENTICATION MARKERS (Logout button)
-            # Sometimes the chat pane is slow, but the logo/logout is there
-            if page.get_by_text("Log out").or_(page.get_by_text("Cerrar sesión")).first.is_visible():
-                print(f"[{elapsed}s] Login confirmed via Logout marker.")
-                session_state = "LOGGED_IN"
-                break
-
             # 3. SYNCING MARKERS
             if page.get_by_text("Loading your chats").or_(page.get_by_text("Cargando tus chats")).first.is_visible():
                 print(f"[{elapsed}s] Syncing detected... extending wait (up to 5 mins).")
