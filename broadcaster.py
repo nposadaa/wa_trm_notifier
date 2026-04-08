@@ -327,18 +327,25 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                  continue
                  
             # 4. Type message using keyboard events (DEC-018)
-            # CRITICAL: chat_box.fill() bypasses React's synthetic event system on
-            # contenteditable divs. WhatsApp never sees the text, so the Send button
-            # stays hidden and Enter sends nothing. page.keyboard.type() fires real
-            # keystroke events that React listens to, activating the Send button.
+            # CRITICAL: chat_box.fill() bypasses React's synthetic event system.
+            # Using press_sequentially on the locator can timeout if React re-renders
+            # the aria-label or DOM. Using an element handle + page.keyboard prevents this.
+            # Also, newlines (\n) must be typed as Shift+Enter to avoid premature sending.
             print(f"Typing message to {name}...")
             
-            # click() can hit padding and blur. focus() is safer.
-            chat_box.focus()
+            try:
+                box_handle = chat_box.element_handle(timeout=5000)
+            except Exception as e:
+                print(f"Failed to get element handle: {e}")
+                continue
+                
+            # Click and force focus via JS to guarantee caret placement
+            box_handle.click()
+            box_handle.evaluate("el => el.focus()")
             
             # Force caret into the text box via evaluate just in case it's a Lexical boundary
             try:
-                chat_box.evaluate("el => { el.focus(); const selection = window.getSelection(); const range = document.createRange(); range.selectNodeContents(el); selection.removeAllRanges(); selection.addRange(range); }")
+                box_handle.evaluate("el => { const selection = window.getSelection(); const range = document.createRange(); range.selectNodeContents(el); selection.removeAllRanges(); selection.addRange(range); }")
             except: pass
             
             # Clear any residual text first using correct OS modifiers
@@ -347,15 +354,19 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             time.sleep(0.3)
             
             # Re-ensure focus right before typing
-            chat_box.focus()
+            box_handle.evaluate("el => el.focus()")
             
-            # Type with small delay so React state updates keep up on slow VM
-            # We loop over text, or just use type/press_sequentially via the locator to ensure target
-            try:
-                chat_box.press_sequentially(message_text, delay=30)
-            except AttributeError:
-                # Fallback for older Playwright (chat_box.type is same as press_sequentially)
-                chat_box.type(message_text, delay=30)
+            # Type line by line, using Shift+Enter for newlines
+            lines = message_text.split('\n')
+            for i, line in enumerate(lines):
+                if line:
+                    # Type chunks to ensure Playwright doesn't get interrupted by React
+                    page.keyboard.type(line, delay=10)
+                if i < len(lines) - 1:
+                    page.keyboard.down("Shift")
+                    page.keyboard.press("Enter")
+                    page.keyboard.up("Shift")
+                    time.sleep(0.05)
                 
             time.sleep(1.5)  # Let React register the typed content
 
