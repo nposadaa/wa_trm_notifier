@@ -23,13 +23,18 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
         # --- Pre-flight: Clear Browser Locks ---
-        # This solves the "persistence denied" error on VMs after abnormal exits
-        lock_path = os.path.join(USER_DATA_DIR, "SingletonLock")
-        if os.path.exists(lock_path):
-            try: 
-                os.remove(lock_path)
-                print("Cleaned up stale session lock.")
-            except: pass
+        # This solves the "persistence denied" error on VMs after abnormal exits (pkill)
+        # Chromium leaves LevelDB LOCK files that deadlock WhatsApp's IndexedDB on reboot.
+        import glob
+        try:
+            for lock in glob.glob(os.path.join(USER_DATA_DIR, "**", "LOCK"), recursive=True):
+                os.remove(lock)
+                print(f"Cleaned up stale LevelDB lock: {lock}")
+            for singleton in glob.glob(os.path.join(USER_DATA_DIR, "Singleton*")):
+                os.remove(singleton)
+                print(f"Cleaned up stale Singleton lock: {singleton}")
+        except Exception as e:
+            print(f"Lock cleanup partial failure: {e}")
 
         # Launch persistent context with ADVANCED HARDENING
         print(f"Launching hardened browser with session at {USER_DATA_DIR}...")
@@ -38,6 +43,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             headless=headless,
             user_agent=USER_AGENT,
             viewport={'width': 1024, 'height': 768},
+            permissions=['persistent-storage', 'notifications', 'background-sync'],
             # --- Anti-Detection: Locality matching ---
             timezone_id="America/Bogota",
             locale="es-419",
