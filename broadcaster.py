@@ -332,13 +332,31 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # stays hidden and Enter sends nothing. page.keyboard.type() fires real
             # keystroke events that React listens to, activating the Send button.
             print(f"Typing message to {name}...")
-            chat_box.click()  # Ensure focus
-            # Clear any residual text first
-            page.keyboard.press("Control+A")
+            
+            # click() can hit padding and blur. focus() is safer.
+            chat_box.focus()
+            
+            # Force caret into the text box via evaluate just in case it's a Lexical boundary
+            try:
+                chat_box.evaluate("el => { el.focus(); const selection = window.getSelection(); const range = document.createRange(); range.selectNodeContents(el); selection.removeAllRanges(); selection.addRange(range); }")
+            except: pass
+            
+            # Clear any residual text first using correct OS modifiers
+            page.keyboard.press("Control+a")
             page.keyboard.press("Backspace")
             time.sleep(0.3)
+            
+            # Re-ensure focus right before typing
+            chat_box.focus()
+            
             # Type with small delay so React state updates keep up on slow VM
-            page.keyboard.type(message_text, delay=30)
+            # We loop over text, or just use type/press_sequentially via the locator to ensure target
+            try:
+                chat_box.press_sequentially(message_text, delay=30)
+            except AttributeError:
+                # Fallback for older Playwright (chat_box.type is same as press_sequentially)
+                chat_box.type(message_text, delay=30)
+                
             time.sleep(1.5)  # Let React register the typed content
 
             # --- Robust Send Method (DEC-010 refined) ---
