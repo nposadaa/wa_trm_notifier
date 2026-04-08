@@ -116,3 +116,10 @@
 - **Decision**: Use `focus()` and `page.keyboard.type()` instead of `click()` and `fill()` for the search box.
 - **Rationale**: Mouse-click actions (`click()`) were timing out despite the element being "stable," indicating a desync between Playwright and the VM's graphics compositor. Keyboard events are processed by the browser's core logic and are more reliable on overloaded hardware.
 - **Status**: Active
+
+## DEC-017: Empirical Delivery Verification (Checkmark Audit)
+- **Date**: 2026-04-08
+- **Phase**: 4.4
+- **Decision**: Only report success if a "Sent" (`msg-check`) or "Delivered" (`msg-dblcheck`) icon is detected in the UI after sending.
+- **Rationale**: Low-resource VMs often report "Success" after a keystroke even if the UI hasn't committed the message yet. Waiting for the checkmark ensures the message has actually reached the WhatsApp server before closing the browser.
+- **Status**: Active

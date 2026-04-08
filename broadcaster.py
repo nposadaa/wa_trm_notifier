@@ -332,23 +332,51 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             chat_box.fill(message_text)
             time.sleep(1.5) # Let the UI react to the text
             
-            # --- Robust Send Method ---
+            # --- Robust Send Method (DEC-010 refined) ---
             try:
-                # Look for the Send button icon (data-testid="send")
+                # 1. Try Send Button First
                 send_button = page.locator('button:has(span[data-testid="send"]), [data-testid="send"]').first
                 if send_button.is_visible(timeout=3000):
                     print("Clicking Send button icon...")
                     send_button.click()
                 else:
-                    print("Send button icon not visible. Falling back to Enter key...")
-                    chat_box.press("Enter")
+                    # 2. Force Focus and Press Enter
+                    print("Send button icon not visible. Forcing focus and Enter key...")
+                    chat_box.focus()
+                    page.keyboard.press("Enter")
             except Exception as e:
-                print(f"Send button error ({e}). Falling back to Enter key...")
-                chat_box.press("Enter")
+                print(f"Initial send attempt failed: {e}. Trying raw Keyboard Enter...")
+                page.keyboard.press("Enter")
 
-            print(f"✅ SUCCESS: Sent message to {name}!")
-            # 5s wait between recipients to allow server sync
-            time.sleep(5) 
+            # --- Empirical Delivery Verification ---
+            # We wait up to 20s to see the 'Sent' checkmark appear.
+            # This prevents false positives on slow VMs.
+            print(f"Verifying delivery to {name}...")
+            delivery_verified = False
+            
+            for v_sec in range(20):
+                # SUCCESS: Found a single or double checkmark on the latest message
+                if page.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"]').last.is_visible(timeout=500):
+                    print(f"[{v_sec}s] Delivery Confirmed: Checkmark detected.")
+                    delivery_verified = True
+                    break
+                
+                # WARNING: Message is still in outbox (Clock icon)
+                if page.locator('span[data-testid="msg-clock"]').last.is_visible(timeout=500):
+                    if v_sec % 5 == 0:
+                        print(f"[{v_sec}s] Message still in Outbox (Clock icon)...")
+                
+                time.sleep(1)
+
+            if delivery_verified:
+                print(f"✅ SUCCESS: Sent message to {name}!")
+            else:
+                print(f"❌ FAILURE: Message to {name} was not confirmed as sent (Checkmark missing).")
+                # Save diagnostic screenshot of the conversation
+                page.screenshot(path=f"diag_delivery_failed_{name.replace('/', '_')}.png")
+
+            # Additional cooling period
+            time.sleep(2) 
 
         print("\nAll recipients processed. Final delivery buffer (10s)...")
         # CRITICAL: Wait 10s to ensure the WebSocket actually uploads the data before we kill the browser

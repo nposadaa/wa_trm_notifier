@@ -33,18 +33,18 @@ The **TRM Notifier** is an automated system designed to scrape the daily USD/COP
 ### Browser Automation (`broadcaster.py`)
 - **Purpose**: Automates WhatsApp Web to deliver messages.
 - **Location**: `broadcaster.py`
-- **Dependencies**: `playwright`, `playwright-stealth`.
-- **Features**: 
-    - Persistent session management via `whatsapp_session/` directory.
-    - QR code fallback (`qr.png`) for remote headless authentication.
-    - Human-like typing simulation to avoid anti-bot detection.
+- **Modern Logic**: 
+    - **Keyboard-First (DEC-016)**: Bypasses mouse click processing for search box interaction to solve VM lag desync.
+    - **Empirical Delivery (DEC-017)**: Verifies message checkmarks physically in the DOM before reporting success.
+    - **Shielded Env (DEC-011)**: Aggressive Chromium hardening (disabling 3D/GL) to prevent GPU stalls on e2-micro VMs.
+    - **Keyring Handling**: Uses `--password-store=basic` to solve Linux storage persistence denial.
 
 ## Data Flow
 
-1. **Trigger**: `main.py` is executed (locally or via cron).
+1. **Trigger**: `main.py` is executed (via `xvfb-run` on server).
 2. **Retrieval**: `scraper.py` fetches the TRM from `dolar-colombia.com`.
-3. **Format**: `main` formats the value into a predefined message string.
-4. **Broadcast**: `broadcaster.py` reads `recipients.json`, navigates to WhatsApp Web, searches for each contact, and types the message into the chat.
+3. **Format**: `main.py` formats the value into a predefined message string.
+4. **Broadcast**: `broadcaster.py` navigates to WhatsApp Web, confirms state (Splash vs Logged In), uses keyboard-only search to find recipients, and verifies successful delivery via checkmark detection.
 
 ## Integration Points
 
@@ -52,12 +52,12 @@ The **TRM Notifier** is an automated system designed to scrape the daily USD/COP
 |---------|------|---------|
 | `dolar-colombia.com` | Web Scraping | Source of daily TRM value. |
 | `web.whatsapp.com` | Browser Automation | Broadcast delivery channel. |
+| `xvfb` | Virtual Display | Handles graphical browser execution on headless GCP VM. |
 
 ## Technical Debt
 
-- [ ] **Fragile Selectors**: WhatsApp Web DOM changes frequently; selectors in `broadcaster.py` may require periodic updates.
 - [ ] **Testing**: Lack of unit or integration tests for the scraper and broadcaster.
-- [ ] **Session Sync**: The current manual `session.zip` transfer process to Cloud VMs is cumbersome.
+- [x] **Session Sync**: Resolved via documented local-to-cloud transfer and `SingletonLock` cleanup.
 - [ ] **Error Handling**: `scraper.py` suppresses some exceptions; needs more granular error reporting.
 
 ## Conventions
