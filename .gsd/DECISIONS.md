@@ -58,7 +58,7 @@
 - **Decision**: Use `fill()` to input search text, followed by an explicit `press("Enter")`.
 - **Rationale**: `fill()` is memory-efficient for the 1GB VM but doesn't always trigger the search UI. `Enter` forces the React state to update.
 - **Implementation**: Refined by **DEC-015** (Structural Locators).
-- **Status**: Active
+- **Status**: Partially superseded — search box still uses `keyboard.type()` (DEC-016), but **message composition `fill()` is fully replaced by `keyboard.type()` (DEC-018)**.
 
 ## DEC-009: Advanced Diagnostics (Console + Sidebar Audit)
 - **Date**: 2026-04-08
@@ -122,4 +122,13 @@
 - **Phase**: 4.4
 - **Decision**: Only report success if a "Sent" (`msg-check`) or "Delivered" (`msg-dblcheck`) icon is detected in the UI after sending.
 - **Rationale**: Low-resource VMs often report "Success" after a keystroke even if the UI hasn't committed the message yet. Waiting for the checkmark ensures the message has actually reached the WhatsApp server before closing the browser.
+- **Status**: Active
+
+## DEC-018: keyboard.type() for Message Composition (React Event Fix)
+- **Date**: 2026-04-08
+- **Phase**: 4.5
+- **Decision**: Replace `chat_box.fill(message_text)` with `page.keyboard.type(message_text, delay=30)` for composing and sending messages.
+- **Rationale**: WhatsApp Web's message input is a `contenteditable` div driven by React. Playwright's `.fill()` injects text directly into the DOM, bypassing React's synthetic event system — WhatsApp's internal state never registers the text, so the Send button stays hidden and Enter sends nothing. `page.keyboard.type()` fires real keystroke events that React listens to, activating the Send button correctly.
+- **Relation**: Extends **DEC-016** (Keyboard-First Interaction) from search to message composition. Supersedes `fill()` usage from **DEC-008** for the message send step.
+- **Evidence**: First live VM run (2026-04-08) — chat found, message typed, but Send button not visible and checkmark never detected. Root cause confirmed as React event bypass.
 - **Status**: Active
