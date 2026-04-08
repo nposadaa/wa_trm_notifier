@@ -106,14 +106,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             page.screenshot(path="error_page.png", full_page=True)
             context.close()
             return
-            
-        elif session_state != "LOGGED_IN":
-            print(f"\n--- SESSION TIMEOUT ({session_state}) ---")
-            print(f"Reached {MAX_INITIAL_WAIT}s without entering logged-in state.")
-            print("Saving diagnostic screenshot to 'error_page.png'...")
-            page.screenshot(path="error_page.png", full_page=True)
-            context.close()
-            return
 
         print("Session fully stabilized.")
 
