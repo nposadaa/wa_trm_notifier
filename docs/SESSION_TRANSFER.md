@@ -19,10 +19,18 @@ These steps will generate a fresh, cryptographically valid session token using y
    - *Windows (PowerShell)*: `Remove-Item -Recurse -Force whatsapp_session`
    - *Mac/Linux*: `rm -rf whatsapp_session`
 
-3. **Run the script locally in visual mode**:
-   ```bash
-   python main.py
-   ```
+3. **Activate your local virtual environment and run the script**:
+   Before running the script locally, ensure your Python environment is active so it has access to Playwright.
+   - *Windows (PowerShell)*:
+     ```bash
+     .\venv\Scripts\Activate.ps1
+     python main.py
+     ```
+   - *Mac/Linux*:
+     ```bash
+     source venv/bin/activate
+     python main.py
+     ```
    *A visible Chromium browser will open. Scan the QR code with your phone. Wait completely until your chats load and the "WhatsApp" interface is fully visible.*
 
 4. **Close cleanly**:
