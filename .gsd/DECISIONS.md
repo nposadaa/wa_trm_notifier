@@ -133,12 +133,13 @@
 - **Evidence**: First live VM run (2026-04-08) — chat found, message typed, but Send button not visible and checkmark never detected. Root cause confirmed as React event bypass.
 - **Status**: Active
 
-## DEC-019: Structure-First Lexical Input Strategy (Anti-Timeout)
+## DEC-019: Structure-First Lexical Input Strategy (Anti-Timeout & Anti-Focus Loss)
 - **Date**: 2026-04-08
 - **Phase**: 4.5
-- **Decision**: Replace `get_by_role("textbox", name="...")` with `#main div[contenteditable="true"]`, freeze it using `.element_handle()`, and send strings line-by-line using `page.keyboard.type` with `Shift+Enter` for newlines.
+- **Decision**: Replace `get_by_role("textbox")` with an atomic `page.wait_for_selector('#main div[contenteditable="true"]')` to prevent unmount race conditions. Then, inject text using the explicit `box_handle.type()` instead of `page.keyboard.type()`, keeping `Shift+Enter` for newlines.
 - **Rationale**: 
-  1. *Locator Timeouts*: WhatsApp's React-based Lexical editor dynamically changes `aria-label` properties the millisecond text is entered. Playwright's `press_sequentially` constantly re-evaluates the locator between keystrokes and crashes with a 30s `TimeoutError` when the label vanishes. `element_handle` freezes the DOM reference, bypassing actionability timeouts.
-  2. *Premature Sending*: Standard Playwright string typing interprets `\n` as `Enter`, triggering WhatsApp's native "Send" event halfway through multi-line messages (like the TRM breakdown). Manually shifting down for `Enter` preserves the line breaks without triggering submission.
+  1. *Locator Timeouts & Race Conditions*: WhatsApp's React-based Lexical editor dynamically changes properties during state transitions. Playwright's `press_sequentially` crashes when the label vanishes mid-type. Furthermore, using a two-step `locator.wait_for()` followed by `element_handle()` triggers race conditions on VMs if React unmounts the wrapper between steps. `page.wait_for_selector` locks onto the C++ pointer atomically.
+  2. *Focus Stealing*: Global `page.keyboard.type()` dispatches keys into the ether, which can miss the input box if a React render briefly steals focus on a slow VM. Using `box_handle.type()` explicitly targets the exact DOM node.
+  3. *Premature Sending*: Standard string typing interprets `\n` as `Enter`, triggering WhatsApp's "Send" event prematurely. Manually shifting down for `Enter` preserves the line breaks.
 - **Relation**: Replaces **DEC-018**'s `press_sequentially` standard and corrects localized query failure points.
 - **Status**: Active
