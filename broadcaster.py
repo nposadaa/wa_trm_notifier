@@ -203,64 +203,38 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             name = rec.get("name")
             print(f"--- Processing: {name} ---")
             
-            # 1. Focus the main search box
-            search_box = None
-            selectors_to_try = [
-                'div[data-testid="search-container"] input',
-                'div[contenteditable="true"][data-tab="3"]',
-                'input[data-tab="3"]',
-                'input[placeholder="Search or start a new chat"]',
-                'input[aria-label="Search or start a new chat"]',
-                'div[aria-label="Search input textbox"]'
-            ]
-
-            # --- METHOD A: Playwright Roles (Most Resilient) ---
+            # 1. Focus the main search box (Persistent Structural Locator)
+            # We avoid 'get_by_placeholder' because the placeholder vanishes from the DOM 
+            # as soon as we type, which breaks Playwright's lazy re-resolution.
+            search_box = page.locator('#side div[contenteditable="true"], div[data-tab="3"], div[aria-label="Search input textbox"]').first
+            
             try:
-                # Try finding by role/placeholder
-                search_box = page.get_by_placeholder("Search or start a new chat")
-                if not search_box.is_visible():
-                    search_box = page.get_by_label("Search input textbox")
-                
-                if search_box and search_box.is_visible(timeout=3000):
-                    print("Found search box via Role/Label.")
-                else:
-                    search_box = None
-            except:
-                search_box = None
+                if not search_box.is_visible(timeout=8000):
+                    print("CRITICAL: search box not found after 8s. Auditing DOM...")
+                    # Fallback check for any input
+                    search_box = page.locator('div[contenteditable="true"], input').first
+            except Exception as e:
+                print(f"Search box detection warning: {e}. Attempting brute force...")
+                search_box = page.locator('#side [contenteditable="true"]').first
+            
+            if not search_box:
+                 print("CRITICAL: Final search box locator failed.")
+                 continue
 
-            # --- METHOD B: Selector Fallbacks ---
-            if not search_box:
-                for selector in selectors_to_try:
-                    try:
-                        search_box = page.wait_for_selector(selector, state="visible", timeout=2000)
-                        if search_box:
-                            print(f"Found search box via selector: {selector}")
-                            break
-                    except Exception:
-                        continue
-                
-            # --- METHOD C: DOM AUDIT (If all else fails) ---
-            if not search_box:
-                print("DEBUG: All search selectors failed. Auditing DOM inputs...")
-                try:
-                    # Find any inputs or contenteditables that might be search boxes
-                    inputs = page.query_selector_all("input, div[contenteditable]")
-                    for i, inp in enumerate(inputs):
-                        placeholder = inp.get_attribute("placeholder") or "None"
-                        label = inp.get_attribute("aria-label") or "None"
-                        print(f"  Input {i}: Placeholder='{placeholder}', Label='{label}'")
-                except: pass
-                
-                print("CRITICAL: Main search box not found. The WhatsApp Web DOM has changed.")
-                continue
                 
             # Use hybrid trigger (DEC-008): fill() + Enter
-            print(f"Executing hybrid search for: {name}...")
-            search_box.click() # Ensure focus
-            search_box.fill("") # Clear previous
-            search_box.fill(name) # Instant paste (memory safe)
-            time.sleep(0.5)
-            search_box.press("Enter") # Wake up the React search engine
+            print(f"Executing search for: {name} (using stable locator)...")
+            try:
+                search_box.click() # Ensure focus
+                search_box.fill("") # Clear
+                # Short sleep to let the UI react to the clear
+                time.sleep(0.5)
+                search_box.fill(name) # Instant paste
+                time.sleep(0.8)
+                search_box.press("Enter") # Wake up the React engine
+            except Exception as e:
+                print(f"Search box interaction failed: {e}. Trying secondary enter...")
+                page.keyboard.press("Enter")
             
             # 2. Click the chat in the search results pane (Retry Loop)
             print(f"Auditing results for: {name}...")

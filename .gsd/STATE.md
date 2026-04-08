@@ -7,7 +7,7 @@
 ## Current Position
 - **Phase**: Phase 4 — Cloud Deployment (Verification)
 - **Task**: Final Broadcast Verification on VM
-- **Status**: Safe Stability Pivot Complete. Removed all resource filters and deprecated aggressive hardening (DEC-011, DEC-013). Ready for final VM verification.
+- **Status**: Persistent Locator Fix Complete. Fixed Playwright timeout by switching to structural CSS locators (DEC-015) that remain stable after typing. Ready for final VM verification.
 
 ## Completed This Session
 - **Handshake Bypassed**: Successfully implemented "Local-to-Cloud" session transfer (Linked locally, zipped, and uploaded).

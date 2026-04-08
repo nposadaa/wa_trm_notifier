@@ -14,19 +14,19 @@
 - **Phase**: 2
 - **Decision**: Use Meta Business Cloud API with template messages for initial delivery.
 - **Rationale**: Official API, reliable for 1-on-1 messaging.
-- **Status**: Deprecated (replaced by DEC-005)
+- **Status**: Deprecated (replaced by **DEC-005**)
 
 ## DEC-003: Playwright Pivot for Group Messaging
 - **Date**: 2026-04-06
 - **Phase**: 3.1
 - **Decision**: Use Playwright browser automation instead of Meta API for group messaging.
 - **Rationale**: Meta Cloud API does not support standard WhatsApp groups without extreme business verification.
-- **Status**: Active (evolved into DEC-005)
+- **Status**: Active (evolved into **DEC-005**)
 
 ## DEC-004: Persistent WhatsApp Session
 - **Date**: 2026-04-06
 - **Phase**: 3.2
-- **Decision**: Store Playwright browser session in ./whatsapp_session/ to avoid repeated QR scans.
+- **Decision**: Store Playwright browser session in `./whatsapp_session/` to avoid repeated QR scans.
 - **Rationale**: QR scan only needed once; session reused across runs.
 - **Status**: Active
 
@@ -34,58 +34,78 @@
 - **Date**: 2026-04-06
 - **Phase**: 3.3
 - **Decision**: Bypass Meta API completely. Scraper feeds formatted text directly to Playwright, which types and sends natively in each chat.
-- **Rationale**: Forwarding via context menus proved extremely fragile due to WhatsApp Web DOM changes. Direct typing is simpler, more robust, and eliminates the API dependency entirely.
-- **Alternatives Rejected**: Meta API + Playwright forwarding (too brittle), Meta API only (cant reach groups).
+- **Rationale**: Forwarding via context menus proved extremely fragile due to WhatsApp Web DOM changes. Direct typing is simpler and more robust.
 - **Status**: Active
 
 ## DEC-006: No Emojis in recipients.json
 - **Date**: 2026-04-06
 - **Phase**: 3.3
 - **Decision**: Use plain text names only in recipients.json.
-- **Rationale**: Emojis cause encoding issues in Playwright search - chat not found.
+- **Rationale**: Emojis caused encoding issues in Playwright search—chat not found.
 - **Status**: Active
 
-## DEC-008: Hybrid Search Trigger (fill + Enter)
+## DEC-007: Headless Mode Disabled
+- **Date**: 2026-04-06
+- **Phase**: 3.2
+- **Decision**: Run Playwright with `headless=False`.
+- **Rationale**: WhatsApp Web detects and blocks headless sessions. 
+- **Impact**: Requires a virtual display (XVFB) for server execution.
+- **Status**: Active
+
+## DEC-008: Hybrid Search Strategy (fill + Enter)
 - **Date**: 2026-04-08
 - **Phase**: 4.1
 - **Decision**: Use `fill()` to input search text, followed by an explicit `press("Enter")`.
-- **Rationale**: `fill()` is memory-efficient for the 1GB VM but doesn't always trigger the search UI. `Enter` forces the React state to update without the high CPU overhead of character-by-character `type()`.
+- **Rationale**: `fill()` is memory-efficient for the 1GB VM but doesn't always trigger the search UI. `Enter` forces the React state to update.
+- **Implementation**: Refined by **DEC-015** (Structural Locators).
 - **Status**: Active
 
 ## DEC-009: Advanced Diagnostics (Console + Sidebar Audit)
 - **Date**: 2026-04-08
 - **Phase**: 4.1
-- **Decision**: Implement real-time mirroring of browser console errors to VM stdout and automated sidebar text audits on failure.
-- **Rationale**: Debugging headless runs on remote VMs is difficult. Console logs and DOM dumps at the moment of failure provide immediate root-cause evidence.
+- **Decision**: Mirror browser console errors to VM stdout and log sidebar text audits on failure.
+- **Rationale**: Debugging remote headless runs without visual access requires deep "inner-browser" reporting.
+- **Status**: Active
+
+## DEC-010: Delivery Safety Buffer
+- **Date**: 2026-04-08
+- **Phase**: 4.1
+- **Decision**: Add a 10-second sleep after broadcast before closing context.
+- **Rationale**: Slow VMs often kill the browser process before the last message uploads via WebSockets.
 - **Status**: Active
 
 ## DEC-011: Deep Hardening (Rendering & 3D Disabling)
 - **Date**: 2026-04-08
 - **Phase**: 4.2
-- **Decision**: Disable all 3D APIs, WebGL, software rasterizer, and hardware canvas acceleration.
-- **Status**: Deprecated (replaced by DEC-014)
-- **Rationale**: Proved too aggressive; likely broke Service Worker rendering or triggered bot-detection.
+- **Decision**: Disable 3D APIs, WebGL, and hardware acceleration via flags.
+- **Status**: Deprecated (replaced by **DEC-014**)
+- **Rationale**: Too aggressive; suspected of breaking Service Worker rendering and causing `net::ERR_FAILED` loops.
 
 ## DEC-012: Pre-flight SingletonLock Cleanup
 - **Date**: 2026-04-08
 - **Phase**: 4.2
-- **Decision**: Programmatically remove `SingletonLock` from the user data directory before launch.
-- **Rationale**: Fixed the "storage bucket persistence denied" error caused by abnormal browser exits on the VM.
+- **Decision**: Programmatically remove `SingletonLock` from the session folder before launch.
+- **Rationale**: Prevents "storage bucket persistence denied" errors after abnormal browser exits on the VM.
 - **Status**: Active
 
 ## DEC-013: Aggressive Resource Caching Limits
 - **Date**: 2026-04-08
 - **Phase**: 4.2
-- **Decision**: Set disk and media cache sizes to 1 byte.
-- **Status**: Deprecated (replaced by DEC-014)
-- **Rationale**: Might have caused unnecessary overhead or network loops (net::ERR_FAILED) on slow VM.
+- **Decision**: Set disk/media cache sizes to 1 byte.
+- **Status**: Deprecated (replaced by **DEC-014**)
+- **Rationale**: Likely caused networking handles to exhaust while trying to bypass cache for critical app blobs.
 
 ## DEC-014: Safe Stability Pivot (Standard Configuration)
 - **Date**: 2026-04-08
 - **Phase**: 4.3
-- **Decision**: Remove all resource-blocking interceptors and revert to a standard Chromium flag set. Add a 5-second "Settling Window" post-login.
-- **Rationale**: The previous configuration (DEC-011/DEC-013) caused catastrophic network loops (`net::ERR_FAILED`) and browser hangs. Priority shifted to "session safety" over "memory optimization."
+- **Decision**: Remove all resource-blocking interceptors and revert to a standard Chromium flag set. 
+- **Rationale**: Proved the most stable path for the e2-micro VM; fixed infinite `net::ERR_FAILED` loops.
 - **Status**: Active
 
-
-
+## DEC-015: Persistent Search Locators (Structural CSS)
+- **Date**: 2026-04-08
+- **Phase**: 4.3
+- **Decision**: Use `#side div[contenteditable="true"]` instead of `get_by_placeholder`.
+- **Rationale**: Placeholders disappear after typing, making lazy locators invalid during the `Enter` press step. Structural CSS remains stable.
+- **Relation**: Fixes the implementation of **DEC-008**.
+- **Status**: Active
