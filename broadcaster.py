@@ -338,8 +338,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             lines = message_text.split('\n')
             for i, line in enumerate(lines):
                 if line:
-                    # Type chunks to ensure Playwright doesn't get interrupted by React
-                    page.keyboard.type(line, delay=10)
+                    # Type chunks targeting the exact DOM element pointer to prevent focus stealing
+                    box_handle.type(line, delay=10)
                 if i < len(lines) - 1:
                     page.keyboard.down("Shift")
                     page.keyboard.press("Enter")
@@ -358,7 +358,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 else:
                     # 2. Force Focus and Press Enter
                     print("Send button icon not visible. Forcing focus and Enter key...")
-                    chat_box.focus()
+                    box_handle.focus()
                     page.keyboard.press("Enter")
             except Exception as e:
                 print(f"Initial send attempt failed: {e}. Trying raw Keyboard Enter...")
