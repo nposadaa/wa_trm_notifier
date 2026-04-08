@@ -18,7 +18,9 @@
 
 **Planning Lock**: No implementation code until SPEC.md contains "Status: FINALIZED".
 
----
+### Architectural Consciousness Clause
+1. **Synchronized Documentation**: You may NOT adjust the architecture of the application without synchronously documenting the change in `DECISIONS.md`. 
+2. **Impact Awareness**: Before modifying any script that shares execution environments (e.g. Cron vs Local interactive), explicitly evaluate how the change affects *both* environments before acting. Avoid impulsive patches (like hard `sys.exit`s) that break secondary workflows.
 
 ## Proof Requirements
 

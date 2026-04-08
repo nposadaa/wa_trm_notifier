@@ -6,38 +6,41 @@
 
 The **TRM Notifier** is an automated system designed to scrape the daily USD/COP exchange rate (TRM) and broadcast it to a list of WhatsApp contacts and groups. It uses browser automation to bypass API limitations and ensure reliable delivery to group chats.
 
-```
+```text
 ┌─────────────────────────────────────────┐
-│        [main.py] Entry Point            │
-├─────────────────────────────────────────┤
-│    [scraper.py] Scraper Logic           │
-├─────────────────────────────────────────┤
-│  [broadcaster.py] Browser Automation    │
+│        [main.py] CLI Entry Point        │──────┐
+├─────────────────────────────────────────┤      │
+│     [scraper.py] TRM Scraper Logic      │      v
+├─────────────────────────────────────────┤   ┌────────────────────────────────┐
+│  [broadcaster.py] Headless Automation   │<──│ [browser_config.py] Playwright │
+├─────────────────────────────────────────┤   │    Shared Hardening Config     │
+│       [auth.py] Local UI Session        │──>└────────────────────────────────┘      
 └─────────────────────────────────────────┘
 ```
 
 ## Components
 
 ### Main Orchestrator (`main.py`)
-- **Purpose**: Coordinates the scraping and broadcasting lifecycle.
-- **Functionality**:
-    - Handles CLI arguments (`--headless`, `--discovery`).
-    - Configures project-wide logging (stdout + file).
-    - Formats the TRM data into a readable broadcast string.
+- **Purpose**: Coordinates the scraping and broadcasting lifecycle for chron/production execution.
+- **Functionality**: Rejects interactive flows. Invokes TRM Scraper and passes strings to Playwright.
 
 ### Scraper Logic (`scraper.py`)
-- **Purpose**: Retrieves the exchange rate from external sources.
-- **Location**: `scraper.py`
-- **Dependencies**: `requests`, `beautifulsoup4`, `lxml`.
+- **Purpose**: Retrieves the exchange rate from external sources (`dolar-colombia.com`).
 
 ### Browser Automation (`broadcaster.py`)
-- **Purpose**: Automates WhatsApp Web to deliver messages.
-- **Location**: `broadcaster.py`
+- **Purpose**: Automates WhatsApp Web to deliver messages natively to groups.
+- **Role**: Strictly headless execution engine. Immediately throws exception on unauthorized/QR states.
 - **Modern Logic**: 
     - **Keyboard-First (DEC-016)**: Bypasses mouse click processing for search box interaction to solve VM lag desync.
     - **Empirical Delivery (DEC-017)**: Verifies message checkmarks physically in the DOM before reporting success.
-    - **Shielded Env (DEC-011)**: Aggressive Chromium hardening (disabling 3D/GL) to prevent GPU stalls on e2-micro VMs.
-    - **Keyring Handling**: Uses `--password-store=basic` to solve Linux storage persistence denial.
+
+### Shared Browser Config (`browser_config.py`)
+- **Purpose**: A universal library preventing divergence between local interactive sessions and headless cloud sessions.
+- **Role**: Contains aggressive Chromium hardening (DEC-011, DEC-014) and LevelDB lock sweeps.
+
+### Local Session Authenticator (`auth.py`)
+- **Purpose**: A dedicated CLI tool for capturing fresh QR-code tokens.
+- **Role**: UI-only. Waives all timeouts to wait for human phone scans, preventing premature exits (DEC-020).
 
 ## Data Flow
 

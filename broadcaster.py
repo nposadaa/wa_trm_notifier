@@ -2,6 +2,7 @@ import os
 import time
 import json
 from playwright.sync_api import sync_playwright
+from browser_config import get_browser_context
 from dotenv import load_dotenv
 
 # Load env variables
@@ -19,56 +20,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
     Otherwise, it loops through recipients, finds their chat, and sends `message_text`.
     """
     with sync_playwright() as p:
-        # Define a modern User Agent to prevent the "Unsupported Browser" error
-        USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-
-        # --- Pre-flight: Clear Browser Locks ---
-        # This solves the "persistence denied" error on VMs after abnormal exits (pkill)
-        # Chromium leaves LevelDB LOCK files that deadlock WhatsApp's IndexedDB on reboot.
-        import glob
-        try:
-            for lock in glob.glob(os.path.join(USER_DATA_DIR, "**", "LOCK"), recursive=True):
-                os.remove(lock)
-                print(f"Cleaned up stale LevelDB lock: {lock}")
-            for singleton in glob.glob(os.path.join(USER_DATA_DIR, "Singleton*")):
-                os.remove(singleton)
-                print(f"Cleaned up stale Singleton lock: {singleton}")
-        except Exception as e:
-            print(f"Lock cleanup partial failure: {e}")
-
-        # Launch persistent context with ADVANCED HARDENING
-        print(f"Launching hardened browser with session at {USER_DATA_DIR}...")
-        context = p.chromium.launch_persistent_context(
-            user_data_dir=USER_DATA_DIR,
-            headless=headless,
-            user_agent=USER_AGENT,
-            viewport={'width': 1024, 'height': 768},
-            permissions=['notifications', 'background-sync'],
-            # --- Anti-Detection: Locality matching ---
-            timezone_id="America/Bogota",
-            locale="es-419",
-            # --- Memory & OOM flags ---
-            args=[
-                "--start-maximized",
-                "--disable-dev-shm-usage",
-                "--no-sandbox",
-                "--disable-gpu",
-                "--disable-3d-apis",
-                "--disable-webgl",
-                "--disable-software-rasterizer",
-                "--no-zygote",
-                "--js-flags='--max-old-space-size=512'", 
-                "--disable-setuid-sandbox",
-                "--no-first-run",
-                "--disable-background-networking",
-                "--disable-web-security",
-                "--password-store=basic",
-                "--use-mock-keychain",
-                "--disable-features=IsolateOrigins,site-per-process",
-                "--unlimited-storage"
-            ]
-        )
-        
+        # --- Browser Initialization ---
+        context = get_browser_context(p, headless=headless)
         page = context.new_page()
         
         # --- HARDENING & STEALTH: Manual Navigator Overrides ---
@@ -126,20 +79,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             
             # 4. QR CODE MARKERS (Login Required)
             if page.locator('canvas, [data-testid="qrcode-container"]').first.is_visible():
-                if session_state != "QR_REQUIRED":
-                    print("⚡ QR CODE IS LIVE!")
-                    try:
-                        time.sleep(2)
-                        page.screenshot(path="qr.png")
-                        print("!!! SCAN THE BROWSER QR CODE NOW !!!")
-                    except Exception as e: pass
-                    session_state = "QR_REQUIRED"
-                
-                # If we are headless on the cloud, exit immediately to save CPU.
-                # If we are local (headless=False), DO NOT BREAK. Let the loop wait for the user!
-                if headless:
-                    print("Running headless: Cannot wait for manual scan. Exiting early.")
-                    break
+                context.close()
+                raise RuntimeError("Session Invalidated! (QR Required). Please run `python auth.py` locally and transfer the new session.zip.")
             
             # 5. SPLASH SCREEN (VM Lag or Initialization)
             # If we see 'End-to-end encrypted' or 'WhatsApp' title, we are likely on splash
@@ -158,9 +99,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         if session_state == "LOGGED_IN":
             print("Session fully stabilized. Waiting 5s for React UI to settle...")
             time.sleep(5)
-        if session_state == "QR_REQUIRED":
-            print("\n--- LOGIN REQUIRED ---")
-            print(f"Current Page: {page.title()} | URL: {page.url}")
+        else:
+            print(f"\n--- SESSION TIMEOUT ({session_state}) ---")
+            print(f"Reached {MAX_INITIAL_WAIT}s without entering logged-in state.")
+            print("Saving diagnostic screenshot to 'error_page.png'...")
+            page.screenshot(path="error_page.png", full_page=True)
             context.close()
             return
             

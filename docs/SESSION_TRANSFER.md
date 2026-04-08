@@ -19,22 +19,22 @@ These steps will generate a fresh, cryptographically valid session token using y
    - *Windows (PowerShell)*: `Remove-Item -Recurse -Force whatsapp_session`
    - *Mac/Linux*: `rm -rf whatsapp_session`
 
-3. **Activate your local virtual environment and run the script**:
+3. **Activate your local virtual environment and run the authenticator**:
    Before running the script locally, ensure your Python environment is active so it has access to Playwright.
    - *Windows (PowerShell)*:
      ```bash
      .\venv\Scripts\Activate.ps1
-     python main.py
+     python auth.py
      ```
    - *Mac/Linux*:
      ```bash
      source venv/bin/activate
-     python main.py
+     python auth.py
      ```
-   *A visible Chromium browser will open. Scan the QR code with your phone. Wait completely until your chats load and the "WhatsApp" interface is fully visible.*
+   *A visible Chromium browser will open. Scan the QR code with your phone. Wait completely until it prints 'Session directory is safe to zip and transfer!'.*
 
 4. **Close cleanly**:
-   Once you see the green "Task completed successfully" in your terminal, the browser will close automatically. Do **not** forcefully close the terminal early, as this corrupts the SQLite databases.
+   Once `auth.py` successfully validates the synchronization, it will automatically close the browser cleanly to preserve database integrity. Do **not** forcefully close the terminal early, as this corrupts the SQLite databases.
 
 5. **Zip the new session folder**:
    - *Windows (PowerShell)*: `Compress-Archive -Path "whatsapp_session" -DestinationPath "session.zip" -Force`

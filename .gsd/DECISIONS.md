@@ -143,3 +143,12 @@
   3. *Premature Sending*: Standard string typing interprets `\n` as `Enter`, triggering WhatsApp's "Send" event prematurely. Manually shifting down for `Enter` preserves the line breaks.
 - **Relation**: Replaces **DEC-018**'s `press_sequentially` standard and corrects localized query failure points.
 - **Status**: Active
+## DEC-020: Architecture Split (Authentication vs Production Execution)
+- **Date**: 2026-04-08
+- **Phase**: 4.5
+- **Decision**: Decouple the interactive `QR_REQUIRED` polling flow from `broadcaster.py` into a new, dedicated `auth.py` script. Remove `sys.exit` crutches from production workflows and replace them with hard state invalidation exceptions. Share browser invariants via `browser_config.py`.
+- **Rationale**: 
+  1. *Resource Guarding*: Production runs on cloud cron jobs should absolutely not idle for minutes waiting for QR scans that will never come.
+  2. *UX Stability*: Running locally requires the opposite—waiving all wait limits so the user can easily pull out their phone and scan without the script mysteriously killing the connection mid-sync.
+- **Relation**: Stabilizes session token generation (Fixes the 400 Bad Request / aquire-persistent-storage-denied crashes related to session invalidation via `pkill`).
+- **Status**: Active
