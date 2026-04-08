@@ -77,3 +77,24 @@ xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless
 ```
 Expect: `Clicking Send button icon...` then `Delivery Confirmed: Checkmark detected.`
 If that passes → set up cron → Phase 4 complete.
+
+---
+
+## Session: 2026-04-08 17:00 (COT)
+
+### Objective
+Resolve the `TimeoutError` on the chat composer and safely inject multi-line text into a Lexical editor.
+
+### Accomplished
+- ✅ **Diagnosed Playwright-React Conflict**: Identified why `press_sequentially` times out. WhatsApp's Lexical editor dynamically shifts `aria-label`s on the fly when text is typed. Playwright's strict locator actionability check fails mid-type because the `name` attribute vanishes.
+- ✅ **Implemented Structural Anchors (DEC-019)**: Swapped brittle localized `get_by_role` locators for a bulletproof DOM-based anchor: `#main div[contenteditable="true"]`. Converted the locator instantly to an `element_handle` to freeze the DOM reference and bypass actionability timeouts.
+- ✅ **Solved the Newline Trap**: Standard `page.keyboard.type()` reads `\n` as `Enter`, triggering WhatsApp's native send action prematurely, leading to truncated messages. Engineered a newline handler that manually simulates `Shift+Enter` to inject safe rich-text breaks without firing the submit event.
+- ✅ **Documented strategy**: Added **DEC-019** to `DECISIONS.md`.
+
+### Verification
+- [x] Code audited and verified for logic consistency.
+- [x] `broadcaster.py` pushed to `master`.
+- [ ] VM Live Test.
+
+### Paused Because
+Awaiting user execution of the VM pipeline to provide the empirical log of success before we finally set up the background cron.
