@@ -126,15 +126,27 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             
             # 4. QR CODE MARKERS (Login Required)
             if page.locator('canvas, [data-testid="qrcode-container"]').first.is_visible():
-                session_state = "QR_REQUIRED"
-                break
+                if session_state != "QR_REQUIRED":
+                    print("⚡ QR CODE IS LIVE!")
+                    try:
+                        time.sleep(2)
+                        page.screenshot(path="qr.png")
+                        print("!!! SCAN THE BROWSER QR CODE NOW !!!")
+                    except Exception as e: pass
+                    session_state = "QR_REQUIRED"
+                
+                # If we are headless on the cloud, exit immediately to save CPU.
+                # If we are local (headless=False), DO NOT BREAK. Let the loop wait for the user!
+                if headless:
+                    print("Running headless: Cannot wait for manual scan. Exiting early.")
+                    break
             
             # 5. SPLASH SCREEN (VM Lag or Initialization)
             # If we see 'End-to-end encrypted' or 'WhatsApp' title, we are likely on splash
             try:
                 screen_content = page.inner_text("body")[:1000]
                 if "End-to-end encrypted" in screen_content or "WhatsApp" in screen_content:
-                    if session_state != "SPLASH":
+                    if session_state != "SPLASH" and session_state != "QR_REQUIRED":
                         print(f"[{elapsed}s] Splash screen detected (Logo/Encryption splash). Waiting for JS to render...")
                         session_state = "SPLASH"
             except: pass
@@ -149,18 +161,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         if session_state == "QR_REQUIRED":
             print("\n--- LOGIN REQUIRED ---")
             print(f"Current Page: {page.title()} | URL: {page.url}")
-            
-            print("⚡ QR CODE IS LIVE! Saving immediately...")
-            try:
-                # Give it a tiny bit to breathe
-                time.sleep(2)
-                qr_path = "qr.png"
-                page.screenshot(path=qr_path)
-                print(f"!!! DOWNLOAD AND SCAN {qr_path} NOW !!!")
-            except Exception as e:
-                print(f"Failed to save QR screenshot: {e}")
-                page.screenshot(path="error_page.png", full_page=True)
-            
             context.close()
             return
             
