@@ -298,9 +298,13 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # we target the contenteditable div in the main window.
             box_handle = None
             try:
-                chat_box_locator = page.locator('#main div[contenteditable="true"], footer div[contenteditable="true"]').first
-                chat_box_locator.wait_for(state="visible", timeout=10000)
-                box_handle = chat_box_locator.element_handle(timeout=2000)
+                # We use page.wait_for_selector to atomically wait for visibility AND grab the handle in one step.
+                # This prevents React from unmounting the element between wait_for() and element_handle()
+                box_handle = page.wait_for_selector(
+                    '#main div[contenteditable="true"], footer div[contenteditable="true"]', 
+                    state="visible", 
+                    timeout=15000
+                )
                 print("Found chat box successfully.")
             except Exception as e:
                 print(f"Could not find the chat input box for {name}: {e}")
