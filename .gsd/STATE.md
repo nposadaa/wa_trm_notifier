@@ -2,50 +2,50 @@
 
 > **Current Phase**: Phase 4 — Cloud Deployment
 > **Last Update**: 2026-04-09
-> **Status**: Active (resumed 2026-04-09 17:06 COT)
+> **Status**: Paused at 18:09 COT
 
 ## Current Position
 - **Phase**: Phase 4 — Cloud Deployment (Stabilization & Documentation)
-- **Task**: Final Verification & Documentation Alignment
-- **Status**: Paused at 2026-04-09 17:05 COT. Documentation updated for PowerShell.
+- **Task**: Initial WhatsApp Web Authentication & E2E Decompression
+- **Status**: Paused at 2026-04-09 18:09 COT. Awaiting 30+ minute sync completion on VM.
 
 ## Last Session Summary
-- Analyzed and updated `docs/SESSION_TRANSFER.md` to support local PowerShell environments.
-- Confirmed the correct `gcloud compute scp` syntax for Windows PowerShell users.
-- Verification: User successfully downloaded `qr.png` using the updated command.
+- Diagnosed "Couldn't link device" error caused by WhatsApp rotating the QR every 20 seconds; fixed `auth.py` to continuously save fresh QR codes.
+- Diagnosed session drop logs; found the 10-minute maximum runtime in `auth.py` was too short for the e2-micro VM to decrypt E2E chat history keys.
+- Raised synchronization wait timeout inside `auth.py` to 40 minutes and instructed user to wipe corrupted `whatsapp_session` for a full clean run.
 
 ## In-Progress Work
-- Fix for `auth.py` (websocket disconnection) pushed to `master`.
-- Files modified: `docs/SESSION_TRANSFER.md`, `auth.py` (from earlier today).
-- Tests status: `auth.py` logic updated; awaiting final run on VM.
+- Execution of `xvfb-run --server-args="-screen 0 1024x768x24" python3 auth.py --headless` on VM.
+- Currently syncing. If it works, session state will transition to "LOGGED_IN".
 
 ## Blockers
-- None. Pausing for session handoff.
+- Hardware limits of GCP e2-micro VM drastically throttles chat-history decryption time.
 
 ## Context Dump
 
 ### Decisions Made
-- **Local Environment Mapping**: Explicitly mapping documentation to PowerShell since the user's primary local terminal is Windows PS, not Bash.
-- **Session Auth**: `auth.py` now waits for `#pane-side` to ensure E2E encryption key exchange finishes before the process exits.
+- **Extended Timeouts**: Replaced standard 10-minute session initialization max loops with 40-minute loops to cater exclusively to GCP e2-micro constraints.
+- **Session Purges**: Valid partial syncs are immediately corrupted if playwright drops mid-sync. Implemented a strict rule that if sync drops, the entire `whatsapp_session` block must be explicitly deleted before attempting a new QR scan.
 
 ### Current Hypothesis
-The improved `auth.py` loop will eliminate the "Check your phone's internet" error by keeping the connection open during the critical encryption sync phase.
+Because the timeout is now correctly aligned with the slow web-assembly execution time on 1vCPU VMs, `auth.py` will patiently wait and successfully conclude the authentication handshake without interruption. Verification is pending.
 
 ### Exact Start Sequence for Next Session
-```powershell
-# On Local Machine (PowerShell)
-gcloud compute scp nposadaa111@trm-notifier:/home/nposadaa111/wa_trm_notifier/qr.png .
-
+If the sync finished perfectly (`✅ Session successfully synchronized!`):
+```bash
 # On GCP VM
 cd ~/wa_trm_notifier
-git pull
-pkill -f Xvfb || true; pkill -f chromium || true
-# Followed by:
+xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless
+```
+
+If the sync drops again (highly unlikely unless manually stopped):
+```bash
+# On GCP VM
+rm -rf whatsapp_session
 xvfb-run --server-args="-screen 0 1024x768x24" python3 auth.py --headless
 ```
 
 ## Next Steps
-1. User scans the `qr.png` downloaded to their local machine.
-2. Verify that `auth.py` reaches the "Session fully stabilized" state on the VM.
-3. Run `main.py` on the VM to confirm TRM broadcast delivery.
-4. Finalize automation with CRON and close Phase 4.
+1. Wait for `auth.py` to gracefully exit with logging confirmation.
+2. Run `main.py --headless` in the virtual framebuffer environment to empirically verify TRM forwarding.
+3. Configure local cronjob for full autonomy and conclude Phase 4.

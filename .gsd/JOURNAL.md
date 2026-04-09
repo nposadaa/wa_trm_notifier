@@ -1,5 +1,27 @@
 # JOURNAL.md — Project Log
 
+## Session: 2026-04-09 18:09 (COT)
+
+### Objective
+Diagnose the early timeout drops on `auth.py` and stabilize the QR code scan pipeline.
+
+### Accomplished
+- ✅ **QR Code Live Refresh**: Fixed `auth.py` to overwrite `qr.png` every 5 seconds to bypass WhatsApp's native 20-second QR token rotation preventing user scans.
+- ✅ **Timeout Extension**: Replaced 10-minute maximum runtime loop with a 40-minute loop so the slow Google Cloud e2-micro VM has ample time to decrypt WhatsApp E2E WebAssembly chunks without prematurely dropping the session container.
+- ✅ **GSD Education**: Instructed user on creating a fully personalized Git repository fork of the GSD Agent Framework equipped with `caveman` and `mempalace` skills via automated submodule inclusion directly hooked to their `/install` pipeline.
+
+### Verification
+- [x] Tested auth.py with real VM, and confirmed the new timeouts and QR generations perfectly aligned with Playwright output constraints.
+- [ ] Verify `main.py` succeeds in deploying the daily TRM post after `auth.py` terminates gracefully.
+
+### Paused Because
+User requested pause `/pause` while the VM natively processes the 30-minute sync to avoid hitting agent token boundaries.
+
+### Handoff Notes
+We are merely waiting for `auth.py` to say "✅ Session successfully synchronized!" Next session immediately progresses directly to running the `main.py --headless` via `xvfb-run`. A clean `whatsapp_session` has successfully logged in and is validating keys now.
+
+---
+
 ## Session: 2026-04-09 17:05 (COT)
 
 ### Objective
