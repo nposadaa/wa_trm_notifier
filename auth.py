@@ -1,4 +1,5 @@
 import time
+import os
 import argparse
 from playwright.sync_api import sync_playwright
 from browser_config import clean_browser_locks, get_browser_context, apply_stealth_overrides
@@ -46,17 +47,18 @@ def main():
                 if session_state != "QR_REQUIRED":
                     print("\n⚡ QR CODE IS LIVE!")
                     if args.headless:
-                        try:
-                            # Let it render fully before capturing
-                            time.sleep(2)
-                            page.screenshot(path="qr.png")
-                            print("!!! qr.png HAS BEEN SAVED TO VM. PLEASE DOWNLOAD IT NOW TO SCAN !!!")
-                        except Exception as e:
-                            print(f"Failed to capture QR code: {e}")
+                        print("!!! qr.png IS BEING UPDATED. PLEASE DOWNLOAD IT NOW TO SCAN !!!")
                     else:
                         print("!!! SCAN WITH YOUR PHONE NOW !!!")
                     print("This script will poll for up to 10 minutes until successfully logged in.")
                     session_state = "QR_REQUIRED"
+                
+                if args.headless:
+                    try:
+                        # Continuously update the screenshot because WhatsApp rotates the QR every 20s
+                        page.screenshot(path="qr.png")
+                    except Exception as e:
+                        pass
             
             time.sleep(5)
             elapsed += 5
@@ -64,6 +66,12 @@ def main():
         if session_state == "LOGGED_IN":
             print("\n✅ Session successfully synchronized!")
             print("To ensure keys are safely written to DB, waiting 10 seconds before closing...")
+            if os.path.exists("qr.png"):
+                try:
+                    os.remove("qr.png")
+                    print("Local qr.png deleted.")
+                except Exception as e:
+                    pass
             time.sleep(10)
         else:
             print("\n❌ Timeout (10m) waiting for successful login.")
