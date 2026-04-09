@@ -29,15 +29,15 @@ def main():
         session_state = "UNKNOWN"
         elapsed = 0
         
-        while elapsed < 600:  # 10 minutes max wait for humans
+        while elapsed < 2400:  # 40 minutes max wait for humans
             if page.locator('#pane-side, [data-testid="chat-list-search-filtered"]').first.is_visible():
                 session_state = "LOGGED_IN"
                 break
                 
             if page.get_by_text("Loading your chats").or_(page.get_by_text("Cargando tus chats")).first.is_visible():
-                print(f"\n[{elapsed}s] Syncing detected... waiting up to 5 minutes for E2E keys to download.")
+                print(f"\n[{elapsed}s] Syncing detected... waiting up to 30 minutes for E2E keys to download on slow hardware.")
                 try:
-                    page.wait_for_selector('#pane-side, [data-testid="chat-list-search-filtered"]', timeout=300000)
+                    page.wait_for_selector('#pane-side, [data-testid="chat-list-search-filtered"]', timeout=1800000)
                     session_state = "LOGGED_IN"
                     break
                 except Exception:
@@ -74,7 +74,7 @@ def main():
                     pass
             time.sleep(10)
         else:
-            print("\n❌ Timeout (10m) waiting for successful login.")
+            print("\n❌ Timeout (40m) waiting for successful login.")
             
         print("Closing browser cleanly...")
         context.close()
