@@ -2,59 +2,50 @@
 
 > **Current Phase**: Phase 4 — Cloud Deployment
 > **Last Update**: 2026-04-09
-> **Status**: Paused at 09:42 COT
+> **Status**: Paused at 17:05 COT
 
 ## Current Position
-- **Phase**: Phase 4 — Cloud Deployment (Stabilization & Scheduling)
-- **Task**: Final production run of the unified headless broadcaster.
-- **Status**: Paused at 09:42 COT
+- **Phase**: Phase 4 — Cloud Deployment (Stabilization & Documentation)
+- **Task**: Final Verification & Documentation Alignment
+- **Status**: Paused at 2026-04-09 17:05 COT. Documentation updated for PowerShell.
 
 ## Last Session Summary
-- Analyzed the "Couldn't log in. Check your phone's internet" error.
-- Found that `auth.py` was breaking out of the loop and closing the websocket connection identically upon encountering the "Loading your chats" sequence, literally severing the E2E encryption key exchange midway through.
-- Pushed an update (`a56dd2a`) to `auth.py` to wait up to 5 minutes after "Loading your chats" for `#pane-side` to appear, ensuring E2E key exchange completes without severing the websocket connection.
+- Analyzed and updated `docs/SESSION_TRANSFER.md` to support local PowerShell environments.
+- Confirmed the correct `gcloud compute scp` syntax for Windows PowerShell users.
+- Verification: User successfully downloaded `qr.png` using the updated command.
 
 ## In-Progress Work
-- Fix pushed to `master`. Awaiting VM execution.
-- Files modified: `auth.py`
-- Tests status: Not run on VM yet.
+- Fix for `auth.py` (websocket disconnection) pushed to `master`.
+- Files modified: `docs/SESSION_TRANSFER.md`, `auth.py` (from earlier today).
+- Tests status: `auth.py` logic updated; awaiting final run on VM.
 
 ## Blockers
-- None. Time constraint (User needed to leave).
+- None. Pausing for session handoff.
 
 ## Context Dump
 
 ### Decisions Made
-- Replaced premature `context.close()` in `auth.py` with an explicit `wait_for_selector('#pane-side')` to fix mid-sync disconnection issue.
+- **Local Environment Mapping**: Explicitly mapping documentation to PowerShell since the user's primary local terminal is Windows PS, not Bash.
+- **Session Auth**: `auth.py` now waits for `#pane-side` to ensure E2E encryption key exchange finishes before the process exits.
 
 ### Current Hypothesis
-The phone threw an internet error because `auth.py` closed the browser exactly when the WhatsApp Web client was actively receiving encryption keys via the websocket during the "Loading your chats" spinner timeframe. Now that `auth.py` waits correctly for `#pane-side`, the handshake will naturally complete.
+The improved `auth.py` loop will eliminate the "Check your phone's internet" error by keeping the connection open during the critical encryption sync phase.
 
 ### Exact Start Sequence for Next Session
-```bash
-# On GCP VM
-
-cd ~/wa_trm_notifier
-git pull
-
-# 1. Clean the environment and delete the broken half-sync
-pkill -f Xvfb || true; pkill -f chromium || true
-rm -rf whatsapp_session
-rm qr.png
-
-# 2. Rerun the authenticator natively
-xvfb-run --server-args="-screen 0 1024x768x24" python3 auth.py --headless
-
-# On Local Machine Workspace, pull and scan QR:
+```powershell
+# On Local Machine (PowerShell)
 gcloud compute scp nposadaa111@trm-notifier:/home/nposadaa111/wa_trm_notifier/qr.png .
 
-# After scan is complete and script reaches 'Session fully stabilized...'
-# On GCP VM, run the worker
-xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless
+# On GCP VM
+cd ~/wa_trm_notifier
+git pull
+pkill -f Xvfb || true; pkill -f chromium || true
+# Followed by:
+xvfb-run --server-args="-screen 0 1024x768x24" python3 auth.py --headless
 ```
 
 ## Next Steps
-1. Execute the Exact Start Sequence above to pull the latest `auth.py` and run a fresh session sync.
-2. Scan the QR code, and verify that the script correctly waits out the "Loading your chats" sequence.
-3. Run `main.py` to verify delivery.
-4. `/complete-milestone` and finish Phase 4.
+1. User scans the `qr.png` downloaded to their local machine.
+2. Verify that `auth.py` reaches the "Session fully stabilized" state on the VM.
+3. Run `main.py` on the VM to confirm TRM broadcast delivery.
+4. Finalize automation with CRON and close Phase 4.

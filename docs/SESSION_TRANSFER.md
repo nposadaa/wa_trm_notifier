@@ -31,9 +31,10 @@ xvfb-run --server-args="-screen 0 1024x768x24" python3 auth.py --headless
 *The terminal will output: `!!! qr.png HAS BEEN SAVED TO VM. PLEASE DOWNLOAD IT NOW TO SCAN !!!` and pause.*
 
 ### 2. Download the QR Code 
-**Open a SECOND terminal window on your local Windows laptop** (do not close the SSH one) and use `gcloud` to securely pull the `qr.png` file from the VM to your laptop:
+**On your local Windows computer**, open a **PowerShell** window (do not close the SSH terminal) and use `gcloud` to securely pull the `qr.png` file from the VM to your machine:
 
-```bash
+```powershell
+# Run this on your local Windows PowerShell:
 gcloud compute scp nposadaa111@trm-notifier:/home/nposadaa111/wa_trm_notifier/qr.png .
 ```
 
