@@ -30,6 +30,12 @@ def main():
         elapsed = 0
         
         while elapsed < 600:  # 10 minutes max wait for humans
+            if args.headless:
+                try:
+                    page.screenshot(path="debug.png")
+                except Exception:
+                    pass
+
             if page.locator('#pane-side, [data-testid="chat-list-search-filtered"]').first.is_visible():
                 session_state = "LOGGED_IN"
                 break
