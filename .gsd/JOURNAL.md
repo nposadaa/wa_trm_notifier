@@ -16,10 +16,14 @@ Diagnose and completely resolve the fatal "400 Bad Request" and "Storage Persist
 ### Verification
 - [x] Tested headless `auth.py` natively on GCP via `xvfb-run`.
 - [x] Secured `qr.png` locally via SCP and successfully tied natively-encrypted credentials into the server DB.
+- [x] Traced 400() token drop to Javascript Fingerprint Drift and centralized it into `browser_config.py`.
 - [ ] Final `main.py` worker execution.
 
 ### Paused Because
-Awaiting final test from the user on the VM before officially locking in Phase 4.
+Session end explicitly triggered via `/pause` workflow. Token fingerprint unification codebase is pushed and clean. 
+
+### Handoff Notes
+Next session requires wiping the drifted token, scanning one last headless `auth.py` QR code, and proving `main.py` execution. Start explicitly with `STATE.md` steps.
 
 ---
 
