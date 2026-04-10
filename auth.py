@@ -65,14 +65,27 @@ def main():
             
         if session_state == "LOGGED_IN":
             print("\n✅ Session successfully synchronized!")
-            print("To ensure keys are safely written to DB, waiting 10 seconds before closing...")
+            
             if os.path.exists("qr.png"):
                 try:
                     os.remove("qr.png")
                     print("Local qr.png deleted.")
                 except Exception as e:
                     pass
-            time.sleep(10)
+            
+            if args.headless:
+                print("Headless mode: Waiting 180 seconds to ensure E2E keys and chat history are fully downloaded and written to IndexedDB...")
+                for i in range(180, 0, -10):
+                    print(f"Waiting... {i} seconds remaining.")
+                    time.sleep(10)
+            else:
+                print("\n⚠️ IMPORTANT: Do not close immediately!")
+                print("WhatsApp Web needs time to download E2E encryption keys and chat history.")
+                print("Check your phone's 'Linked Devices' - wait until the status changes from 'Syncing' to 'Active'.")
+                input("Press ENTER here to safely close the browser once you confirm it is fully synced...")
+                print("Writing final data to disk...")
+                time.sleep(5)
+                
         else:
             print("\n❌ Timeout (40m) waiting for successful login.")
             
