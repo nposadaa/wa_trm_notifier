@@ -58,4 +58,12 @@ def apply_stealth_overrides(page):
         Object.defineProperty(navigator, 'webdriver', {get: () => false});
         Object.defineProperty(navigator, 'platform', {get: () => 'Win32'});
         Object.defineProperty(navigator, 'languages', {get: () => ['es-419', 'es', 'en-US', 'en']});
+        
+        // Mock persistent storage to prevent WhatsApp crash in headless Linux
+        if (navigator.storage) {
+            navigator.storage.persist = async () => true;
+            if (!navigator.storage.estimate) {
+                navigator.storage.estimate = async () => ({ quota: 1000000000, usage: 10000000 });
+            }
+        }
     """)
