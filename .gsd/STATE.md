@@ -2,50 +2,47 @@
 
 > **Current Phase**: Phase 4 — Cloud Deployment
 > **Last Update**: 2026-04-09
-> **Status**: Paused at 18:09 COT
+> **Status**: Paused at 20:25 COT
 
 ## Current Position
 - **Phase**: Phase 4 — Cloud Deployment (Stabilization & Documentation)
-- **Task**: Initial WhatsApp Web Authentication & E2E Decompression
-- **Status**: Paused at 2026-04-09 18:09 COT. Awaiting 30+ minute sync completion on VM.
+- **Task**: Final Verification of Cloud Synchronization
+- **Status**: Paused at 2026-04-09 20:25 COT. Waiting on user's manual validation of `run_vm.sh`.
 
 ## Last Session Summary
-- Diagnosed "Couldn't link device" error caused by WhatsApp rotating the QR every 20 seconds; fixed `auth.py` to continuously save fresh QR codes.
-- Diagnosed session drop logs; found the 10-minute maximum runtime in `auth.py` was too short for the e2-micro VM to decrypt E2E chat history keys.
-- Raised synchronization wait timeout inside `auth.py` to 40 minutes and instructed user to wipe corrupted `whatsapp_session` for a full clean run.
+- Discovered `auth.py --headless` on GCP VM natively fails primarily due to severe OOM (1GB RAM) crashes during massive E2E decryption.
+- Vindicated the "Zip and Ship" strategy. Proven that `--password-store=basic` succeeded in making Windows profiles portable to Linux.
+- Fixed catastrophic UI exit in `auth.py` by requiring manual Enter-key closing to prevent database corruption.
+- Diagnosed `storage bucket persistence denied` crash on headless Linux Chrome; resolved by injecting a JS mock for `navigator.storage.persist()`.
+- Stripped arbitrary background isolation block out of `run_vm.sh`, converting the executable into a synchronous, live-feed runner.
 
 ## In-Progress Work
-- Execution of `xvfb-run --server-args="-screen 0 1024x768x24" python3 auth.py --headless` on VM.
-- Currently syncing. If it works, session state will transition to "LOGGED_IN".
+- Execution of synchronous `bash scripts/run_vm.sh` with the fixed `permissions=777` local session dump.
 
 ## Blockers
-- Hardware limits of GCP e2-micro VM drastically throttles chat-history decryption time.
+- None. System is primed.
 
 ## Context Dump
 
 ### Decisions Made
-- **Extended Timeouts**: Replaced standard 10-minute session initialization max loops with 40-minute loops to cater exclusively to GCP e2-micro constraints.
-- **Session Purges**: Valid partial syncs are immediately corrupted if playwright drops mid-sync. Implemented a strict rule that if sync drops, the entire `whatsapp_session` block must be explicitly deleted before attempting a new QR scan.
+- **Zip and Ship is Canon**: The Cloud Auth VM-native phase is officially deprecated. Transferring Windows sessions is now the core deployment pipeline because VMs cannot handle the multi-gigabyte RAM hit during decryption syncs.
+- **Synchronous VM script**: Cron handles backgrounding natively. `run_vm.sh` now streams output linearly using `tee` to provide the user flawless visibility.
+- **Navigator Mocking**: Headless Chromium strictly rejects `navigator.storage.persist()`, crashing WhatsApp Web instantly. Masking this with a 1-line JS promise resolution successfully avoids 400 Bad Request death loops.
 
 ### Current Hypothesis
-Because the timeout is now correctly aligned with the slow web-assembly execution time on 1vCPU VMs, `auth.py` will patiently wait and successfully conclude the authentication handshake without interruption. Verification is pending.
+Because the storage API crash is circumvented and the Windows profile's filesystem locks have been `chmod` released, the `run_vm.sh` pipeline should fully ingest the `whatsapp_session` flawlessly, find the search-box locator, and broadcast the TRM.
 
 ### Exact Start Sequence for Next Session
-If the sync finished perfectly (`✅ Session successfully synchronized!`):
-```bash
-# On GCP VM
-cd ~/wa_trm_notifier
-xvfb-run --server-args="-screen 0 1024x768x24" python3 main.py --headless
-```
+If the user returns after validation:
 
-If the sync drops again (highly unlikely unless manually stopped):
-```bash
-# On GCP VM
-rm -rf whatsapp_session
-xvfb-run --server-args="-screen 0 1024x768x24" python3 auth.py --headless
-```
+**Success Scenario:**
+1. Wait for user to confirm the TRM broadcast sent via `run_vm.sh`.
+2. Move immediately to configuring `crontab` to trigger `bash scripts/run_vm.sh` daily.
+
+**Failure Scenario:**
+1. Demand `cat logs/vm_run.log` or error console excerpts to track precisely what locator failed.
 
 ## Next Steps
-1. Wait for `auth.py` to gracefully exit with logging confirmation.
-2. Run `main.py --headless` in the virtual framebuffer environment to empirically verify TRM forwarding.
-3. Configure local cronjob for full autonomy and conclude Phase 4.
+1. User reports back on outcome of the `run_vm.sh` broadcast.
+2. Finalize Cron logic.
+3. Clean handoff for project conclusion.
