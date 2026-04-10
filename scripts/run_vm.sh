@@ -35,41 +35,14 @@ rm -f qr.png error_page.png
 pkill -f Xvfb || true
 pkill -f chromium || true
 
-# 4. Run in Background with nohup (prevents crash on terminal disconnect)
+# 4. Run Synchronously (Foreground)
 echo "------------------------------------------------"
-echo "🚀 Starting TRM Notifier in BACKGROUND..."
-echo "Log file: logs/vm_run.log"
+echo "🚀 Starting TRM Notifier..."
 echo "------------------------------------------------"
 
 export PYTHONUNBUFFERED=1
-nohup xvfb-run --server-args="-screen 0 1280x1024x24" python3 main.py --headless "$@" > logs/vm_run.log 2>&1 &
+xvfb-run --server-args="-screen 0 1280x1024x24" python3 main.py --headless "$@" | tee logs/vm_run.log
 
-# Store PID
-PID=$!
-echo "Process started (PID: $PID). Watching for QR..."
-
-# 5. POLLING for QR (Much faster than fixed sleep)
-# We wait up to 3 minutes (90 iterations) for the slow VM to parse
-for i in {1..90}; do
-    if [ -f "qr.png" ] || grep -q "Login successful" logs/vm_run.log; then
-        break
-    fi
-    echo -n "."
-    sleep 2
-done
-echo ""
-
-# 6. Final Status
-if [ -f "qr.png" ]; then
-    echo "------------------------------------------------"
-    echo "✨ QR CODE IS READY! (valid for <20s)"
-    echo "------------------------------------------------"
-    echo "DOWNLOAD NOW via Browser SSH 'Download file' button:"
-    echo "Path: $PROJECT_DIR/qr.png"
-    echo "------------------------------------------------"
-elif grep -q "Login successful" logs/vm_run.log; then
-    echo "✅ Already logged in! Check logs/vm_run.log for results."
-else
-    echo "❌ Timeout or error. Check logs/vm_run.log"
-    tail -n 10 logs/vm_run.log
-fi
+echo "------------------------------------------------"
+echo "✅ Execution completed. Check output above or in logs/vm_run.log"
+echo "------------------------------------------------"
