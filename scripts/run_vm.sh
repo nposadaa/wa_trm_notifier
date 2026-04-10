@@ -41,6 +41,7 @@ echo "🚀 Starting TRM Notifier in BACKGROUND..."
 echo "Log file: logs/vm_run.log"
 echo "------------------------------------------------"
 
+export PYTHONUNBUFFERED=1
 nohup xvfb-run --server-args="-screen 0 1280x1024x24" python3 main.py --headless "$@" > logs/vm_run.log 2>&1 &
 
 # Store PID
@@ -48,7 +49,8 @@ PID=$!
 echo "Process started (PID: $PID). Watching for QR..."
 
 # 5. POLLING for QR (Much faster than fixed sleep)
-for i in {1..30}; do
+# We wait up to 3 minutes (90 iterations) for the slow VM to parse
+for i in {1..90}; do
     if [ -f "qr.png" ] || grep -q "Login successful" logs/vm_run.log; then
         break
     fi
