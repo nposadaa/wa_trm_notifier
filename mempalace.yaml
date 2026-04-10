@@ -1,0 +1,30 @@
+wing: wa_trm_notifier
+rooms:
+- name: adapters
+  description: Files from adapters/
+  keywords:
+  - adapters
+  - adapters
+- name: documentation
+  description: Files from docs/
+  keywords:
+  - documentation
+  - docs
+- name: logs
+  description: Files from logs/
+  keywords:
+  - logs
+  - logs
+- name: scripts
+  description: Files from scripts/
+  keywords:
+  - scripts
+  - scripts
+- name: whatsapp_session
+  description: Files from whatsapp_session/
+  keywords:
+  - whatsapp_session
+  - whatsapp_session
+- name: general
+  description: Files that don't fit other rooms
+  keywords: []

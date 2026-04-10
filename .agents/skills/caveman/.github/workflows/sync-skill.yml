@@ -1,0 +1,44 @@
+name: Sync SKILL.md
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - skills/caveman/SKILL.md
+
+concurrency:
+  group: sync-skill
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Pull latest before making changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+
+      - name: Copy to duplicate locations
+        run: |
+          cp skills/caveman/SKILL.md caveman/SKILL.md
+          cp skills/caveman/SKILL.md plugins/caveman/skills/caveman/SKILL.md
+          cp skills/caveman/SKILL.md .cursor/skills/caveman/SKILL.md
+
+      - name: Rebuild caveman.skill ZIP
+        run: |
+          cd skills && zip -r ../caveman.skill caveman/
+
+      - name: Commit and push if changed
+        run: |
+          git diff --quiet && exit 0
+          git add caveman/SKILL.md plugins/caveman/skills/caveman/SKILL.md .cursor/skills/caveman/SKILL.md caveman.skill
+          git commit -m "chore: sync SKILL.md copies and caveman.skill [skip ci]"
+          git push

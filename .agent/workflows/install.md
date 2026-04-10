@@ -55,7 +55,7 @@ If user chooses Reinstall, continue to Step 2.
 ## 2. Clone from GitHub
 
 ```bash
-git clone --depth 1 https://github.com/toonight/get-shit-done-for-antigravity.git .gsd-install-temp
+git clone --depth 1 --recurse-submodules https://github.com/nposadaa/get-shit-done-for-antigravity_NicksDev .gsd-install-temp
 ```
 
 ---
