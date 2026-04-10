@@ -6,6 +6,7 @@ __pycache__/
 recipients.json
 whatsapp_session/
 session.zip
+whatsapp_session.zip
 logs/
 *.log
 *.png
