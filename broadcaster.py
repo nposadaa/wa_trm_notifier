@@ -43,76 +43,83 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # --- LOGIN DETECTION & SYNC (Stabilized Flow) ---
         print("Checking session status (State-Aware Loop)...")
         start_time = time.time()
-        # 5 minutes for initial splash/render transition
-        MAX_INITIAL_WAIT = 300 
+        poll_start = time.time()
+        # 20 minutes for initial deep sync on first heartbeats
+        MAX_INITIAL_WAIT = 1200 
         session_state = "INITIALIZING"
         reload_triggered = False
+        last_percentage = -1
         
         while time.time() - start_time < MAX_INITIAL_WAIT:
             elapsed = int(time.time() - start_time)
             
+            # Watchdog: If no state change or percentage progress for 5 mins, fail
+            if time.time() - poll_start > 300:
+                print(f"[{elapsed}s] CRITICAL: No progress for 5 minutes. Timing out.")
+                break
+
             # 0. DISMISS BLOCKING MODALS (Bypass)
-            # WhatsApp occasionally shows 'Update Available' or 'Link with Phone' which blocks the main thread.
             try:
                 page.evaluate("""() => {
-                    const buttons = [
-                        ...document.querySelectorAll('button'), 
-                        ...document.querySelectorAll('[role="button"]')
-                    ];
-                    // Dismiss common blockers
                     const targets = ['Actualizar', 'Update', 'Cerrar', 'Close', 'Más tarde', 'Later', 'OK'];
-                    buttons.forEach(btn => {
-                        if (targets.some(t => btn.innerText.includes(t))) {
-                            btn.click();
-                        }
+                    document.querySelectorAll('button, [role="button"]').forEach(btn => {
+                        if (targets.some(t => btn.innerText.includes(t))) btn.click();
                     });
                 }""")
             except: pass
 
             # 1. SUCCESS MARKERS (Search Box or Chat Pane)
-            # We check for multiple selectors because React rendering order varies on slow VMs.
             if page.locator('#pane-side, [data-testid="chat-list-search-filtered"], #side [contenteditable="true"]').first.is_visible():
                 print(f"[{elapsed}s] Login successful! Chat UI detected.")
                 session_state = "LOGGED_IN"
                 break
             
-            # 3. SYNCING MARKERS
-            if page.get_by_text("Loading your chats").or_(page.get_by_text("Cargando tus chats")).first.is_visible():
+            # 3. SYNCING & PROGRESS MARKERS
+            screen_content = ""
+            try: screen_content = page.locator("body").inner_text()[:2000]
+            except: pass
+
+            if "Loading your chats" in screen_content or "Cargando tus chats" in screen_content:
                 if session_state != "SYNCING":
-                    print(f"[{elapsed}s] Syncing detected... (Data-heavy phase).")
+                    print(f"[{elapsed}s] Syncing detected... (First run decryption phase).")
                     session_state = "SYNCING"
                 
-                # RECOVERY: If stuck in Syncing for > 180s, jumpstart with a reload
-                if elapsed > 180 and not reload_triggered:
+                # Extract percentage to verify progress (e.g., "Loading your chats [19%]")
+                import re
+                match = re.search(r'\[(\d+)%\]', screen_content)
+                if match:
+                    current_pct = int(match.group(1))
+                    if current_pct > last_percentage:
+                        print(f"[{elapsed}s] Sync Progress: {current_pct}% (CPU Decrypting...)")
+                        last_percentage = current_pct
+                        poll_start = time.time() # Reset watchdog - we have progress!
+
+                # RECOVERY: If stuck at 0% or no % for > 240s, jumpstart
+                if elapsed > 240 and not reload_triggered and last_percentage <= 0:
                     print(f"[{elapsed}s] WARNING: Sync hang suspected. Triggering jumpstart reload...")
                     page.reload()
                     reload_triggered = True
+                    poll_start = time.time()
                     time.sleep(5)
                     continue
 
                 try:
-                    # Atomic wait for either the chat list or the search box
                     page.wait_for_selector('#pane-side, #side [contenteditable="true"]', timeout=30000)
                     session_state = "LOGGED_IN"
                     break
-                except Exception:
-                    pass
+                except : pass
             
-            # 4. QR CODE MARKERS (Login Required)
+            # 4. QR CODE MARKERS
             if page.locator('canvas, [data-testid="qrcode-container"]').first.is_visible():
                 context.close()
-                raise RuntimeError("Session Invalidated! (QR Required). Please run `python auth.py` locally and transfer the new session.zip.")
+                raise RuntimeError("Session Invalidated! (QR Required).")
             
-            # 5. SPLASH SCREEN (VM Lag or Initialization)
-            try:
-                screen_content = page.inner_text("body")[:1000]
-                if "End-to-end encrypted" in screen_content or "WhatsApp" in screen_content:
-                    if session_state == "INITIALIZING":
-                        print(f"[{elapsed}s] Splash screen detected. Waiting for decryption...")
-                        session_state = "SPLASH"
-            except: pass
+            # 5. SPLASH SCREEN (Initial)
+            if "WhatsApp" in screen_content and session_state == "INITIALIZING":
+                print(f"[{elapsed}s] Splash detected. Waiting for decryption...")
+                session_state = "SPLASH"
 
-            time.sleep(15) # Increased to 15s to prioritize main-thread decryption on 1-core VM
+            time.sleep(15) 
             print(f"[{elapsed}s] Auth Loop: {session_state}...")
 
         # --- SETTLING WINDOW (DEC-014) ---
