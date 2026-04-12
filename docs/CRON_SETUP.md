@@ -54,3 +54,10 @@ If the cron job fails to send (e.g., due to a session expiration), you will see 
 1. Delete the remote session: `rm -rf ~/wa_trm_notifier/whatsapp_session`
 2. Generate a new session locally.
 3. Transfer the new `whatsapp_session.zip` to the VM.
+
+## 5. Verification
+To verify that your schedule was saved correctly, run the **List** command on your VM:
+```bash
+crontab -l
+```
+Standard output will show your scheduled command at the bottom of the file. If you see the message `no crontab for [user]`, the save was not successful.
