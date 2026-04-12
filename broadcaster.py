@@ -124,7 +124,19 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
 
         # --- SETTLING WINDOW (DEC-014) ---
         if session_state == "LOGGED_IN":
-            print("Session fully stabilized. Waiting 5s for React UI to settle...")
+            print("Session fully stabilized. Checking for background sync activity...")
+            # EXTRA: Wait for the sidebar 'Syncing chats...' message to disappear
+            for _ in range(20): # Up to 5 more minutes of grace
+                sync_status = page.locator('div:has-text("Syncing chats"), div:has-text("Sincronizando")').first
+                if sync_status.is_visible(timeout=1000):
+                    status_text = ""
+                    try: status_text = sync_status.inner_text().strip()
+                    except: pass
+                    print(f"  [Syncing] {status_text}...")
+                    time.sleep(15)
+                else:
+                    print("  [Syncing] Sidebar sync message gone. Proceeding.")
+                    break
             time.sleep(5)
         else:
             print(f"\n--- SESSION TIMEOUT ({session_state}) ---")
@@ -178,8 +190,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"--- Processing: {name} ---")
             
             # 1. Focus the main search box (Persistent Structural Locator)
-            # We avoid 'get_by_placeholder' because the placeholder vanishes from the DOM 
-            # as soon as we type, which breaks Playwright's lazy re-resolution.
             search_box = page.locator('#side div[contenteditable="true"], div[data-tab="3"], div[aria-label="Search input textbox"]').first
             
             try:
@@ -203,10 +213,10 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 # Robust clear using keyboard
                 page.keyboard.press("Control+A")
                 page.keyboard.press("Backspace")
-                time.sleep(0.5)
+                time.sleep(1.0) # Increased for stability
                 # Type characters with tiny delay to satisfy React listeners on slow VM
-                page.keyboard.type(name, delay=50) 
-                time.sleep(1.0)
+                page.keyboard.type(name, delay=70) 
+                time.sleep(2.0)
                 page.keyboard.press("Enter")
             except Exception as e:
                 print(f"Search box keyboard interaction failed: {e}. Trying raw press...")
@@ -216,15 +226,15 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"Auditing results for: {name}...")
             chat_found = False
             
-            # Give the VM up to 15s for the sidebar to populate
-            for attempt in range(3):
+            # Give the VM up to 30s for the sidebar to populate (Slow VM Fix)
+            for attempt in range(5):
                 # --- Result Method A: Exact Title Match ---
                 try:
                     chat_title = page.locator(f'span[title="{name}"], [aria-label="{name}"]').first
                     if chat_title.is_visible(timeout=4000):
                         chat_title.click()
                         chat_found = True
-                        print(f"SUCCESS: Clicked {name} via Sidebar match ({attempt+1}/3).")
+                        print(f"SUCCESS: Clicked {name} via Sidebar match ({attempt+1}/5).")
                         break
                 except: pass
     
@@ -232,140 +242,102 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 if not chat_found:
                     try:
                         result = page.get_by_text(name, exact=False).first
-                        if result.is_visible(timeout=2000):
+                        if result.is_visible(timeout=3000):
                             result.click()
                             chat_found = True
-                            print(f"SUCCESS: Clicked {name} via Text fallback ({attempt+1}/3).")
+                            print(f"SUCCESS: Clicked {name} via Text fallback ({attempt+1}/5).")
                             break
                     except: pass
                 
                 if not chat_found:
-                    print(f"Attempt {attempt+1}/3: Result not visible. Auditing current sidebar items...")
-                    # DIAGNOSTIC AUDIT: What is actually in the sidebar?
-                    try:
-                        items = page.query_selector_all('span[title]')
-                        titles = [f"'{i.get_attribute('title')}'" for i in items[:5]]
-                        print(f"  DEBUG: Visible Sidebar Items: {', '.join(titles)}")
-                    except: pass
-                    time.sleep(4)
+                    print(f"Attempt {attempt+1}/5: Still searching sidebar...")
+                    time.sleep(5)
             
             if not chat_found:
                 print(f"CRITICAL: Search failed for '{name}'. Saving search_failed.png")
                 page.screenshot(path=f"diag_search_failed_{name.replace('/', '_')}.png")
                 continue
 
-
-
-            # Wait for right pane to load
-            time.sleep(1.5)
+            time.sleep(3.0) # Stability buffer
 
             # 3. Focus the chat input box (bottom bar of right pane)
             print(f"Finding input box for {name}...")
-            
-            # --- Robust Unique Locator (Language Agnostic & Stable) ---
-            # Instead of relying on aria-labels that Lexical dynamically toggles,
-            # we target the contenteditable div in the main window.
             box_handle = None
             try:
-                # We use page.wait_for_selector to atomically wait for visibility AND grab the handle in one step.
-                # This prevents React from unmounting the element between wait_for() and element_handle()
                 box_handle = page.wait_for_selector(
                     '#main div[contenteditable="true"], footer div[contenteditable="true"]', 
                     state="visible", 
                     timeout=15000
                 )
-                print("Found chat box successfully.")
             except Exception as e:
                 print(f"Could not find the chat input box for {name}: {e}")
                 continue
                  
             # 4. Type message using keyboard events (DEC-018)
-            # CRITICAL: chat_box.fill() bypasses React's synthetic event system.
-            # Using press_sequentially on the locator can timeout if React re-renders
-            # the aria-label or DOM. Using an element handle + page.keyboard prevents this.
-            # Also, newlines (\n) must be typed as Shift+Enter to avoid premature sending.
             print(f"Typing message to {name}...")
                 
-            # Click and force focus via JS to guarantee caret placement
             box_handle.click()
             box_handle.evaluate("el => el.focus()")
             
-            # Force caret into the text box via evaluate just in case it's a Lexical boundary
-            try:
-                box_handle.evaluate("el => { const selection = window.getSelection(); const range = document.createRange(); range.selectNodeContents(el); selection.removeAllRanges(); selection.addRange(range); }")
-            except: pass
-            
-            # Clear any residual text first using correct OS modifiers
+            # Clear any residual text
             page.keyboard.press("Control+a")
             page.keyboard.press("Backspace")
-            time.sleep(0.3)
+            time.sleep(0.5)
             
-            # Re-ensure focus right before typing
-            box_handle.evaluate("el => el.focus()")
-            
-            # Type line by line, using Shift+Enter for newlines
             lines = message_text.split('\n')
             for i, line in enumerate(lines):
                 if line:
-                    # Type chunks targeting the exact DOM element pointer to prevent focus stealing
-                    box_handle.type(line, delay=10)
+                    box_handle.type(line, delay=20)
                 if i < len(lines) - 1:
                     page.keyboard.down("Shift")
                     page.keyboard.press("Enter")
                     page.keyboard.up("Shift")
-                    time.sleep(0.05)
+                    time.sleep(0.1)
                 
-            time.sleep(1.5)  # Let React register the typed content
+            time.sleep(2.0)
 
-            # --- Robust Send Method (DEC-010 refined) ---
+            # --- Robust Send Method ---
             try:
-                # 1. Try Send Button First (should now be visible after keyboard.type)
                 send_button = page.locator('button:has(span[data-testid="send"]), [data-testid="send"]').first
-                if send_button.is_visible(timeout=5000):
-                    print("Clicking Send button icon...")
+                if send_button.is_visible(timeout=3000):
                     send_button.click()
                 else:
-                    # 2. Force Focus and Press Enter
-                    print("Send button icon not visible. Forcing focus and Enter key...")
                     box_handle.focus()
                     page.keyboard.press("Enter")
-            except Exception as e:
-                print(f"Initial send attempt failed: {e}. Trying raw Keyboard Enter...")
+            except:
                 page.keyboard.press("Enter")
 
             # --- Empirical Delivery Verification ---
-            # We wait up to 30s to see the 'Sent' checkmark appear (extra buffer for slow VM).
-            # This prevents false positives on slow VMs.
+            # We wait longer for the 'Clock' icon to transition to 'Checkmark'
             print(f"Verifying delivery to {name}...")
             delivery_verified = False
             
-            for v_sec in range(30):
-                # SUCCESS: Found a single or double checkmark on the latest message
+            # Up to 3 minutes for slow VM to upload the buffer
+            for v_sec in range(180):
+                # SUCCESS: Found checkmark
                 if page.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"]').last.is_visible(timeout=500):
                     print(f"[{v_sec}s] Delivery Confirmed: Checkmark detected.")
                     delivery_verified = True
                     break
                 
-                # WARNING: Message is still in outbox (Clock icon)
+                # WARNING: In Outbox (Clock)
                 if page.locator('span[data-testid="msg-clock"]').last.is_visible(timeout=500):
-                    if v_sec % 5 == 0:
-                        print(f"[{v_sec}s] Message still in Outbox (Clock icon)...")
+                    if v_sec % 10 == 0:
+                        print(f"[{v_sec}s] Message in Outbox (Clock icon). Waiting for WebSocket upload...")
                 
                 time.sleep(1)
 
             if delivery_verified:
                 print(f"✅ SUCCESS: Sent message to {name}!")
             else:
-                print(f"❌ FAILURE: Message to {name} was not confirmed as sent (Checkmark missing).")
-                # Save diagnostic screenshot of the conversation
+                print(f"❌ FAILURE: Message held in Outbox (Clock) or Missing. Saving diag_delivery_failed.png")
                 page.screenshot(path=f"diag_delivery_failed_{name.replace('/', '_')}.png")
 
-            # Additional cooling period
-            time.sleep(2) 
+            time.sleep(5) 
 
-        print("\nAll recipients processed. Final delivery buffer (10s)...")
-        # CRITICAL: Wait 10s to ensure the WebSocket actually uploads the data before we kill the browser
-        time.sleep(10)
+        print("\nAll recipients processed. Finalizing buffer flush (60s)...")
+        # EXTENDED: Give the slow VM a full minute to ensure all WebSockets are closed cleanly
+        time.sleep(60)
         context.close()
 
 
