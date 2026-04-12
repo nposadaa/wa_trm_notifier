@@ -30,7 +30,11 @@ To schedule the script for every day at 12:00 (UTC):
 0 12 * * * cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh
 ```
 
-Save and exit. The cron daemon will immediately pick up the new job and run the script daily in the background.
+Save and exit using the following **Nano** shortcuts:
+1. **Press `Ctrl + O`** then **`Enter`** to save (Write Out).
+2. **Press `Ctrl + X`** to exit.
+
+The terminal will display `crontab: installing new crontab`. The cron daemon will then pick up the new job and run the script daily in the background.
 
 ## 3. Monitoring the System (Local Machine)
 You no longer need to check logs manually on the VM. Use the diagnostic utility from your **Local PowerShell** terminal:
