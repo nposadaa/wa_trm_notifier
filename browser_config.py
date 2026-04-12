@@ -28,15 +28,17 @@ def get_browser_context(playwright, headless=True):
         "--disable-webgl",
         "--disable-software-rasterizer",
         "--no-zygote",
-        "--js-flags='--max-old-space-size=512'", 
+        "--js-flags='--max-old-space-size=640'", 
         "--disable-setuid-sandbox",
         "--no-first-run",
         "--disable-background-networking",
         "--disable-web-security",
         "--password-store=basic",
         "--use-mock-keychain",
-        "--disable-features=IsolateOrigins,site-per-process",
-        "--unlimited-storage"  # Crucial for low-disk micro VMs
+        "--disable-features=IsolateOrigins,site-per-process,Translate,OptimizationHints,MediaRouter,DialMediaRouteProvider,ProcessPerSiteUpToMainFrameThreshold",
+        "--disable-component-update",
+        "--disable-extensions",
+        "--unlimited-storage"
     ]
 
     print(f"[config] Launching Playwright browser (headless={headless}) with session at {USER_DATA_DIR}...")

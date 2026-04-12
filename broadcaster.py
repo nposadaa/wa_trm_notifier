@@ -40,32 +40,63 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # Wait for the chat list to load (indicator of login)
         print("Waiting for WhatsApp Web to load. If this is your first run, please scan the QR code.")
         
-        # --- LOGIN DETECTION & SYNC (Robust Loop) ---
+        # --- LOGIN DETECTION & SYNC (Stabilized Flow) ---
         print("Checking session status (State-Aware Loop)...")
         start_time = time.time()
-        # 4 minutes total for initial splash/render transition
-        MAX_INITIAL_WAIT = 240 
+        # 5 minutes for initial splash/render transition
+        MAX_INITIAL_WAIT = 300 
         session_state = "INITIALIZING"
+        reload_triggered = False
         
         while time.time() - start_time < MAX_INITIAL_WAIT:
             elapsed = int(time.time() - start_time)
             
-            # 1. SUCCESS MARKERS (Chat Pane)
-            if page.locator('#pane-side, [data-testid="chat-list-search-filtered"]').first.is_visible():
-                print(f"[{elapsed}s] Login successful! Chat pane found.")
+            # 0. DISMISS BLOCKING MODALS (Bypass)
+            # WhatsApp occasionally shows 'Update Available' or 'Link with Phone' which blocks the main thread.
+            try:
+                page.evaluate("""() => {
+                    const buttons = [
+                        ...document.querySelectorAll('button'), 
+                        ...document.querySelectorAll('[role="button"]')
+                    ];
+                    // Dismiss common blockers
+                    const targets = ['Actualizar', 'Update', 'Cerrar', 'Close', 'Más tarde', 'Later', 'OK'];
+                    buttons.forEach(btn => {
+                        if (targets.some(t => btn.innerText.includes(t))) {
+                            btn.click();
+                        }
+                    });
+                }""")
+            except: pass
+
+            # 1. SUCCESS MARKERS (Search Box or Chat Pane)
+            # We check for multiple selectors because React rendering order varies on slow VMs.
+            if page.locator('#pane-side, [data-testid="chat-list-search-filtered"], #side [contenteditable="true"]').first.is_visible():
+                print(f"[{elapsed}s] Login successful! Chat UI detected.")
                 session_state = "LOGGED_IN"
                 break
             
             # 3. SYNCING MARKERS
             if page.get_by_text("Loading your chats").or_(page.get_by_text("Cargando tus chats")).first.is_visible():
-                print(f"[{elapsed}s] Syncing detected... extending wait (up to 5 mins).")
+                if session_state != "SYNCING":
+                    print(f"[{elapsed}s] Syncing detected... (Data-heavy phase).")
+                    session_state = "SYNCING"
+                
+                # RECOVERY: If stuck in Syncing for > 180s, jumpstart with a reload
+                if elapsed > 180 and not reload_triggered:
+                    print(f"[{elapsed}s] WARNING: Sync hang suspected. Triggering jumpstart reload...")
+                    page.reload()
+                    reload_triggered = True
+                    time.sleep(5)
+                    continue
+
                 try:
-                    # Give it a long time to finish the data sync
-                    page.wait_for_selector('#pane-side', timeout=300000)
+                    # Atomic wait for either the chat list or the search box
+                    page.wait_for_selector('#pane-side, #side [contenteditable="true"]', timeout=30000)
                     session_state = "LOGGED_IN"
                     break
                 except Exception:
-                    print(f"[{elapsed}s] Syncing still in progress or timed out. Re-checking markers...")
+                    pass
             
             # 4. QR CODE MARKERS (Login Required)
             if page.locator('canvas, [data-testid="qrcode-container"]').first.is_visible():
@@ -73,17 +104,16 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 raise RuntimeError("Session Invalidated! (QR Required). Please run `python auth.py` locally and transfer the new session.zip.")
             
             # 5. SPLASH SCREEN (VM Lag or Initialization)
-            # If we see 'End-to-end encrypted' or 'WhatsApp' title, we are likely on splash
             try:
                 screen_content = page.inner_text("body")[:1000]
                 if "End-to-end encrypted" in screen_content or "WhatsApp" in screen_content:
-                    if session_state != "SPLASH" and session_state != "QR_REQUIRED":
-                        print(f"[{elapsed}s] Splash screen detected (Logo/Encryption splash). Waiting for JS to render...")
+                    if session_state == "INITIALIZING":
+                        print(f"[{elapsed}s] Splash screen detected. Waiting for decryption...")
                         session_state = "SPLASH"
             except: pass
 
-            time.sleep(10) # 10s intervals to save e2-micro CPU
-            print(f"[{elapsed}s] Still initializing (Current State: {session_state})...")
+            time.sleep(15) # Increased to 15s to prioritize main-thread decryption on 1-core VM
+            print(f"[{elapsed}s] Auth Loop: {session_state}...")
 
         # --- SETTLING WINDOW (DEC-014) ---
         if session_state == "LOGGED_IN":

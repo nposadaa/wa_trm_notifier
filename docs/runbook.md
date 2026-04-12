@@ -99,13 +99,41 @@ After 3 consecutive failed debug attempts:
 **Find relevant logs:**
 
 ```powershell
-# Search for error patterns
+# Search for error patterns locally
 Select-String -Path "*.log" -Pattern "error|exception|failed" -CaseSensitive:$false
 ```
 
 ```bash
-# Search for error patterns
-grep -ri "error\|exception\|failed" *.log
+# Search for error patterns on VM
+grep -ri "error\|exception\|failed" logs/*.log
+```
+
+---
+
+## Remote VM Diagnostics
+
+When running on the GCP Always Free VM, use the automated sync tool to pull diagnostics to your local machine for analysis.
+
+### Standard Log Retrieval
+
+Run the following command from your local PowerShell terminal to sync all logs and screenshots:
+
+```powershell
+.\scripts\fetch-logs.ps1
+```
+
+**What it does:**
+1. Syncs `logs/*.log` from VM to local `./logs/`.
+2. Syncs `*.png` (screenshots) from VM root to local root.
+3. Automatically tails the most recent `notifier_*.log` and `vm_run.log`.
+
+### Manual Cleanup
+If you need to manually force the browser to release session locks on the VM:
+```bash
+# Inside VM
+pkill -f chromium
+rm -f whatsapp_session/SingletonLock
+rm -f whatsapp_session/Default/LOCK
 ```
 
 ---

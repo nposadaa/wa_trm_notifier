@@ -40,9 +40,13 @@ If the user returns after validation:
 2. Move immediately to configuring `crontab` to trigger `bash scripts/run_vm.sh` daily.
 
 **Failure Scenario:**
-1. Demand `cat logs/vm_run.log` or error console excerpts to track precisely what locator failed.
+1. Run diagnostics sync from local terminal: `.\scripts\fetch-logs.ps1`.
+2. Analyze the displayed tail of `logs/vm_run.log` or `logs/notifier_*.log`.
+3. Review any downloaded `.png` screenshots in the root directory.
+4. Track locator failures or network timeouts based on logs.
 
 ## Next Steps
-1. User reports back on outcome of the `run_vm.sh` broadcast.
-2. Finalize Cron logic.
-3. Clean handoff for project conclusion.
+1. Execute `.\scripts\fetch-logs.ps1` to pull today's VM logs.
+2. Analyze logs to determine why `run_vm.sh` failed.
+3. Finalize Cron logic for autonomous daily runs.
+4. Clean handoff for project conclusion.

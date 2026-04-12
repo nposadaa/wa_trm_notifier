@@ -67,11 +67,20 @@ dolar-colombia.com → scraper.py → main.py → broadcaster.py → WhatsApp We
    py main.py
    ```
 
+## 🔍 Troubleshooting & Diagnostics
+When running on the cloud (GCP VM), use the following utility to sync logs and screenshots to your local machine for analysis:
+
+```powershell
+# Sync remote logs and screenshots to local machine
+.\scripts\fetch-logs.ps1
+```
+*(Requires `gcloud` SDK installed and configured on your local machine)*
+
 ## 📊 Status
 - ✅ Phase 1: Scraper — Complete
 - ✅ Phase 2: API Handshake — Complete (deprecated in Phase 3.3)
 - ✅ Phase 3: Direct Playwright Broadcast — Complete
-- 🚧 Phase 4: Cloud Automation (Scheduling Pending) — In Progress
+- 🚧 Phase 4: Cloud Automation (GCP) — In Progress
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*
