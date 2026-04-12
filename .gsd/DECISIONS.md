@@ -152,3 +152,12 @@
   2. *UX Stability*: Running locally requires the opposite—waiving all wait limits so the user can easily pull out their phone and scan without the script mysteriously killing the connection mid-sync.
 - **Relation**: Stabilizes session token generation (Fixes the 400 Bad Request / aquire-persistent-storage-denied crashes related to session invalidation via `pkill`).
 - **Status**: Active
+
+## DEC-021: Self-Healing Locator Architecture (Supersedes Handle portion of DEC-019)
+- **Date**: 2026-04-12
+- **Phase**: 4.6
+- **Decision**: Replace all `ElementHandle` (static pointers) for chat interaction with Playwright `Locators` (search-based queries).
+- **Rationale**: 
+  1. *Stale Element Errors*: `DEC-019` hypothesized that locking onto a DOM pointer was safer. However, on e2-micro VMs, background chat synchronization causes React to frequently unmount and replace the input box. Static handles become "stale" and crash mid-interaction.
+  2. *Resiliency*: `Locators` are lazy and auto-retry. If React replaces the input box during a sequence, Playwright automatically re-queries and recovers the new element seamlessly.
+- **Status**: Active (Supersedes interaction logic from **DEC-019**)

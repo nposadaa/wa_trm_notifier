@@ -260,51 +260,38 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
 
             time.sleep(3.0) # Stability buffer
 
-            # 3. Focus the chat input box (bottom bar of right pane)
+            # 3. Target the chat input box (Locator-First / DEC-021)
             print(f"Finding input box for {name}...")
-            box_handle = None
-            try:
-                box_handle = page.wait_for_selector(
-                    '#main div[contenteditable="true"], footer div[contenteditable="true"]', 
-                    state="visible", 
-                    timeout=15000
-                )
-            except Exception as e:
-                print(f"Could not find the chat input box for {name}: {e}")
-                continue
-                 
-            # 4. Type message using keyboard events (DEC-018)
+            # We use a locator here because handles become 'stale' if React re-renders the box mid-run.
+            chat_input = page.locator('#main div[contenteditable="true"], footer div[contenteditable="true"]').first
+            
+            # 4. Type message using resilient Sequential Pressing (DEC-021)
             print(f"Typing message to {name}...")
-                
-            box_handle.click()
-            box_handle.evaluate("el => el.focus()")
-            
-            # Clear any residual text
-            page.keyboard.press("Control+a")
-            page.keyboard.press("Backspace")
-            time.sleep(0.5)
-            
-            lines = message_text.split('\n')
-            for i, line in enumerate(lines):
-                if line:
-                    box_handle.type(line, delay=20)
-                if i < len(lines) - 1:
-                    page.keyboard.down("Shift")
-                    page.keyboard.press("Enter")
-                    page.keyboard.up("Shift")
-                    time.sleep(0.1)
-                
-            time.sleep(2.0)
-
-            # --- Robust Send Method ---
             try:
+                # Ensure the box is ready and clear it atomically
+                chat_input.wait_for(state="visible", timeout=15000)
+                chat_input.fill("") 
+                
+                lines = message_text.split('\n')
+                for i, line in enumerate(lines):
+                    if line:
+                        # press_sequentially is resilient to DOM jitter
+                        chat_input.press_sequentially(line, delay=30)
+                    if i < len(lines) - 1:
+                        # Shift+Enter for newlines in WhatsApp
+                        chat_input.press("Shift+Enter")
+                        time.sleep(0.1)
+                
+                time.sleep(2.0)
+
+                # --- Robust Send Method ---
                 send_button = page.locator('button:has(span[data-testid="send"]), [data-testid="send"]').first
                 if send_button.is_visible(timeout=3000):
                     send_button.click()
                 else:
-                    box_handle.focus()
-                    page.keyboard.press("Enter")
-            except:
+                    chat_input.press("Enter")
+            except Exception as e:
+                print(f"Interaction error for {name}: {e}. Attempting emergency Enter...")
                 page.keyboard.press("Enter")
 
             # --- Empirical Delivery Verification ---
