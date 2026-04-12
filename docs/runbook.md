@@ -127,6 +127,15 @@ Run the following command from your local PowerShell terminal to sync all logs a
 2. Syncs `*.png` (screenshots) from VM root to local root.
 3. Automatically tails the most recent `notifier_*.log` and `vm_run.log`.
 
+### Common Failure Patterns & Diagnosis
+
+| Symptom | Cause | Solution |
+| :--- | :--- | :--- |
+| Stuck at `SPLASH` | CPU throttled during decryption. | Wait for percentage progress (e.g., `[19%]`). The script will wait up to 20m. |
+| Stuck at `SYNCING` | WebSocket hanging on slow VM. | The script now triggers a `page.reload()` after 180s to jumpstart the sync. |
+| Message has Clock Icon | Message in Outbox (Slow upload). | Patience Patch (DEC-021) now waits up to 3m for the checkmark. |
+| `TimeoutError` in typing | React re-rendered input box. | Automatic recovery via Self-Healing Locators (DEC-021). No action required. |
+
 ### Manual Cleanup
 If you need to manually force the browser to release session locks on the VM:
 ```bash

@@ -2,42 +2,40 @@
 
 > **Current Phase**: Phase 4 — Cloud Deployment
 > **Last Update**: 2026-04-12
-> **Status**: Active (Resilient Interaction Refinement)
+> **Status**: Active (Final CRON Verification)
 
 ## Current Position
 - **Phase**: Phase 4 — Cloud Deployment (Stabilization & Verification)
-- **Task**: Final Verification of "Safe Stability" Locator Refactor (DEC-021)
-- **Status**: Execution complete. Waiting for user to `git pull` and run `scripts/run_vm.sh` on VM.
+- **Task**: Final Verification of Automated CRON Execution
+- **Status**: Production artifacts synchronized. Waiting for first automated CRON run verification.
 
 ## Last Session Summary
-- **Diagnosed Splash Screen Hang**: Discovered that e2-micro's 1-core CPU throttles heavily during initial E2E decryption. Resolved by implementing percentage-aware detection and extending login timeout to 20 minutes with a progress-based watchdog.
-- **Fixed Sync Progress Recovery**: Added an automated `page.reload()` trigger if the sync state hangs for > 3 minutes, effectively jumpstarting the WebSocket connection.
-- **Fixed Stale Element Timeout**: Identified that static `ElementHandle` usage (DEC-019) was crashing due to React re-rendering the input box mid-type. Resolved by pivoting to Playwright **Locators** (DEC-021), which are self-healing.
-- **Improved Interaction Resiliency**: Upgraded typing to `press_sequentially` and added a "Patience Patch" that explicitly waits for background sidebar sync to finish before broadcasting.
+- **Diagnosed Splash Screen Hang**: Implemented percentage-aware detection and extended login timeout to 20 minutes to handle e2-micro CPU throttling during decryption.
+- **Fixed Sync Progress Recovery**: Added automated `page.reload()` to jumpstart hanging WebSockets.
+- **Resolved Stale Element Timeouts**: Pivoted from `ElementHandle` (static) to **Locators (DEC-021)** (self-healing) to handle React re-renders on slow hardware.
+- **Documented Production Pipeline**: Refactored `docs/CRON_SETUP.md` to use the standardized `scripts/run_vm.sh` and `fetch-logs.ps1` diagnostic workflow.
 
 ## In-Progress Work
-- Manual validation of `DEC-021` changes on the GCP instance.
+- Monitoring the first few autonomous CRON runs via `.\scripts\fetch-logs.ps1`.
 
 ## Blockers
-- None. System is in its most resilient state to date.
+- None. System is in its final "Safe Stability" configuration.
 
 ## Context Dump
 
 ### Decisions Made
-- **DEC-021 (Locators over Handles)**: Replaced static pointers with search-based queries. This is the definitive fix for "Stale Element" errors on overloaded cloud hardware where the UI renders asynchronously.
-- **Percentage Watchdog**: Progress-based resets on the 20-minute timeout ensure we allow the VM to "cook" through decryption without idling indefinitely on real crashes.
+- **DEC-021 (Locators over Handles)**: This was the architectural breakthrough needed for cloud-stable interaction. It eliminates the "Stale Element" crash that plagued the 1GB VM.
+- **Run-VM Orchestrator**: Standardizing on `scripts/run_vm.sh` ensures that environment variables and virtual displays are consistently applied across manual and cron executions.
 
 ### Current Hypothesis
-The combined force of **extended sync patience** and **self-healing locators** will finalize the stabilization. The script can now survive the "jitter" of a 1GB RAM VM and effectively upload messages even when historical data sync is backgrounded.
+The current configuration is robust enough to handle the resource jitter of an e2-micro instance. The "Patience Patch" handles slow network uploads, and "Self-Healing Locators" handle UI re-renders.
 
-### Exact Start Sequence for Next Session
-**Success Scenario:**
-1. Confirm message delivery via `fetch-logs.ps1`.
-2. Move immediately to final `crontab` configuration for daily automation.
-3. Archive the project artifacts and transition to the "Maintenance & Handover" walkthrough.
+### Final Verification Roadmap
+1. **First CRON Run**: Monitor logs for successful delivery without manual intervention.
+2. **Phase 4 Completion**: Once verified, mark Phase 4 as `Complete` in `README.md` and `ROADMAP.md`.
+3. **Project Closure**: Transfer final learnings to the user and finalize the repository.
 
 ## Next Steps
-1. Push latest `broadcaster.py` and `DECISIONS.md` to GitHub.
-2. User runs `git pull` and `bash scripts/run_vm.sh` on VM.
-3. Analyze final results via `.\scripts\fetch-logs.ps1`.
-4. Finalize daily Cron scheduling.
+1. Commit all documentation updates (`README.md`, `docs/`, `STATE.md`).
+2. Push to GitHub.
+3. Wait for the user's first CRON execution test result.

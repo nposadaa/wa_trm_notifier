@@ -18,6 +18,7 @@ dolar-colombia.com → scraper.py → main.py → broadcaster.py → WhatsApp We
 - **Direct Browser Broadcast**: Uses **Playwright** to natively type and send messages on WhatsApp Web — no Meta API or business account needed.
 - **Multi-Recipient**: Configurable list of groups/contacts via `recipients.json`.
 - **Persistent Session**: QR code scan needed only once; session persists across runs.
+- **Self-Healing Interaction**: Uses Playwright **Locators** (DEC-021) to automatically recover if the DOM re-renders during slow cloud syncs.
 - **Zero-Cost**: No paid APIs. Runs entirely with free Python tooling.
 
 ## 🛠 Tech Stack
@@ -80,7 +81,7 @@ When running on the cloud (GCP VM), use the following utility to sync logs and s
 - ✅ Phase 1: Scraper — Complete
 - ✅ Phase 2: API Handshake — Complete (deprecated in Phase 3.3)
 - ✅ Phase 3: Direct Playwright Broadcast — Complete
-- 🚧 Phase 4: Cloud Automation (GCP) — In Progress
+- 🚧 Phase 4: Cloud Automation (GCP) — Stabilization Confirmed (Final CRON verification in progress)
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*

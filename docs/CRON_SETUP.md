@@ -1,39 +1,17 @@
 # Automated Cron Task Scheduling (GCP VM)
 
-Once your application is fully stabilized via the session transfer, you should set up a `cron` job on your server to autonomously execute `main.py` every day.
+Once your application is fully stabilized via the session transfer, you should set up a `cron` job on your server to autonomously execute the broadcaster every day.
 
-## 1. Finding Your Execution Path
-Cron environments do **not** automatically load your `.bashrc`, meaning standard variables like your Python virtual environment path or your `$PATH` will not exist. We must use absolute paths to invoke the scraper perfectly.
+## 1. The Standard Runner
+To ensure the environment, virtual display (`xvfb`), and logging are handled correctly, this project uses a standard runner script: **`scripts/run_vm.sh`**.
 
-The two absolute paths we need:
-1. The path to your virtual environment Python: `/home/[your-username]/wa_trm_notifier/venv/bin/python3`
-2. The path to your `main.py` entrypoint: `/home/[your-username]/wa_trm_notifier/main.py`
+This script:
+1. Navigates to the project root.
+2. Activates the Python virtual environment.
+3. Launches a virtual X-server (required for WhatsApp Web).
+4. Executes `main.py` and captures all output to `logs/vm_run.log`.
 
-## 2. Generating The Execution Shell Script
-The safest way to run complex commands like `xvfb-run` inside cron is to wrap them in a small `.sh` file so the `$PATH` is contained.
-
-On your VM, create a file named `run_notifier.sh` inside your project directory:
-```bash
-cd ~/wa_trm_notifier
-nano run_notifier.sh
-```
-
-Paste the following execution sequence:
-```bash
-#!/bin/bash
-cd /home/$USER/wa_trm_notifier
-
-# Activate environment implicitly by calling the absolute binary path
-# xvfb-run creates the virtual X.org headless server
-/usr/bin/xvfb-run --server-args="-screen 0 1024x768x24" /home/$USER/wa_trm_notifier/venv/bin/python3 main.py --headless >> /home/$USER/wa_trm_notifier/cron_output.log 2>&1
-```
-
-Save the file and mark it as executable:
-```bash
-chmod +x run_notifier.sh
-```
-
-## 3. Configuring Crontab
+## 2. Configuring Crontab
 Open the cron editor on the VM:
 ```bash
 crontab -e
@@ -44,18 +22,31 @@ Scroll to the very bottom to add your schedule.
 
 ### Schedule Formatting
 Cron schedules use 5 asterisks: `Minute Hour Day Month DayOfWeek`.
+
 **Warning on Timezones:** GCP VM servers typically operate on **UTC** time. If you want the script to run at **7:00 AM (Colombia Time / UTC-5)**, you must schedule it for **12:00 PM (UTC)**.
 
 To schedule the script for every day at 12:00 (UTC):
 ```bash
-0 12 * * * /home/nposadaa111/wa_trm_notifier/run_notifier.sh
+0 12 * * * cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh
 ```
 
-Save and exit. The cron daemon will immediately pick up the new job and run the script daily invisibly in the background.
+Save and exit. The cron daemon will immediately pick up the new job and run the script daily in the background.
 
-## 4. Monitoring the System
-Because we explicitly piped all output, any errors (like a killed session) or successes will be saved directly.
-To check the result of the last automated run:
-```bash
-cat ~/wa_trm_notifier/cron_output.log
+## 3. Monitoring the System (Local Machine)
+You no longer need to check logs manually on the VM. Use the diagnostic utility from your **Local PowerShell** terminal:
+
+```powershell
+# Pull latest logs and screenshots from the VM
+.\scripts\fetch-logs.ps1
 ```
+
+### What to check in the logs:
+- **`logs/vm_run.log`**: Shows the high-level execution and any `xvfb` errors.
+- **`logs/notifier_[date].log`**: Contains the detailed broadcaster logs, including the "Sync Progress" and delivery verification.
+- **`error_page.png`**: If a timeout occurs, this screenshot shows the exact browser state.
+
+## 4. Manual Troubleshooting
+If the cron job fails to send (e.g., due to a session expiration), you will see "QR Required" in the logs. In this case:
+1. Delete the remote session: `rm -rf ~/wa_trm_notifier/whatsapp_session`
+2. Generate a new session locally.
+3. Transfer the new `whatsapp_session.zip` to the VM.
