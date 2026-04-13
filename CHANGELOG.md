@@ -2,6 +2,16 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.0.2] - TBD — 🚧 PRE-RELEASE
+> **Status**: Pre-release. Fixes planned in Phase 5 / Sprint 2 (delivery-reliability).
+> Bugs are tracked in `.gsd/phases/5/BUGS.md`.
+
+### Fixed
+- **(BUG-001)** Pre-send connectivity guard: broadcaster now detects "Connecting/Retrying" banner
+  before attempting to send; aborts cleanly with error if WebSocket is not restored within 60s.
+- **(BUG-002)** Exit code propagation: `main.py` now exits with code `1` when the broadcaster
+  reports a delivery failure, ensuring CRON and log pipelines reflect true execution status.
+
 ## [1.0.1] - 2026-04-13
 ### Added
 - **UI Janitor**: Automatic dismissal of "Notifications are off" and "Update" banners during login to optimize DOM stability.

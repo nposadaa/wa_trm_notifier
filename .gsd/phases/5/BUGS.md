@@ -12,7 +12,7 @@
 | **Status** | `open` |
 | **Priority** | High |
 | **Discovered** | 2026-04-13 |
-| **Fixed in release** | — |
+| **Fixed in release** | v1.0.2 (pre-release) |
 | **Phase plan** | phases/5/1-PLAN.md → Task: BUG-1 |
 
 ### Description
@@ -43,7 +43,7 @@ before the send loop. Abort with `RuntimeError` if banner persists beyond 60s ti
 | **Status** | `open` |
 | **Priority** | High |
 | **Discovered** | 2026-04-13 |
-| **Fixed in release** | — |
+| **Fixed in release** | v1.0.2 (pre-release) |
 | **Phase plan** | phases/5/1-PLAN.md → Task: BUG-2 |
 
 ### Description
