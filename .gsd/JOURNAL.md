@@ -89,3 +89,36 @@ Next session requires a fresh sync on the VM: `git pull`, clear `whatsapp_sessio
 
 ---
 ...
+
+## Session: 2026-04-13 14:18 (COT)
+
+### Objective
+Post-mortem and planning following first autonomous CRON failure. Set up Phase 5 infrastructure and plan Sprint 2.
+
+### Accomplished
+- Diagnosed CRON failure via logs and diag screenshot: WA 'Connecting/Retrying' at moment of send
+- Identified BUG-001 (no connectivity guard) and BUG-002 (silent exit code failure)
+- Added Phase 5 to ROADMAP.md + created phases/5/ directory structure
+- Created phases/5/1-PLAN.md (GSD plan format) and phases/5/BUGS.md (bug tracker)
+- Created .gsd/SPRINT.md (Sprint 2 - delivery-reliability) from template
+- Added bug-release traceability gate and release tag naming convention to PROJECT_RULES.md
+- Added v1.0.2 pre-release entry to CHANGELOG.md with BUG-NNN references
+- Created and pushed git tag v1.0.2 (clean tag, pre-release toggle set on GitHub)
+- Updated README.md with Phase 5 status and sprint model overview
+- All artifacts committed and pushed to GitHub (master @ 99d64db)
+
+### Verification
+- [x] All commits pushed to GitHub
+- [x] Tag v1.0.2 confirmed on remote
+- [ ] Sprint 2 execution (pending tomorrow's CRON result)
+- [ ] v1.0.2 promoted from pre-release to stable on GitHub
+
+### Paused Because
+End of planning session. Waiting for tomorrow's CRON run (2026-04-14 12:00 UTC) to confirm whether bugs reproduce before executing fixes.
+
+### Handoff Notes
+No code changes made this session — planning only. Resume with:
+1. Run .\scripts\fetch-logs.ps1 to check tomorrow's CRON result
+2. Execute Sprint 2: broadcaster.py (BUG-001) then main.py (BUG-002)
+3. Deploy to VM, confirm next CRON run, close sprint, promote v1.0.2 tag
+
