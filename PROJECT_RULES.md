@@ -158,6 +158,12 @@ type(scope): description
   1. Update the bug's `Fixed in release` field in `.gsd/phases/{N}/BUGS.md` with the target version tag (e.g., `v1.0.2`)
   2. Add a `### Fixed` entry in `CHANGELOG.md` under that version block referencing the `BUG-NNN` ID
   3. No bug may be marked `fixed` in the bug log without a corresponding CHANGELOG entry. No exceptions.
+- **Release tag naming convention**:
+  - Tag names contain only the version identifier: `v{major}.{minor}.{patch}` (e.g., `v1.0.2`)
+  - Suffixes (`-alpha`, `-beta`, `-rc1`) are reserved for genuine pre-stable builds that differ structurally from the release format
+  - **Pre-release status is marked on GitHub** via the "Set as pre-release" toggle — it is NOT part of the tag name
+  - A tag named `v1.0.2` with GitHub pre-release flag = planned/staged release awaiting promotion
+  - Only promote (un-flag as pre-release on GitHub) once Sprint verification is complete
 
 ---
 
