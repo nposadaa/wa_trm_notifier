@@ -87,7 +87,19 @@ If the cloud run fails or times out, pull the remote evidence to your local mach
 - ✅ Phase 1: Scraper — Complete
 - ✅ Phase 2: API Handshake — Complete (deprecated in Phase 3.3)
 - ✅ Phase 3: Direct Playwright Broadcast — Complete
-- 🚧 Phase 4: Cloud Automation (GCP) — Stabilization Confirmed (Final CRON verification in progress)
+- ✅ Phase 4: Cloud Automation (GCP) — Deployed & Running
+- 🔄 Phase 5: Live Support & Stability — Active
+
+### Phase 5 — Live Support Model
+Post-deployment reliability work is managed in **time-boxed sprints** rather than monolithic planning cycles. Each sprint targets specific bugs or improvements surfaced from autonomous CRON runs.
+
+| Artifact | Purpose |
+| :--- | :--- |
+| [BUGS.md](.gsd/phases/5/BUGS.md) | Active bug tracker — every bug linked to a release tag |
+| [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
+| [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
+
+> **Current sprint**: Sprint 2 — `delivery-reliability` · Target: `v1.0.2`
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*
