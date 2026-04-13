@@ -2,6 +2,18 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.0.0] - 2026-04-12
+
+### Added
+- **Self-Healing Locators (DEC-021)**: Switched to dynamic queries that automatically recover if the DOM re-renders during high CPU load.
+- **Sync Watchdog & Progress Detection**: Real-time percentage detection and automated `page.reload()` to jumpstart hanging decryption syncs.
+- **Remote Diagnostics Utility**: Created `scripts/fetch-logs.ps1` for seamless local analysis of cloud failures.
+- **Patience Patch**: Extended delivery verification to 3 minutes to handle slow WebSocket uploads on 1-core VMs.
+
+### Changed
+- Standardized project runner to `scripts/run_vm.sh`.
+- Optimized V8 memory flags (`--max-old-space-size=640`) for e2-micro instances.
+
 ## [1.0.0-beta] - 2026-04-08
 
 ### Added
