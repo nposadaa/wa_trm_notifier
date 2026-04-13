@@ -1,41 +1,42 @@
-# STATE.md — Project Memory
+﻿# STATE.md - Project Memory
 
-> **Current Phase**: Phase 4 — Cloud Deployment
-> **Last Update**: 2026-04-12
-> **Status**: Active (Final CRON Verification)
+> **Current Phase**: Phase 5 - Live Support & Stability
+> **Last Update**: 2026-04-13
+> **Status**: Sprint 1 Planned
 
 ## Current Position
-- **Phase**: Phase 4 — Cloud Deployment (Stabilization & Verification)
-- **Task**: Final Verification of Automated CRON Execution
-- **Status**: Production artifacts synchronized. Waiting for first automated CRON run verification.
+- **Phase**: Phase 5 - Live Support & Stability
+- **Sprint**: Sprint 1 - Delivery Reliability Hardening (Planned, not yet started)
+- **Status**: Awaiting execution session
 
 ## Last Session Summary
-- **Diagnosed Splash Screen Hang**: Implemented percentage-aware detection and extended login timeout to 20 minutes to handle e2-micro CPU throttling during decryption.
-- **Fixed Sync Progress Recovery**: Added automated `page.reload()` to jumpstart hanging WebSockets.
-- **Resolved Stale Element Timeouts**: Pivoted from `ElementHandle` (static) to **Locators (DEC-021)** (self-healing) to handle React re-renders on slow hardware.
-- **Documented Production Pipeline**: Refactored `docs/CRON_SETUP.md` to use the standardized `scripts/run_vm.sh` and `fetch-logs.ps1` diagnostic workflow.
+- **Diagnosed CRON Failure (2026-04-13)**: First autonomous CRON run failed silently. Root cause: WA WebSocket in "Connecting/Retrying" state at moment of send. Message held in outbox (clock icon). Confirmed via diag_delivery_failed_COP_USD Notifier.png.
+- **Two Bugs Identified**: (1) No pre-send connectivity guard. (2) main.py exits 0 even on broadcaster failure.
+- **Phase 5 Added**: New "Live Support & Stability" phase for ongoing sprint-based hardening.
+- **Sprint 1 Planned**: .gsd/SPRINT.md scoped and ready to execute.
 
 ## In-Progress Work
-- Monitoring the first few autonomous CRON runs via `.\scripts\fetch-logs.ps1`.
+- Sprint 1 tasks (BUG-1 + BUG-2) ready to execute next session.
 
 ## Blockers
-- None. System is in its final "Safe Stability" configuration.
+- None. Waiting for execution session.
 
 ## Context Dump
 
 ### Decisions Made
-- **DEC-021 (Locators over Handles)**: This was the architectural breakthrough needed for cloud-stable interaction. It eliminates the "Stale Element" crash that plagued the 1GB VM.
-- **Run-VM Orchestrator**: Standardizing on `scripts/run_vm.sh` ensures that environment variables and virtual displays are consistently applied across manual and cron executions.
+- **DEC-021 (Locators over Handles)**: Self-healing Locators for React re-renders on slow hardware.
+- **Run-VM Orchestrator**: Standardizing on scripts/run_vm.sh for consistent env across manual and cron.
+- **Phase 5 Sprint Model**: Post-deployment work managed in time-boxed sprints rather than monolithic phases.
 
-### Current Hypothesis
-The current configuration is robust enough to handle the resource jitter of an e2-micro instance. The "Patience Patch" handles slow network uploads, and "Self-Healing Locators" handle UI re-renders.
+### Active Bugs (Sprint 1)
+- **BUG-1**: No connectivity guard before send - WA "Retrying" banner not detected
+- **BUG-2**: broadcaster.py failure not propagated to main.py exit code
 
-### Final Verification Roadmap
-1. **First CRON Run**: Monitor logs for successful delivery without manual intervention.
-2. **Phase 4 Completion**: Once verified, mark Phase 4 as `Complete` in `README.md` and `ROADMAP.md`.
-3. **Project Closure**: Transfer final learnings to the user and finalize the repository.
+### Sprint 1 Verification Goal
+- 5 consecutive successful autonomous CRON runs with confirmed delivery
+- main.py exits non-zero on any delivery failure
 
 ## Next Steps
-1. Commit all documentation updates (`README.md`, `docs/`, `STATE.md`).
-2. Push to GitHub.
-3. Wait for the user's first CRON execution test result.
+1. Execute Sprint 1: /execute sprint-1 (or start next session with SPRINT.md as context)
+2. Deploy fixes to VM
+3. Monitor next CRON run (tomorrow 12:00 UTC / 7:00 AM COT)
