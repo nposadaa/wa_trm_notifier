@@ -2,6 +2,12 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.0.1] - 2026-04-13
+### Added
+- **UI Janitor**: Automatic dismissal of "Notifications are off" and "Update" banners during login to optimize DOM stability.
+- **Reinforced Interaction**: Implemented 2-attempt typing retry loop and increased timeouts (45s) for message input box to survive high VM load.
+- **JS-Force Focus**: Added `document.execCommand` injection to force focus on message input box, bypassing Playwright's bounding-box jitter checks.
+
 ## [1.0.0] - 2026-04-12
 
 ### Added

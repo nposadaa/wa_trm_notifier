@@ -161,3 +161,23 @@
   1. *Stale Element Errors*: `DEC-019` hypothesized that locking onto a DOM pointer was safer. However, on e2-micro VMs, background chat synchronization causes React to frequently unmount and replace the input box. Static handles become "stale" and crash mid-interaction.
   2. *Resiliency*: `Locators` are lazy and auto-retry. If React replaces the input box during a sequence, Playwright automatically re-queries and recovers the new element seamlessly.
 - **Status**: Active (Supersedes interaction logic from **DEC-019**)
+164: 
+165: ## DEC-022: Aggressive Banner & Modal Clearance
+166: - **Date**: 2026-04-13
+167: - **Phase**: 4.7
+168: - **Decision**: Implement a proactive "UI Janitor" step via `page.evaluate` that dismisses common overlays (Updates, "Notifications Off", etc.) before interaction.
+169: - **Rationale**: On resource-constrained VMs, the presence of informational banners like "Notifications are off" can cause layout shifts or consume CPU during React re-renders, potentially interfering with Playwright's visibility/stability checks. Removing them immediately upon login cleans the DOM for faster interaction.
+170: - **Status**: Active
+171: 
+172: ## DEC-023: Reinforced Interaction Strategy (Force-Focus + Retry)
+173: - **Date**: 2026-04-13
+174: - **Phase**: 4.7
+175: - **Decision**: 
+176:   1. Increase `wait_for` timeouts from 15s to 45s for the message input box.
+177:   2. Pre-emptively use `document.execCommand` via `page.evaluate` to focus and clear the input box before typing.
+178:   3. Implement a 2-attempt retry loop for the entire typing/sending sequence for each recipient.
+179: - **Rationale**: 
+180:   1. *VM Lag*: 15s was proven insufficient during peak VM load (DEC-022 failure diagnostic).
+181:   2. *Focus Jitter*: Playwright's native `focus()` sometimes fails if the element's bounding box is oscillating mid-render. JS-based focus is more reliable in these scenarios.
+182:   3. *Empty Buffers*: Previous failures resulted in "Emergency Enter" on empty boxes. A retry loop ensures we only attempt a send after confirming the text has been successfully injected.
+183: - **Status**: Active

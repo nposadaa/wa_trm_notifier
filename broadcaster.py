@@ -58,15 +58,29 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print(f"[{elapsed}s] CRITICAL: No progress for 5 minutes. Timing out.")
                 break
 
-            # 0. DISMISS BLOCKING MODALS (Bypass)
+            # 0. DISMISS BLOCKING MODALS & BANNERS (Bypass / DEC-022)
             try:
+                # Defensive UI Cleanup: Only target common overlays
                 page.evaluate("""() => {
-                    const targets = ['Actualizar', 'Update', 'Cerrar', 'Close', 'Más tarde', 'Later', 'OK'];
-                    document.querySelectorAll('button, [role="button"]').forEach(btn => {
-                        if (targets.some(t => btn.innerText.includes(t))) btn.click();
+                    const dismiss = (selector, textMatch = null) => {
+                        const items = document.querySelectorAll(selector);
+                        items.forEach(el => {
+                            if (!textMatch || el.innerText.includes(textMatch)) {
+                                el.click();
+                            }
+                        });
+                    };
+                    // Generic Buttons
+                    ['Actualizar', 'Update', 'Cerrar', 'Close', 'Más tarde', 'Later', 'OK'].forEach(t => dismiss('button, [role="button"]', t));
+                    
+                    // Specific "Notifications are off" banner close button (data-icon is safer)
+                    document.querySelectorAll('span[data-icon="x-alt"], span[data-icon="x"]').forEach(icon => {
+                        const btn = icon.closest('div[role="button"], button');
+                        if (btn) btn.click();
                     });
                 }""")
-            except: pass
+            except Exception as eval_err:
+                pass # Non-critical loop stability
 
             # 1. SUCCESS MARKERS (Search Box or Chat Pane)
             if page.locator('#pane-side, [data-testid="chat-list-search-filtered"], #side [contenteditable="true"]').first.is_visible():
@@ -262,36 +276,54 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
 
             # 3. Target the chat input box (Locator-First / DEC-021)
             print(f"Finding input box for {name}...")
-            # We use a locator here because handles become 'stale' if React re-renders the box mid-run.
             chat_input = page.locator('#main div[contenteditable="true"], footer div[contenteditable="true"]').first
             
-            # 4. Type message using resilient Sequential Pressing (DEC-021)
+            # 4. Type message using resilient Sequential Pressing (DEC-021/023)
             print(f"Typing message to {name}...")
-            try:
-                # Ensure the box is ready and clear it atomically
-                chat_input.wait_for(state="visible", timeout=15000)
-                chat_input.fill("") 
-                
-                lines = message_text.split('\n')
-                for i, line in enumerate(lines):
-                    if line:
-                        # press_sequentially is resilient to DOM jitter
-                        chat_input.press_sequentially(line, delay=30)
-                    if i < len(lines) - 1:
-                        # Shift+Enter for newlines in WhatsApp
-                        chat_input.press("Shift+Enter")
-                        time.sleep(0.1)
-                
-                time.sleep(2.0)
+            interaction_success = False
+            
+            for attempt in range(2):
+                try:
+                    # Ensure the box is ready (Increased timeout for VM stability)
+                    chat_input.wait_for(state="visible", timeout=45000)
+                    
+                    # Force Focus (DEC-023: JS Injection to bypass Playwright stability desync)
+                    print(f"  [Attempt {attempt+1}/2] Forcing focus and clearing buffer...")
+                    page.evaluate("(el) => { el.focus(); document.execCommand('selectAll', false, null); document.execCommand('delete', false, null); }", chat_input.element_handle())
+                    
+                    lines = message_text.split('\n')
+                    for i, line in enumerate(lines):
+                        if line:
+                            # press_sequentially is resilient to DOM jitter
+                            chat_input.press_sequentially(line, delay=40)
+                        if i < len(lines) - 1:
+                            # Shift+Enter for newlines in WhatsApp
+                            chat_input.press("Shift+Enter")
+                            time.sleep(0.1)
+                    
+                    time.sleep(2.0)
 
-                # --- Robust Send Method ---
-                send_button = page.locator('button:has(span[data-testid="send"]), [data-testid="send"]').first
-                if send_button.is_visible(timeout=3000):
-                    send_button.click()
-                else:
-                    chat_input.press("Enter")
-            except Exception as e:
-                print(f"Interaction error for {name}: {e}. Attempting emergency Enter...")
+                    # --- Robust Send Method ---
+                    send_button = page.locator('button:has(span[data-testid="send"]), [data-testid="send"]').first
+                    if send_button.is_visible(timeout=5000):
+                        send_button.click()
+                        print(f"  [Attempt {attempt+1}/2] Send button clicked.")
+                    else:
+                        chat_input.press("Enter")
+                        print(f"  [Attempt {attempt+1}/2] Enter pressed (Send button missing).")
+                    
+                    interaction_success = True
+                    break
+
+                except Exception as e:
+                    print(f"  [Attempt {attempt+1}/2] Interaction error: {e}")
+                    if attempt == 0:
+                        print("  Taking diagnostic screenshot and retrying...")
+                        page.screenshot(path=f"diag_retry_{name.replace('/', '_')}.png")
+                        time.sleep(5)
+            
+            if not interaction_success:
+                print(f"CRITICAL: Interaction failed for {name} after all retries. Attempting final emergency Enter...")
                 page.keyboard.press("Enter")
 
             # --- Empirical Delivery Verification ---
