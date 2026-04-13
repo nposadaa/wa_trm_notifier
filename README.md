@@ -24,6 +24,7 @@ dolar-colombia.com → scraper.py → main.py → broadcaster.py → WhatsApp We
 For detailed guides on specific modules, refer to:
 | Document | Purpose |
 | :--- | :--- |
+| [GCP_SETUP.md](docs/GCP_SETUP.md) | How to provision a $0.00/mo server in the Google Free Tier. |
 | [CRON_SETUP.md](docs/CRON_SETUP.md) | How to schedule the daily run on a Linux server. |
 | [SESSION_TRANSFER.md](docs/SESSION_TRANSFER.md) | The "Zip & Ship" authentication workflow. |
 | [Runbook](docs/runbook.md) | Operational procedures and troubleshooting patterns. |
@@ -57,8 +58,11 @@ For detailed guides on specific modules, refer to:
 
 Because GCP e2-micro instances have limited RAM (1GB), we use a **"Zip & Ship"** authentication strategy to prevent decryption-related crashes.
 
-### 1. The "Zip & Ship" Authentication
-Establish your session locally where you have more RAM, then transfer the results to the cloud:
+### 1. Provisioning
+Follow the [GCP_SETUP.md](docs/GCP_SETUP.md) guide to create your free e2-micro instance.
+
+### 2. The "Zip & Ship" Authentication
+Establish your session locally where you have more RAM, then transfer the results to the cloud. See the [SESSION_TRANSFER.md](docs/SESSION_TRANSFER.md) for step-by-step details:
 1. Run `python auth.py` locally and scan the QR code.
 2. Wait for the phone to show "Active" and press `Enter` to save.
 3. Zip the session: `Compress-Archive -Path whatsapp_session -DestinationPath whatsapp_session.zip`.
