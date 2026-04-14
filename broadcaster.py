@@ -330,7 +330,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"Finding input box for {name}...")
             chat_input = page.locator('#main div[contenteditable="true"], footer div[contenteditable="true"]').first
             
-            # 4. Type message using resilient Sequential Pressing (DEC-021/023)
+            # 4. Type message using DOM-level insertText (BUG-006 / DEC-024)
+            # press_sequentially mangles emoji surrogate pairs in Lexical editors.
+            # insertText operates at the DOM level and handles full Unicode natively.
             print(f"Typing message to {name}...")
             interaction_success = False
             
@@ -339,21 +341,40 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     # Ensure the box is ready (Increased timeout for VM stability)
                     chat_input.wait_for(state="visible", timeout=60000)
                     
-                    # Force Focus (DEC-023: JS Injection to bypass Playwright stability desync)
+                    # Force Focus via Locator.evaluate (BUG-006: no stale element_handle)
                     print(f"  [Attempt {attempt+1}/2] Forcing focus and clearing buffer...")
-                    page.evaluate("(el) => { el.focus(); document.execCommand('selectAll', false, null); document.execCommand('delete', false, null); }", chat_input.element_handle())
+                    chat_input.evaluate("(el) => { el.focus(); document.execCommand('selectAll', false, null); document.execCommand('delete', false, null); }")
+                    time.sleep(0.5)
                     
+                    # Insert message line-by-line using insertText (handles emoji/Unicode)
                     lines = message_text.split('\n')
                     for i, line in enumerate(lines):
                         if line:
-                            # press_sequentially is resilient to DOM jitter
-                            chat_input.press_sequentially(line, delay=40, timeout=60000)
+                            chat_input.evaluate("(el, text) => { el.focus(); document.execCommand('insertText', false, text); }", line)
+                            time.sleep(0.3)
                         if i < len(lines) - 1:
-                            # Shift+Enter for newlines in WhatsApp
+                            # Shift+Enter for newlines in WhatsApp via keyboard
                             chat_input.press("Shift+Enter")
                             time.sleep(0.1)
                     
                     time.sleep(2.0)
+
+                    # --- Post-typing verification (BUG-006) ---
+                    typed_content = ""
+                    try:
+                        typed_content = chat_input.inner_text().strip()
+                    except Exception:
+                        pass
+                    
+                    if not typed_content:
+                        print(f"  [Attempt {attempt+1}/2] WARNING: Input box appears empty after typing!")
+                        if attempt == 0:
+                            print("  Retrying with keyboard fallback...")
+                            safe_screenshot(page, f"diag_empty_input_{name.replace('/', '_')}.png")
+                            time.sleep(3)
+                            continue
+                    else:
+                        print(f"  [Attempt {attempt+1}/2] Typing verified: {len(typed_content)} chars in input box.")
 
                     # --- Robust Send Method ---
                     send_button = page.locator('button:has(span[data-testid="send"]), [data-testid="send"]').first

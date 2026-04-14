@@ -42,8 +42,15 @@ def main():
     trm_date = trm_data["date"]
     logger.info(f"Scraped TRM: {trm_value} for date: {trm_date}")
 
+    # --- Staleness check (BUG-005) ---
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    stale_disclaimer = ""
+    if trm_date != today_str:
+        logger.warning(f"TRM data is stale! Site date: {trm_date}, Today: {today_str}")
+        stale_disclaimer = f"\n\n⚠️ _Datos del {trm_date} (sitio no actualizado al momento de consulta)_"
+
     # 2. Format the Message
-    message_text = f"📈 *TRM Oficial - {trm_date}*\n\n💵 Valor: ${trm_value:,.2f} COP. Source www.dolar-colombia.com"
+    message_text = f"📈 *TRM Oficial - {trm_date}*\n\n💵 Valor: ${trm_value:,.2f} COP. Source www.dolar-colombia.com{stale_disclaimer}"
     logger.info(f"Prepared Message:\n{message_text}")
 
     # 3. Broadcast using Playwright
