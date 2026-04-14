@@ -2,8 +2,8 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
-## [1.0.2] - TBD 🚧
-> **Status**: Pre-release (marked on GitHub). Fixes planned in Phase 5 / Sprint 2 (delivery-reliability).
+## [1.0.2] - 2026-04-14
+> **Status**: Released. Fixes delivered in Phase 5 / Sprint 2 (delivery-reliability).
 > Bugs are tracked in `.gsd/phases/5/BUGS.md`.
 
 ### Fixed
