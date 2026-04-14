@@ -13,6 +13,52 @@ USER_DATA_DIR = "./whatsapp_session"
 WHATSAPP_URL = "https://web.whatsapp.com/"
 RECIPIENTS_FILE = "recipients.json"
 
+
+def safe_screenshot(page, path, timeout_ms=10000):
+    """Take a diagnostic screenshot without crashing if the browser is frozen. (BUG-003)"""
+    try:
+        page.screenshot(path=path, timeout=timeout_ms)
+        print(f"  Diagnostic saved: {path}")
+    except Exception as e:
+        print(f"  WARNING: Screenshot failed ({e}). Browser may be frozen.")
+
+
+def connectivity_guard(page, timeout=60):
+    """Abort early if WhatsApp Web is in a 'Connecting/Retrying' state. (BUG-001)
+
+    Polls the sidebar for the connectivity banner. If it does not clear
+    within `timeout` seconds, raises RuntimeError so main.py can exit(1).
+    """
+    banner_selectors = (
+        'div:has-text("Connecting to WhatsApp")'
+        ', div:has-text("Retrying")'
+        ', div:has-text("Conectando")'
+        ', div:has-text("Reintentando")'
+    )
+    # Quick initial check — if no banner, proceed immediately
+    banner = page.locator(banner_selectors).first
+    if not banner.is_visible(timeout=2000):
+        print("[CONNECTIVITY] No connectivity banner — proceeding.")
+        return
+
+    print("[CONNECTIVITY] ⚠ Banner detected — waiting for WebSocket restore...")
+    waited = 0
+    backoff = [5, 5, 10, 10, 15, 15]  # ~60s total
+    for delay in backoff:
+        time.sleep(delay)
+        waited += delay
+        banner = page.locator(banner_selectors).first
+        if not banner.is_visible(timeout=2000):
+            print(f"[CONNECTIVITY] Banner cleared after {waited}s — proceeding.")
+            return
+        print(f"[CONNECTIVITY] [{waited}s/{timeout}s] Still retrying...")
+
+    # Timed out — save diag and abort
+    safe_screenshot(page, "diag_connectivity_timeout.png")
+    raise RuntimeError(
+        f"[CONNECTIVITY] WebSocket not restored after {timeout}s. Aborting send."
+    )
+
 def run_broadcaster(message_text="", headless=False, discovery_mode=False):
     """
     Launches WhatsApp Web with a persistent session.
@@ -156,9 +202,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"\n--- SESSION TIMEOUT ({session_state}) ---")
             print(f"Reached {MAX_INITIAL_WAIT}s without entering logged-in state.")
             print("Saving diagnostic screenshot to 'error_page.png'...")
-            page.screenshot(path="error_page.png", full_page=True)
+            safe_screenshot(page, "error_page.png")
             context.close()
-            return
+            return False
 
         print("Session fully stabilized.")
 
@@ -198,7 +244,12 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             
         print(f"Loaded {len(recipients)} recipients from {RECIPIENTS_FILE}.")
 
+        # --- Pre-send connectivity guard (BUG-001) ---
+        connectivity_guard(page)
+        time.sleep(3)  # Settling pause after guard
+
         # --- Direct Broadcasting Logic ---
+        any_failure = False
         for rec in recipients:
             name = rec.get("name")
             print(f"--- Processing: {name} ---")
@@ -269,7 +320,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             
             if not chat_found:
                 print(f"CRITICAL: Search failed for '{name}'. Saving search_failed.png")
-                page.screenshot(path=f"diag_search_failed_{name.replace('/', '_')}.png")
+                safe_screenshot(page, f"diag_search_failed_{name.replace('/', '_')}.png")
+                any_failure = True
                 continue
 
             time.sleep(3.0) # Stability buffer
@@ -285,7 +337,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             for attempt in range(2):
                 try:
                     # Ensure the box is ready (Increased timeout for VM stability)
-                    chat_input.wait_for(state="visible", timeout=45000)
+                    chat_input.wait_for(state="visible", timeout=60000)
                     
                     # Force Focus (DEC-023: JS Injection to bypass Playwright stability desync)
                     print(f"  [Attempt {attempt+1}/2] Forcing focus and clearing buffer...")
@@ -295,7 +347,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     for i, line in enumerate(lines):
                         if line:
                             # press_sequentially is resilient to DOM jitter
-                            chat_input.press_sequentially(line, delay=40)
+                            chat_input.press_sequentially(line, delay=40, timeout=60000)
                         if i < len(lines) - 1:
                             # Shift+Enter for newlines in WhatsApp
                             chat_input.press("Shift+Enter")
@@ -319,7 +371,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     print(f"  [Attempt {attempt+1}/2] Interaction error: {e}")
                     if attempt == 0:
                         print("  Taking diagnostic screenshot and retrying...")
-                        page.screenshot(path=f"diag_retry_{name.replace('/', '_')}.png")
+                        safe_screenshot(page, f"diag_retry_{name.replace('/', '_')}.png")
                         time.sleep(5)
             
             if not interaction_success:
@@ -350,7 +402,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print(f"✅ SUCCESS: Sent message to {name}!")
             else:
                 print(f"❌ FAILURE: Message held in Outbox (Clock) or Missing. Saving diag_delivery_failed.png")
-                page.screenshot(path=f"diag_delivery_failed_{name.replace('/', '_')}.png")
+                safe_screenshot(page, f"diag_delivery_failed_{name.replace('/', '_')}.png")
+                any_failure = True
 
             time.sleep(5) 
 
@@ -358,6 +411,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # EXTENDED: Give the slow VM a full minute to ensure all WebSockets are closed cleanly
         time.sleep(60)
         context.close()
+        return not any_failure
 
 
 if __name__ == "__main__":

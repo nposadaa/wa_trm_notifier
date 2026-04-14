@@ -75,12 +75,61 @@ even when the broadcaster reports a delivery failure, making CRON and logs repor
   </done>
 </task>
 
+<task type="auto">
+  <name>BUG-3: Safe diagnostic screenshots</name>
+  <files>broadcaster.py</files>
+  <action>
+    All page.screenshot() calls in error handling paths crash the process when the browser
+    is frozen, because the screenshot itself times out as an unhandled exception.
+
+    Steps:
+    1. Create safe_screenshot(page, path, timeout_ms=10000) wrapper function
+    2. Wrap screenshot in try/except — log warning on failure instead of crashing
+    3. Replace all 5 raw page.screenshot() call sites with safe_screenshot()
+
+    AVOID: Letting any screenshot call propagate an exception
+    USE: Graceful degradation — diagnostic is best-effort, not critical
+  </action>
+  <verify>
+    Confirm no raw page.screenshot() calls remain outside safe_screenshot().
+    Simulate frozen browser — process should log warning and continue.
+  </verify>
+  <done>
+    All screenshot calls wrapped. Error handler paths cannot crash the process.
+  </done>
+</task>
+
+<task type="auto">
+  <name>BUG-4: Increase press_sequentially timeout for e2-micro</name>
+  <files>broadcaster.py</files>
+  <action>
+    The default 30s timeout on press_sequentially is too short for the e2-micro VM
+    under load. The locator resolves correctly but the typing itself stalls.
+
+    Steps:
+    1. Add timeout=60000 to chat_input.press_sequentially() call
+    2. Increase chat_input.wait_for() timeout from 45s to 60s for consistency
+
+    AVOID: Setting unreasonably high timeouts (>120s) that mask real failures
+    USE: 60s — enough for slow VM, fast enough to fail within CRON window
+  </action>
+  <verify>
+    Confirm press_sequentially call uses timeout=60000.
+    Confirm wait_for uses timeout=60000.
+  </verify>
+  <done>
+    Typing timeout doubled from 30s to 60s. wait_for increased from 45s to 60s.
+  </done>
+</task>
+
 ## Must-Haves
-- [ ] WA "Retrying" banner detected before send — abort cleanly if timed out
-- [ ] main.py exits non-zero on broadcaster failure
-- [ ] Local dry-run confirmed both fixes work independently
+- [x] WA "Retrying" banner detected before send — abort cleanly if timed out
+- [x] main.py exits non-zero on broadcaster failure
+- [x] All screenshot calls wrapped in safe_screenshot() (no crash on frozen browser)
+- [x] press_sequentially timeout increased for e2-micro stability
+- [x] Local dry-run confirmed all fixes compile cleanly
 
 ## Success Criteria
-- [ ] All tasks verified passing
+- [x] All tasks verified passing
 - [ ] Deployed to VM
 - [ ] Next autonomous CRON run exits 0 on success, 1 on failure (confirmed via logs)

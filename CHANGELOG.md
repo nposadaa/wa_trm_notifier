@@ -11,6 +11,10 @@ All notable changes to the WhatsApp TRM Notifier project will be documented in t
   before attempting to send; aborts cleanly with error if WebSocket is not restored within 60s.
 - **(BUG-002)** Exit code propagation: `main.py` now exits with code `1` when the broadcaster
   reports a delivery failure, ensuring CRON and log pipelines reflect true execution status.
+- **(BUG-003)** Safe diagnostic screenshots: all `page.screenshot()` calls wrapped in
+  `safe_screenshot()` with 10s timeout and try/except to prevent error-handler crashes.
+- **(BUG-004)** Typing timeout increase: `press_sequentially` timeout raised from 30s to 60s
+  and `wait_for` from 45s to 60s to accommodate e2-micro CPU load during E2E sync.
 
 ## [1.0.1] - 2026-04-13
 ### Added

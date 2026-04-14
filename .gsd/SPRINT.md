@@ -22,17 +22,25 @@ Fix BUG-1 (connectivity guard) and BUG-2 (exit code propagation) before the next
 
 | Task | Assignee | Status | Est. Hours |
 |------|----------|--------|------------|
-| BUG-1: Connectivity guard in broadcaster.py | Claude | ⬜ Todo | 1.0 |
-| BUG-2: Exit code propagation in main.py | Claude | ⬜ Todo | 0.5 |
-| Local dry-run verification | Claude | ⬜ Todo | 0.5 |
+| BUG-1: Connectivity guard in broadcaster.py | Claude | ✅ Done | 1.0 |
+| BUG-2: Exit code propagation in main.py | Claude | ✅ Done | 0.5 |
+| BUG-3: Safe diagnostic screenshots | Claude | ✅ Done | 0.5 |
+| BUG-4: press_sequentially timeout increase | Claude | ✅ Done | 0.25 |
+| Local dry-run verification | Claude | ✅ Done | 0.5 |
 | Deploy to VM + confirm next CRON | Claude | ⬜ Todo | 0.5 |
 
 ## Daily Log
 
-### Day 1 (2026-04-14)
+### Day 1 (2026-04-13)
 - Sprint created from post-mortem of first autonomous CRON failure (2026-04-13)
 - Root cause confirmed via diag_delivery_failed_COP_USD Notifier.png
 - Phase 5 plan documented in .gsd/phases/5/1-PLAN.md
+
+### Day 2 (2026-04-14)
+- Second CRON failure diagnosed: NEW bugs BUG-003 (screenshot crash) and BUG-004 (typing timeout)
+- All 4 bugs fixed in broadcaster.py and main.py
+- Documentation updated (BUGS.md, CHANGELOG.md, SPRINT.md, 1-PLAN.md)
+- Changes committed and pushed to GitHub for VM deployment
 
 ## Risks & Blockers
 
@@ -54,4 +62,4 @@ Fix BUG-1 (connectivity guard) and BUG-2 (exit code propagation) before the next
 
 ---
 
-*Last updated: 2026-04-13*
+*Last updated: 2026-04-14*

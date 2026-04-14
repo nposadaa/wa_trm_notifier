@@ -48,9 +48,17 @@ def main():
 
     # 3. Broadcast using Playwright
     logger.info(f"Invoking Playwright Broadcaster (headless={args.headless})...")
-    run_broadcaster(message_text, headless=args.headless, discovery_mode=args.discovery)
-    
-    logger.info("Task completed successfully!")
+    try:
+        success = run_broadcaster(message_text, headless=args.headless, discovery_mode=args.discovery)
+    except RuntimeError as e:
+        logger.error(f"Broadcaster fatal error: {e}")
+        sys.exit(1)
+
+    if success:
+        logger.info("Task completed successfully!")
+    else:
+        logger.error("Broadcast failed — see diagnostics above.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

@@ -9,7 +9,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | `open` |
+| **Status** | `fixed` |
 | **Priority** | High |
 | **Discovered** | 2026-04-13 |
 | **Fixed in release** | v1.0.2 |
@@ -40,7 +40,7 @@ before the send loop. Abort with `RuntimeError` if banner persists beyond 60s ti
 
 | Field | Value |
 |-------|-------|
-| **Status** | `open` |
+| **Status** | `fixed` |
 | **Priority** | High |
 | **Discovered** | 2026-04-13 |
 | **Fixed in release** | v1.0.2 |
@@ -65,6 +65,65 @@ raise an exception or return a falsy value that `main.py` acts on.
 - `broadcaster.py`: raise exception or return `False` on delivery failure (no `sys.exit` inside broadcaster)
 - `main.py`: catch failure return/exception and call `sys.exit(1)`
 - Document decision in `DECISIONS.md` per Architectural Consciousness Clause
+
+---
+
+## BUG-003 — Crash in error-handling screenshot path
+
+| Field | Value |
+|-------|-------|
+| **Status** | `fixed` |
+| **Priority** | High |
+| **Discovered** | 2026-04-14 |
+| **Fixed in release** | v1.0.2 |
+| **Phase plan** | phases/5/1-PLAN.md → Task: BUG-3 |
+
+### Description
+When `broadcaster.py` catches a typing/interaction error and attempts to take a diagnostic
+screenshot in the `except` block, the `page.screenshot()` call itself times out (30s default)
+if the browser is frozen. This throws an **unhandled exception** that crashes the entire
+process — replacing the original useful error with a screenshot timeout stack trace.
+
+### Root Cause
+Raw `page.screenshot()` calls with no timeout override and no try/except wrapper. On the
+e2-micro VM, the browser frequently freezes under load, making screenshot capture unreliable.
+
+### Evidence
+- `logs/vm_run.log` (2026-04-14): `Page.screenshot: Timeout 30000ms exceeded` in traceback
+- Process died as unhandled exception instead of graceful error handling
+
+### Fix
+Created `safe_screenshot(page, path, timeout_ms=10000)` wrapper used at all 5 screenshot
+call sites. Catches all exceptions and logs a warning instead of crashing.
+
+---
+
+## BUG-004 — press_sequentially timeout too short for e2-micro
+
+| Field | Value |
+|-------|-------|
+| **Status** | `fixed` |
+| **Priority** | High |
+| **Discovered** | 2026-04-14 |
+| **Fixed in release** | v1.0.2 |
+| **Phase plan** | phases/5/1-PLAN.md → Task: BUG-4 |
+
+### Description
+The `chat_input.press_sequentially()` call uses the default 30s Playwright timeout. On the
+e2-micro VM under load, the locator resolution can stall, causing the typing to timeout
+on the first attempt even though the element is present.
+
+### Root Cause
+Default 30s timeout is insufficient for the e2-micro's single-core CPU when WhatsApp's React
+app is actively processing background sync and E2E decryption alongside the typing.
+
+### Evidence
+- `logs/vm_run.log` (2026-04-14): `Locator.press_sequentially: Timeout 30000ms exceeded`
+- Locator correctly resolved the element but `elementHandle.type()` timed out
+
+### Fix
+Increased `press_sequentially` timeout to 60000ms. Also increased `wait_for` timeout from
+45s to 60s for consistency.
 
 ---
 
