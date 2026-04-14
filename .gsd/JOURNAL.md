@@ -122,3 +122,32 @@ No code changes made this session — planning only. Resume with:
 2. Execute Sprint 2: broadcaster.py (BUG-001) then main.py (BUG-002)
 3. Deploy to VM, confirm next CRON run, close sprint, promote v1.0.2 tag
 
+## Session: 2026-04-14 09:00 (COT)
+
+### Objective
+Execute Sprint 2 bug fixes (BUG-001 through BUG-004) and deploy to VM.
+
+### Accomplished
+- ✅ **Fetched VM logs**: Diagnosed second CRON failure (2026-04-14 12:00 UTC)
+- ✅ **New bugs discovered**: BUG-003 (screenshot crash in error handler) and BUG-004 (30s typing timeout too short)
+- ✅ **BUG-003 fixed**: Created `safe_screenshot()` wrapper, replaced all 5 raw `page.screenshot()` calls
+- ✅ **BUG-004 fixed**: Increased `press_sequentially` timeout to 60s, `wait_for` to 60s
+- ✅ **BUG-001 fixed**: Added `connectivity_guard()` with 60s backoff polling before send loop
+- ✅ **BUG-002 fixed**: `main.py` catches RuntimeError + checks bool return → `sys.exit(1)`
+- ✅ **Documentation updated**: BUGS.md, CHANGELOG.md, SPRINT.md, 1-PLAN.md
+- ✅ **Committed and pushed**: master @ cd015fc, tag v1.0.2 updated
+- ✅ **Deployed to VM**: `git stash && git pull` on nposadaa111@trm-notifier
+- ✅ **Sprint 3 draft created**: Placeholder for v1.0.3 if more issues surface
+
+### Verification
+- [x] Both files compile cleanly (py_compile)
+- [x] Zero raw `page.screenshot()` calls remain in broadcaster.py
+- [x] VM deployed and running updated code
+- [ ] Next CRON run (2026-04-15 12:00 UTC) confirms fixes work
+
+### Paused Because
+User requested pause. Sprint 2 code is deployed; waiting for CRON verification.
+
+### Handoff Notes
+All code deployed. Resume by fetching logs after 2026-04-15 07:00 AM COT.
+Manual test available: `gcloud compute ssh nposadaa111@trm-notifier --zone=us-central1-a --command="cd ~/wa_trm_notifier && bash scripts/run_vm.sh"`
