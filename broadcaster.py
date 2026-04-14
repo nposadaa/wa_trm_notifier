@@ -330,9 +330,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"Finding input box for {name}...")
             chat_input = page.locator('#main div[contenteditable="true"], footer div[contenteditable="true"]').first
             
-            # 4. Type message using DOM-level insertText (BUG-006 / DEC-024)
-            # press_sequentially mangles emoji surrogate pairs in Lexical editors.
-            # insertText operates at the DOM level and handles full Unicode natively.
+            # 4. Type message using keyboard.insert_text (BUG-006 / DEC-024)
+            # press_sequentially mangles emoji surrogate pairs.
+            # execCommand('insertText') modifies DOM but NOT React/Lexical state.
+            # keyboard.insert_text() dispatches proper InputEvent that Lexical recognizes,
+            # AND handles emoji/Unicode natively (designed for IME input).
             print(f"Typing message to {name}...")
             interaction_success = False
             
@@ -341,20 +343,24 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     # Ensure the box is ready (Increased timeout for VM stability)
                     chat_input.wait_for(state="visible", timeout=60000)
                     
-                    # Force Focus via Locator.evaluate (BUG-006: no stale element_handle)
-                    print(f"  [Attempt {attempt+1}/2] Forcing focus and clearing buffer...")
-                    chat_input.evaluate("(el) => { el.focus(); document.execCommand('selectAll', false, null); document.execCommand('delete', false, null); }")
+                    # Force Focus via Locator (BUG-006: no stale element_handle)
+                    print(f"  [Attempt {attempt+1}/2] Focusing input and clearing buffer...")
+                    chat_input.click()
+                    time.sleep(0.3)
+                    page.keyboard.press("Control+A")
+                    page.keyboard.press("Backspace")
                     time.sleep(0.5)
                     
-                    # Insert message line-by-line using insertText (handles emoji/Unicode)
+                    # Insert message line-by-line via keyboard.insert_text
+                    # This fires proper browser InputEvent (compatible with React/Lexical)
                     lines = message_text.split('\n')
                     for i, line in enumerate(lines):
                         if line:
-                            chat_input.evaluate("(el, text) => { el.focus(); document.execCommand('insertText', false, text); }", line)
+                            page.keyboard.insert_text(line)
                             time.sleep(0.3)
                         if i < len(lines) - 1:
-                            # Shift+Enter for newlines in WhatsApp via keyboard
-                            chat_input.press("Shift+Enter")
+                            # Shift+Enter for newlines in WhatsApp
+                            page.keyboard.press("Shift+Enter")
                             time.sleep(0.1)
                     
                     time.sleep(2.0)
@@ -369,7 +375,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     if not typed_content:
                         print(f"  [Attempt {attempt+1}/2] WARNING: Input box appears empty after typing!")
                         if attempt == 0:
-                            print("  Retrying with keyboard fallback...")
+                            print("  Retrying...")
                             safe_screenshot(page, f"diag_empty_input_{name.replace('/', '_')}.png")
                             time.sleep(3)
                             continue
@@ -382,8 +388,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         send_button.click()
                         print(f"  [Attempt {attempt+1}/2] Send button clicked.")
                     else:
-                        chat_input.press("Enter")
-                        print(f"  [Attempt {attempt+1}/2] Enter pressed (Send button missing).")
+                        page.keyboard.press("Enter")
+                        print(f"  [Attempt {attempt+1}/2] Enter pressed (Send button not found).")
                     
                     interaction_success = True
                     break
