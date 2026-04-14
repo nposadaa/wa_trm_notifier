@@ -127,6 +127,88 @@ Increased `press_sequentially` timeout to 60000ms. Also increased `wait_for` tim
 
 ---
 
+## BUG-005 — Scraper returns stale TRM data at early CRON time
+
+| Field | Value |
+|-------|-------|
+| **Status** | `fixed` |
+| **Priority** | Med |
+| **Discovered** | 2026-04-14 |
+| **Fixed in release** | v1.0.3 |
+| **Phase plan** | phases/5/1-PLAN.md |
+
+### Description
+CRON runs at 7:00 AM COT (12:00 UTC), but `dolar-colombia.com` doesn't update the current
+day's TRM until later in the morning (~10 AM COT). The scraper returns yesterday's rate.
+
+### Root Cause
+Timing mismatch between CRON schedule and the source website's update cadence.
+
+### Evidence
+- `logs/notifier_2026-04-14.log`: Scraped 3631.49 for 2026-04-13 at 12:00 UTC
+- Live site at 12:30 PM COT shows $3,608.10 for 2026-04-14
+
+### Fix
+1. Shifted CRON from `0 12 * * *` to `0 15 * * *` (10:00 AM COT)
+2. Added staleness check in `main.py` with disclaimer if date doesn't match today
+
+---
+
+## BUG-006 — Message typing fails silently (emoji + Lexical compat)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `fixed` |
+| **Priority** | High |
+| **Discovered** | 2026-04-14 |
+| **Fixed in release** | v1.0.3 |
+| **Phase plan** | phases/5/1-PLAN.md |
+
+### Description
+Message typed into input box without error, but send button never appears and Enter sends
+nothing. Three contributing factors: emoji surrogate pairs in `press_sequentially`, stale
+`element_handle()` pointer, and `execCommand('insertText')` not firing React/Lexical events.
+
+### Root Cause
+WhatsApp uses Lexical (React-based rich text editor). DOM-level operations modify the DOM
+but not Lexical's internal state. Send button visibility is driven by Lexical state.
+
+### Evidence
+- `logs/vm_run.log`: "Typing verified: 86 chars" but "Send button missing" consistently
+- Message never delivered despite Enter pressed
+
+### Fix (v2)
+Replaced with `page.keyboard.insert_text()` which dispatches proper browser-level InputEvent.
+Confirmed working: live test 2026-04-14 14:38 COT delivered with correct emojis and ✓✓.
+
+---
+
+## BUG-007 — Delivery verification false negative
+
+| Field | Value |
+|-------|-------|
+| **Status** | `open` |
+| **Priority** | Low |
+| **Discovered** | 2026-04-14 |
+| **Fixed in release** | — (planned v1.0.4) |
+| **Phase plan** | — |
+
+### Description
+Delivery verification reports FAILURE even when message is successfully sent and delivered
+(double checkmarks visible in WhatsApp group).
+
+### Root Cause
+Selectors `msg-check`/`msg-dblcheck` may not match current WhatsApp DOM, or checkmarks
+are on elements not captured by the `.last` locator strategy.
+
+### Evidence
+- Live test 2026-04-14: message delivered with ✓✓ but logs show "FAILURE"
+
+### Fix (planned)
+Update checkmark selectors. Consider: if no `msg-clock` after 30s → treat as likely success.
+
+---
+
 ## Template for new bugs
 
 Copy this block when logging a new bug:

@@ -151,3 +151,38 @@ User requested pause. Sprint 2 code is deployed; waiting for CRON verification.
 ### Handoff Notes
 All code deployed. Resume by fetching logs after 2026-04-15 07:00 AM COT.
 Manual test available: `gcloud compute ssh nposadaa111@trm-notifier --zone=us-central1-a --command="cd ~/wa_trm_notifier && bash scripts/run_vm.sh"`
+
+## Session: 2026-04-14 12:00 (COT)
+
+### Objective
+Investigate and fix remaining delivery failures after Sprint 2 deployment.
+
+### Accomplished
+- ✅ **Diagnosed stale scraper data**: dolar-colombia.com updates after 7 AM → CRON was too early
+- ✅ **BUG-005 fixed**: Shifted CRON to 10:00 AM COT + added staleness check in main.py
+- ✅ **BUG-006 fixed (3 iterations)**:
+  - v1: `document.execCommand('insertText')` → typed into DOM but Lexical state unaware
+  - v2: `page.keyboard.insert_text()` → dispatches proper InputEvent, Lexical recognizes it
+  - **Confirmed working**: Live test delivered $3,608.10 for Apr 14 with emojis at 14:38 COT
+- ✅ **BUG-007 identified**: Delivery verification false negative (low priority, deferred to v1.0.4)
+- ✅ **Documentation updated**: BUGS.md, CHANGELOG.md, VERSION, STATE.md, SPRINT, tags
+- ✅ **Releases tagged**: v1.0.2 (cd015fc), v1.0.3 (23a7494) pushed to GitHub
+
+### Verification
+- [x] Live test: message delivered with correct date, value, emojis, double checkmarks
+- [x] Scraper returns correct data at 10:00 AM+ COT
+- [x] All code compile-clean
+- [ ] Next CRON run (2026-04-15 10:00 AM COT) — autonomous verification pending
+
+### Key Learning
+WhatsApp Web uses Lexical (React-based rich text editor). Three levels of text insertion:
+1. `press_sequentially` → keyboard events, breaks on emoji surrogate pairs
+2. `document.execCommand('insertText')` → modifies DOM only, Lexical state unaware
+3. `page.keyboard.insert_text()` → dispatches browser-level InputEvent, Lexical compatible ✅
+
+### Paused Because
+v1.0.3 released and deployed. Awaiting autonomous CRON verification.
+
+### Handoff Notes
+Next CRON: 2026-04-15 10:00 AM COT (15:00 UTC). Fetch logs and check WhatsApp group.
+If delivered: promote v1.0.3 to stable. If not: check logs for new failure mode.

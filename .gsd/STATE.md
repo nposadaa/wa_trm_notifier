@@ -1,64 +1,50 @@
 # STATE.md - Project Memory
 
 > **Current Phase**: Phase 5 - Live Support & Stability
-> **Last Update**: 2026-04-14 10:12 COT
-> **Status**: Paused — Sprint 2 deployed, awaiting CRON verification
+> **Last Update**: 2026-04-14 14:50 COT
+> **Status**: Paused — v1.0.3 released, v1.0.2 released, v1.0.4 planned
 
 ## Current Position
 - **Phase**: Phase 5 - Live Support & Stability
-- **Sprint**: Sprint 2 - delivery-reliability (deployed to VM)
-- **Task**: Verify next CRON run
-- **Status**: Paused at 2026-04-14 10:12 COT
+- **Sprint**: Sprint 3 - typing & scraper (COMPLETE)
+- **Task**: None — awaiting next CRON verification
+- **Status**: Paused at 2026-04-14 14:50 COT
 
 ## Last Session Summary
-Resumed from 2026-04-13 pause. Fetched VM logs, diagnosed second CRON failure (2026-04-14).
-Discovered two NEW bugs on top of the two known ones:
+Diagnosed and fixed two more bugs after Sprint 2 deployment:
+- **BUG-005**: Stale scraper data due to CRON running before website updates → shifted CRON to 10:00 AM COT + added staleness check
+- **BUG-006**: Silent typing failure — three root causes (emoji, stale handle, Lexical compat) → fixed with `keyboard.insert_text()` which dispatches proper InputEvent
 
-All 4 bugs fixed, documented, committed (cd015fc), pushed, and deployed to VM:
-- BUG-001: connectivity_guard() — polls "Retrying" banner, aborts after 60s
-- BUG-002: main.py exits 1 on failure via try/except + bool return
-- BUG-003: safe_screenshot() wrapper — prevents error-handler crashes
-- BUG-004: press_sequentially timeout 30s → 60s for e2-micro
+**Confirmed working**: Live test at 14:38 COT delivered correct message ($3,608.10 for Apr 14) with emojis and double checkmarks.
 
-Tag v1.0.2 updated to cd015fc. VM deployed via `git stash && git pull`.
-Sprint 3 (v1.0.3) created as draft placeholder for future fixes.
+Identified **BUG-007** (delivery verification false negative) for future v1.0.4 release — low priority since delivery itself works.
 
-## In-Progress Work
-- No uncommitted code changes
-- VM has stashed local changes (broadcaster.py from prior runs — diagnostic artifacts only)
-- Sprint 2 final task: verify next CRON run
+## Releases
+| Version | Commit | Status | Content |
+|---------|--------|--------|---------|
+| v1.0.0 | — | Stable | Initial release |
+| v1.0.1 | — | Stable | UI Janitor, reinforced interaction |
+| v1.0.2 | cd015fc | Released | BUG-001→004 (connectivity, exit code, safe screenshots, timeouts) |
+| v1.0.3 | 23a7494 | Released | BUG-005→006 (scraper timing, Lexical typing) |
+| v1.0.4 | — | Planned | BUG-007 (verification false negative) |
 
 ## Blockers
-- None. Waiting for CRON run 2026-04-15 12:00 UTC (7:00 AM COT)
+- None. Pipeline is working end-to-end.
 
 ## Context Dump
-
-### Decisions Made
-- **DEC-021**: Self-healing Locators for React re-renders
-- **Phase 5 Sprint Model**: Post-deployment hardening in time-boxed sprints
-- **Tag naming**: v{major}.{minor}.{patch} — pre-release is GitHub UI toggle
-- **Bug traceability**: BUG-NNN in BUGS.md + CHANGELOG.md
-- **Safe screenshots**: Diagnostic screenshots are best-effort, never crash-inducing
-- **Exit code contract**: run_broadcaster() returns bool; main.py converts to exit code
-- **Connectivity guard**: 60s total with backoff [5,5,10,10,15,15]
 
 ### VM Deployment Details
 - SSH user: nposadaa111@trm-notifier (zone: us-central1-a)
 - Project path: /home/nposadaa111/wa_trm_notifier
-- CRON schedule: 12:00 UTC daily (7:00 AM COT)
+- CRON schedule: `0 15 * * *` (10:00 AM COT)
 - Run script: scripts/run_vm.sh (uses xvfb-run + --headless)
 
-### Active Sprints
-- Sprint 2 (delivery-reliability): code complete, deployed, awaiting verification
-- Sprint 3 (v1.0.3): DRAFT — placeholder for issues surfaced by next CRON runs
-
-### Files Changed in Sprint 2
-- broadcaster.py (BUG-001, BUG-003, BUG-004 + return value)
-- main.py (BUG-002: exit code propagation)
-- .gsd/phases/5/BUGS.md, 1-PLAN.md, SPRINT.md, CHANGELOG.md
+### Key Decisions
+- **DEC-024**: `keyboard.insert_text()` over `press_sequentially` and `execCommand` for Lexical-compatible typing
+- **CRON timing**: 10:00 AM COT ensures dolar-colombia.com has updated
+- **BUG-007 deferred**: False-negative verification doesn't affect delivery, fix later
 
 ## Next Steps
-1. Wait for CRON run 2026-04-15 12:00 UTC — OR run manual test: `gcloud compute ssh nposadaa111@trm-notifier --zone=us-central1-a --command="cd ~/wa_trm_notifier && bash scripts/run_vm.sh"`
-2. Fetch logs: `.\scripts\fetch-logs.ps1`
-3. If passing: close Sprint 2, promote v1.0.2 to stable on GitHub
-4. If failing: diagnose, log bugs in BUGS.md, execute Sprint 3
+1. Wait for next CRON run (2026-04-15 10:00 AM COT / 15:00 UTC)
+2. Fetch logs → if message delivered: promote v1.0.3 to stable
+3. Future: fix BUG-007 in v1.0.4 (low priority)

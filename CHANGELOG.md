@@ -2,9 +2,26 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
-## [1.0.3] - TBD 📋
-> **Status**: Draft. Placeholder for issues surfaced after v1.0.2 deployment.
-> Sprint 3 tracked in `.gsd/SPRINT-3-DRAFT.md`.
+## [1.0.4] - TBD 📋
+> **Status**: Planned. Delivery verification hardening.
+
+### Planned
+- **(BUG-007)** Fix false-negative delivery verification: update checkmark selectors to match
+  current WhatsApp DOM; treat absence of clock icon as likely success.
+
+## [1.0.3] - 2026-04-14
+> **Status**: Released. Fixes delivered in Phase 5 / Sprint 3 (typing & scraper).
+> Bugs are tracked in `.gsd/phases/5/BUGS.md`.
+
+### Fixed
+- **(BUG-005)** CRON shifted from 7:00 AM to 10:00 AM COT to ensure `dolar-colombia.com`
+  has updated the day's TRM. Added staleness check with disclaimer in `main.py`.
+- **(BUG-006)** Replaced `press_sequentially` + `element_handle()` + `execCommand('insertText')`
+  with `page.keyboard.insert_text()` — dispatches proper browser-level InputEvent compatible
+  with WhatsApp's Lexical editor. Handles emoji/Unicode natively. Post-typing verification added.
+
+### Changed
+- CRON schedule: `0 12 * * *` → `0 15 * * *` (10:00 AM COT)
 
 ## [1.0.2] - 2026-04-14
 > **Status**: Released. Fixes delivered in Phase 5 / Sprint 2 (delivery-reliability).
