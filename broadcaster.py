@@ -414,7 +414,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 time.sleep(2)
                 
                 # Wait for the checkmark to attach to the deeply nested DOM (up to 3 minutes for slow VM)
-                page.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"]').last.wait_for(state="attached", timeout=180000)
+                page.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]').last.wait_for(state="attached", timeout=180000)
                 print(f"✅ SUCCESS: Delivery Confirmed. Checkmark detected.")
                 delivery_verified = True
             except Exception as e:
