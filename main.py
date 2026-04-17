@@ -50,7 +50,7 @@ def main():
         stale_disclaimer = f"\n\n⚠️ _Datos del {trm_date} (sitio no actualizado al momento de consulta)_"
 
     # 2. Format the Message
-    message_text = f"📈 *TRM Oficial - {trm_date}*\n\n💵 Valor: ${trm_value:,.2f} COP. Source www.dolar-colombia.com{stale_disclaimer}"
+    message_text = f"📈 *TRM Oficial - {trm_date}*\n\n💵 Valor: ${trm_value:,.2f} COP. Fuente: www.superfinanciera.gov.co{stale_disclaimer}"
     logger.info(f"Prepared Message:\n{message_text}")
 
     # 3. Broadcast using Playwright
