@@ -187,11 +187,11 @@ Confirmed working: live test 2026-04-14 14:38 COT delivered with correct emojis 
 
 | Field | Value |
 |-------|-------|
-| **Status** | `open` |
+| **Status** | `fixed` |
 | **Priority** | Low |
 | **Discovered** | 2026-04-14 |
-| **Fixed in release** | — (planned v1.0.4) |
-| **Phase plan** | — |
+| **Fixed in release** | v1.0.4 |
+| **Phase plan** | phases/5/2-PLAN.md |
 
 ### Description
 Delivery verification reports FAILURE even when message is successfully sent and delivered
@@ -204,8 +204,8 @@ are on elements not captured by the `.last` locator strategy.
 ### Evidence
 - Live test 2026-04-14: message delivered with ✓✓ but logs show "FAILURE"
 
-### Fix (planned)
-Update checkmark selectors. Consider: if no `msg-clock` after 30s → treat as likely success.
+### Fix
+Replaced rapid `is_visible()` polls with stable Playwright `.wait_for(state="attached")`. Expanded checkmark selectors to natively support `data-icon` permutations alongside `data-testid`. Appended a fallback branch: if Playwright wait times out, evaluate if the outbox clock (`msg-clock`) is also gone — if so, safely deduce a false-negative scroll/DOM exception and mark as **SUCCESS**.
 
 ---
 

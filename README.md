@@ -7,14 +7,14 @@ In Colombia, the USD/COP exchange rate is a critical business and social metric.
 
 ## 🏗 Architecture
 ```
-dolar-colombia.com → scraper.py → main.py → broadcaster.py → WhatsApp Web (Playwright)
+datos.gov.co (Datos Abiertos) → scraper.py → main.py → broadcaster.py → WhatsApp Web (Playwright)
 ```
-1. **Scraper** fetches the official TRM from `dolar-colombia.com`.
+1. **Scraper** fetches the official TRM directly from the `datos.gov.co` (SuperFinanciera Socrata API).
 2. **Main** formats a clean message string with the date and value.
 3. **Broadcaster** opens WhatsApp Web via Playwright, searches for each recipient, types the message, and sends.
 
 ## ✨ Key Features
-- **Automated Scraper**: Robust Python-based scraper for `dolar-colombia.com`.
+- **Automated Scraper**: Extremely fast API consumer built exclusively for the official Colombian `Datos Abiertos` infrastructure.
 - **Direct Browser Broadcast**: Uses **Playwright** to natively type and send messages on WhatsApp Web — no Meta API or business account needed.
 - **Self-Healing Interaction**: Uses Playwright **Locators** (DEC-021) to automatically recover if the DOM re-renders during slow cloud syncs.
 - **Zero-Cost**: Runs entirely on a GCP "Always Free" e2-micro instance.
@@ -99,7 +99,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current sprint**: Sprint 2 — `delivery-reliability` · Target: `v1.0.2`
+> **Current sprint**: Sprint 4 — `Data Source Migration` · Target: `v1.0.4`
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*
