@@ -2,18 +2,18 @@
 
 > **Current Phase**: Phase 5 - Live Support & Stability
 > **Last Update**: 2026-04-14 14:50 COT
-> **Status**: Paused — v1.0.3 released, v1.0.2 released, v1.0.4 planned
+> **Status**: Active (resumed 2026-04-17 12:16 COT)
 
 ## Current Position
-- **Phase**: Phase 5 - Live Support & Stability
-- **Sprint**: Sprint 3 - typing & scraper (COMPLETE)
-- **Task**: None — awaiting next CRON verification
-- **Status**: Paused at 2026-04-14 14:50 COT
+- **Phase**: Phase 5 - Operations (Plan 5.2 complete)
+- **Task**: All Socrata API integration and BUG-007 tasks complete
+- **Status**: Active (Awaiting VM deployment/cron test)
 
 ## Last Session Summary
-Diagnosed and fixed two more bugs after Sprint 2 deployment:
-- **BUG-005**: Stale scraper data due to CRON running before website updates → shifted CRON to 10:00 AM COT + added staleness check
-- **BUG-006**: Silent typing failure — three root causes (emoji, stale handle, Lexical compat) → fixed with `keyboard.insert_text()` which dispatches proper InputEvent
+Executed Plan 5.2 (Data Source Migration & Hardening):
+- Refactored `scraper.py` to pull TRM data from SuperFinanciera's official 'Datos Abiertos' Socrata JSON API instead of scraping HTML.
+- Updated `main.py` message template to cite `www.superfinanciera.gov.co`.
+- Fixed BUG-007 (delivery verification false negative) using robust Playwright wait_for strategies for the checkmark element.
 
 **Confirmed working**: Live test at 14:38 COT delivered correct message ($3,608.10 for Apr 14) with emojis and double checkmarks.
 
