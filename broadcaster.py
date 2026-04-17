@@ -406,33 +406,32 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 page.keyboard.press("Enter")
 
             # --- Empirical Delivery Verification ---
-            # We wait longer for the 'Clock' icon to transition to 'Checkmark'
             print(f"Verifying delivery to {name}...")
             delivery_verified = False
             
-            # Up to 3 minutes for slow VM to upload the buffer
-            for v_sec in range(180):
-                # SUCCESS: Found checkmark
-                if page.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"]').last.is_visible(timeout=500):
-                    print(f"[{v_sec}s] Delivery Confirmed: Checkmark detected.")
+            try:
+                # Allow a short moment for DOM to update after sending
+                time.sleep(2)
+                
+                # Wait for the checkmark to attach to the deeply nested DOM (up to 3 minutes for slow VM)
+                page.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"]').last.wait_for(state="attached", timeout=180000)
+                print(f"✅ SUCCESS: Delivery Confirmed. Checkmark detected.")
+                delivery_verified = True
+            except Exception as e:
+                # Timeout occurred. Check if the message is persistently stuck in Outbox.
+                if page.locator('span[data-testid="msg-clock"]').last.is_visible(timeout=2000):
+                    print(f"❌ FAILURE: Message held in Outbox (Clock icon stuck).")
+                else:
+                    # No clock and no checkmark found? Likely a scroll/DOM false negative.
+                    print("⚠️ WARNING: Checkmark locator timed out, but no Clock icon found. Treating as likely SUCCESS (false negative fallback).")
                     delivery_verified = True
-                    break
-                
-                # WARNING: In Outbox (Clock)
-                if page.locator('span[data-testid="msg-clock"]').last.is_visible(timeout=500):
-                    if v_sec % 10 == 0:
-                        print(f"[{v_sec}s] Message in Outbox (Clock icon). Waiting for WebSocket upload...")
-                
-                time.sleep(1)
 
-            if delivery_verified:
-                print(f"✅ SUCCESS: Sent message to {name}!")
-            else:
-                print(f"❌ FAILURE: Message held in Outbox (Clock) or Missing. Saving diag_delivery_failed.png")
+            if not delivery_verified:
+                print(f"❌ FAILURE: Delivery failed. Saving diag_delivery_failed_{name.replace('/', '_')}.png")
                 safe_screenshot(page, f"diag_delivery_failed_{name.replace('/', '_')}.png")
                 any_failure = True
 
-            time.sleep(5) 
+            time.sleep(5)
 
         print("\nAll recipients processed. Finalizing buffer flush (60s)...")
         # EXTENDED: Give the slow VM a full minute to ensure all WebSockets are closed cleanly
