@@ -186,3 +186,25 @@ v1.0.3 released and deployed. Awaiting autonomous CRON verification.
 ### Handoff Notes
 Next CRON: 2026-04-15 10:00 AM COT (15:00 UTC). Fetch logs and check WhatsApp group.
 If delivered: promote v1.0.3 to stable. If not: check logs for new failure mode.
+
+## Session: 2026-04-17
+
+### Objective
+Migrate the TRM scraper data source to SuperFinanciera Socrata API and finalize delivery verification for v1.0.4.
+
+### Accomplished
+- Scraper ripped out `BeautifulSoup`/HTML in favor of a lean `requests` JSON pipeline against `datos.gov.co`.
+- Resolved **BUG-007** (delivery verification false negatives) using robust Playwright async `wait_for(state="attached")`. Expanded selector to handle both `data-testid` and `data-icon`. Added fallback exception handler that safely verifies clock absence.
+- Shipped code and annotated `v1.0.4` git tag.
+
+### Verification
+- [x] Scraper runs returning JSON natively.
+- [x] Full headless dry-run completed on master.
+- [ ] Tomorrow's early VM cron automation.
+
+### Paused Because
+Session goals achieved. Waiting for tomorrow's live automated execution run.
+
+### Handoff Notes
+The `crontab` was OS-adjusted back to an early slot (7:00 AM COT). 
+Review logs tomorrow to confirm success.
