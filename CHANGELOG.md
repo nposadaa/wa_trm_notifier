@@ -2,12 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
-## [1.0.4] - TBD 📋
-> **Status**: Planned. Delivery verification hardening.
+## [1.0.4] - 2026-04-17
+> **Status**: Released. Data source migration and delivery verification hardening.
 
 ### Planned
-- **(BUG-007)** Fix false-negative delivery verification: update checkmark selectors to match
-  current WhatsApp DOM; treat absence of clock icon as likely success.
+- **(FEATURE)** Migrate TRM scraper source from `dolar-colombia.com` to the official SuperFinanciera Datos Abiertos API (Socrata) for improved timeliness. Update message template to cite `www.superfinanciera.gov.co`.
+### Fixed
+- **(BUG-007)** Fix false-negative delivery verification: update checkmark selectors to match current WhatsApp DOM (adding `data-icon`); use `wait_for(state="attached")` and treat absence of clock icon as likely success.
 
 ## [1.0.3] - 2026-04-14
 > **Status**: Released. Fixes delivered in Phase 5 / Sprint 3 (typing & scraper).
