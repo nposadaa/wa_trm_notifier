@@ -1,39 +1,26 @@
 import requests
-from bs4 import BeautifulSoup
 import json
 from datetime import datetime
 
 def scrape_trm():
-    url = "https://www.dolar-colombia.com/"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    }
-
+    # Official SuperFinanciera TRM Open Data via Socrata
+    url = "https://www.datos.gov.co/resource/mcec-87by.json?$limit=1&$order=vigenciadesde DESC"
+    
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
         
-        soup = BeautifulSoup(response.text, "lxml")
+        data = response.json()
+        if not data or len(data) == 0:
+            raise ValueError("No data returned from Datos Abiertos API.")
+            
+        latest = data[0]
         
         # 1. Extract TRM numeric value
-        # Selector: span.exchange-rate
-        trm_element = soup.select_one("span.exchange-rate")
-        if not trm_element:
-            raise ValueError("Could not find TRM element on the page.")
+        trm_value = float(latest["valor"])
         
-        trm_text = trm_element.get_text(strip=True)
-        # Clean: remove commas and any whitespace
-        trm_value = float(trm_text.replace(",", ""))
-        
-        # 2. Extract Date from input-datepicker
-        # Selector: input.input-datepicker (value attribute)
-        date_element = soup.select_one("input.input-datepicker")
-        if not date_element or not date_element.get("value"):
-            # Fallback to human-readable header if input fails
-            fallback_date_element = soup.select_one("div.box__title")
-            reported_date = fallback_date_element.get_text(strip=True) if fallback_date_element else "Unknown"
-        else:
-            reported_date = date_element.get("value")
+        # 2. Extract Date from vigenciadesde (e.g. "2026-04-17T00:00:00.000")
+        reported_date = latest["vigenciadesde"].split("T")[0]
             
         result = {
             "trm": trm_value,
