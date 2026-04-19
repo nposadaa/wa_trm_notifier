@@ -2,6 +2,14 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.0.6] - 2026-04-19
+> **Status**: Released. Stability patch for high-latency VM environments.
+
+### Fixed
+- **Verification Buffer**: Added a 2s settle-pause before delivery verification to allow the React DOM to stabilize.
+- **Extended Timeout**: Increased delivery verification timeout to 5 minutes (300s) to handle extreme "acknowledgment lag" on 1-core VMs.
+- **Granular Logging**: Added elapsed time tracking for the acknowledgment wait to improve observability of VM performance.
+
 ## [1.0.5] - 2026-04-19
 > **Status**: Released. Delivery verification hardening and connectivity guards.
 

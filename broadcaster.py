@@ -23,11 +23,12 @@ def safe_screenshot(page, path, timeout_ms=10000):
         print(f"  WARNING: Screenshot failed ({e}). Browser may be frozen.")
 
 
-def connectivity_guard(page, timeout=60):
+def connectivity_guard(page, timeout=120):
     """Abort early if WhatsApp Web is in a 'Connecting/Retrying' state. (BUG-001)
 
     Polls the sidebar for the connectivity banner. If it does not clear
     within `timeout` seconds, raises RuntimeError so main.py can exit(1).
+    Version: 1.0.6
     """
     banner_selectors = (
         'div:has-text("Connecting to WhatsApp")'
@@ -416,20 +417,23 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 page.keyboard.press("Enter")
 
             # --- Empirical Delivery Verification (BUG-008 Hardening) ---
-            print(f"Verifying delivery to {name}...")
+            print(f"Verifying delivery to {name} (Watching last row for acknowledgment)...")
             delivery_verified = False
+            start_verify = time.time()
             
             try:
+                # Give the DOM a moment to generate the row after 'Enter'
+                time.sleep(2)
+                
                 # 1. Locate the physical last message row in the chat window (#main)
-                # WhatsApp rows use [role="row"]. The last one should be our message.
                 last_row = page.locator('#main div[role="row"]').last
                 
                 # 2. Wait for checkmark/double-checkmark WITHIN that row specifically
-                # This prevents false positives from previous messages already in DOM.
                 status_locator = last_row.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]')
                 
-                status_locator.wait_for(state="attached", timeout=180000)
-                print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark.")
+                status_locator.wait_for(state="attached", timeout=300000) # Increased to 5m for high-latency VMs
+                elapsed_verify = int(time.time() - start_verify)
+                print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark (Ack took {elapsed_verify}s).")
                 delivery_verified = True
             except Exception as e:
                 # Timeout occurred. Check if the SPECIFIC new message is stuck.
