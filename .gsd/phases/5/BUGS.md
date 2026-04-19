@@ -209,7 +209,55 @@ Replaced rapid `is_visible()` polls with stable Playwright `.wait_for(state="att
 
 ---
 
-## Template for new bugs
+## BUG-008 — False Positive Delivery Success (Verification Anchor Missing)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `fixed` |
+| **Priority** | High |
+| **Discovered** | 2026-04-19 |
+| **Fixed in release** | v1.0.5 |
+| **Phase plan** | phases/5/2-PLAN.md → Task: BUG-8 |
+
+### Description
+Broadcaster reports `✅ SUCCESS: Delivery Confirmed` even when a message is stuck in the outbox (clock icon). This occurs because the global checkmark selector finds the *previous* successful message's checkmarks instead of the new one.
+
+### Root Cause
+`page.locator('...check').last` is not anchored to the message we just sent. On high-latency or disconnected sessions, the `wait_for` resolves against the existing DOM elements from the previous day's run.
+
+### Evidence
+- `logs/vm_run.log` (2026-04-19): `SUCCESS: Delivery Confirmed`
+- `diag_delivery_failed_COP_USD Notifier.png`: Message shows a clock icon (⏰), not checkmarks.
+
+### Fix
+Anchor the verification to the last message row in the `#main` chat pane specifically. Only check checkboxes *within* that newest container.
+
+---
+
+## BUG-009 — Connectivity Guard bypass ("Connecting" banner variant)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `fixed` |
+| **Priority** | High |
+| **Discovered** | 2026-04-19 |
+| **Fixed in release** | v1.0.5 |
+| **Phase plan** | phases/5/2-PLAN.md → Task: BUG-9 |
+
+### Description
+The `connectivity_guard()` reports `[CONNECTIVITY] No connectivity banner — proceeding` while the UI clearly shows a "Connecting to WhatsApp" banner, causing the send attempt to hang in the outbox.
+
+### Root Cause
+1. Selector might be missing a specific text variant or wrapper used in the newest WhatsApp Web layout.
+2. The guard only checks once at the start of the loop; it should check immediately before clicking/sending.
+
+### Evidence
+- `diag_delivery_failed_COP_USD Notifier.png`: Yellow "Connecting to WhatsApp -- Retrying" banner is visible.
+- `logs/vm_run.log`: `[CONNECTIVITY] No connectivity banner — proceeding.`
+
+### Fix
+Use broader text-insensitive or data-icon based selectors for the banner. Add a re-verification check right after chat selection.
+
 
 Copy this block when logging a new bug:
 

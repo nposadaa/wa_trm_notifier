@@ -34,11 +34,12 @@ def connectivity_guard(page, timeout=60):
         ', div:has-text("Retrying")'
         ', div:has-text("Conectando")'
         ', div:has-text("Reintentando")'
+        ', div[role="alert"]:has-text("WhatsApp")'
     )
     # Quick initial check — if no banner, proceed immediately
     banner = page.locator(banner_selectors).first
-    if not banner.is_visible(timeout=2000):
-        print("[CONNECTIVITY] No connectivity banner — proceeding.")
+    if not banner.is_visible(timeout=5000): # Increased to catch transient flashes
+        print("[CONNECTIVITY] No connectivity banner detected — proceeding.")
         return
 
     print("[CONNECTIVITY] ⚠ Banner detected — waiting for WebSocket restore...")
@@ -324,6 +325,15 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 any_failure = True
                 continue
 
+            # --- Pre-type connectivity re-verification (BUG-009) ---
+            # Connection can drop after the initial guard during search load.
+            try:
+                connectivity_guard(page, timeout=30)
+            except RuntimeError as e:
+                print(f"  [Attempt 1/1] Aborting: {e}")
+                any_failure = True
+                continue
+
             time.sleep(3.0) # Stability buffer
 
             # 3. Target the chat input box (Locator-First / DEC-021)
@@ -405,29 +415,41 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print(f"CRITICAL: Interaction failed for {name} after all retries. Attempting final emergency Enter...")
                 page.keyboard.press("Enter")
 
-            # --- Empirical Delivery Verification ---
+            # --- Empirical Delivery Verification (BUG-008 Hardening) ---
             print(f"Verifying delivery to {name}...")
             delivery_verified = False
             
             try:
-                # Allow a short moment for DOM to update after sending
-                time.sleep(2)
+                # 1. Locate the physical last message row in the chat window (#main)
+                # WhatsApp rows use [role="row"]. The last one should be our message.
+                last_row = page.locator('#main div[role="row"]').last
                 
-                # Wait for the checkmark to attach to the deeply nested DOM (up to 3 minutes for slow VM)
-                page.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]').last.wait_for(state="attached", timeout=180000)
-                print(f"✅ SUCCESS: Delivery Confirmed. Checkmark detected.")
+                # 2. Wait for checkmark/double-checkmark WITHIN that row specifically
+                # This prevents false positives from previous messages already in DOM.
+                status_locator = last_row.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]')
+                
+                status_locator.wait_for(state="attached", timeout=180000)
+                print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark.")
                 delivery_verified = True
             except Exception as e:
-                # Timeout occurred. Check if the message is persistently stuck in Outbox.
-                if page.locator('span[data-testid="msg-clock"]').last.is_visible(timeout=2000):
-                    print(f"❌ FAILURE: Message held in Outbox (Clock icon stuck).")
-                else:
-                    # No clock and no checkmark found? Likely a scroll/DOM false negative.
-                    print("⚠️ WARNING: Checkmark locator timed out, but no Clock icon found. Treating as likely SUCCESS (false negative fallback).")
-                    delivery_verified = True
+                # Timeout occurred. Check if the SPECIFIC new message is stuck.
+                try:
+                    last_row = page.locator('#main div[role="row"]').last
+                    if last_row.locator('span[data-testid="msg-clock"], span[data-icon="msg-clock"]').is_visible(timeout=3000):
+                        print(f"❌ FAILURE: Message held in Outbox (Clock icon detected on last row).")
+                    else:
+                        # No clock and no checkmark found? Fallback to global audit (risk of false positive, but better than silent fail)
+                        print("⚠️ WARNING: Row-anchored checkmark timed out. Checking global DOM for any recent update...")
+                        if page.locator('span[data-testid="msg-check"], span[data-icon="msg-check"]').last.is_visible(timeout=2000):
+                            print("✅ SUCCESS: Found checkmark in global scope (Possible false-positive fallback).")
+                            delivery_verified = True
+                        else:
+                            print("❌ FAILURE: No checkmarks or clock found. Message state unknown.")
+                except Exception as nested_e:
+                    print(f"❌ FAILURE: Verification engine crashed ({nested_e})")
 
             if not delivery_verified:
-                print(f"❌ FAILURE: Delivery failed. Saving diag_delivery_failed_{name.replace('/', '_')}.png")
+                print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving diag_delivery_failed_{name.replace('/', '_')}.png")
                 safe_screenshot(page, f"diag_delivery_failed_{name.replace('/', '_')}.png")
                 any_failure = True
 

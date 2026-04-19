@@ -1,16 +1,19 @@
 # STATE.md - Project Memory
 
-> **Current Phase**: Phase 5 - Live Support & Stability
-> **Last Update**: 2026-04-17
-> **Status**: Paused
+> **Current Phase**: Phase 5 - Operations (Post-Sprint 5)
+> **Last Update**: 2026-04-19
+> **Status**: v1.0.5 Released
 
 ## Current Position
 - **Phase**: Phase 5 - Operations
-- **Task**: None — Awaiting tomorrow's CRON run
-- **Status**: Paused at 2026-04-17
+- **Task**: Maintenance & Monitoring
+- **Status**: Stable
 
 ## Last Session Summary
-Executed Plan 5.2 (Data Source Migration & Hardening) for `v1.0.4`:
+Finalized **v1.0.5** release focusing on delivery hardening:
+- **BUG-008**: Anchored delivery verification to the last message row in `#main` to eliminate false-positives from old checkmarks.
+- **BUG-009**: Hardened `connectivity_guard` with `data-icon` selectors and added a pre-composition check.
+- Updated documentation (CHANGELOG, BUGS, VERSION) and finalized Sprint 5.
 - Migrated `scraper.py` away from HTML parsing to directly query the official SuperFinanciera 'Datos Abiertos' Socrata API (`mcec-87by.json`).
 - Updated WhatsApp message template to cite `www.superfinanciera.gov.co`.
 - Fixed **BUG-007** (delivery verification false negative): Replaced polling loop with `wait_for(state="attached", timeout=180000)` and added `data-icon` permutation checks. Added robust clock-absence fallback.

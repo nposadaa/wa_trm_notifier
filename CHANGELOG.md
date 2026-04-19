@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.0.5] - 2026-04-19
+> **Status**: Released. Delivery verification hardening and connectivity guards.
+
+### Fixed
+- **(BUG-008)** Anchor delivery verification to the physical last message row in the chat pane to prevent false-positives from previous messages.
+- **(BUG-009)** Hardened connectivity guard with broader selectors (`data-icon`) and implemented a re-verification check immediately before message composition.
+
 ## [1.0.4] - 2026-04-17
 > **Status**: Released. Data source migration and delivery verification hardening.
 

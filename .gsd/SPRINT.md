@@ -1,55 +1,45 @@
-# Sprint 4 — Data Source Migration & Hardening
+# Sprint 5 — Delivery Hardening & Verification
 
-> **Duration**: 2026-04-17 to TBD
-> **Status**: Planned
-> **Target Release**: v1.0.4
+> **Duration**: 2026-04-19 to 2026-04-19
+> **Status**: Completed
+> **Target Release**: v1.0.5
 
 ## Goal
-Migrate the TRM data source to the official SuperFinanciera Socrata API to eliminate data staleness, update the broadcast message template accordingly, and fix the pending delivery verification bug (BUG-007).
+Resolve delivery verification false-positives (BUG-008) and harden the connectivity guard (BUG-009) to ensure reliable autonomous operation on high-latency VM environments.
 
 ## Scope
 
 ### Included
-- Refactor `scraper.py` to use `https://www.datos.gov.co/resource/mcec-87by.json` (SuperFinanciera official Open Data portal)
-- Remove `BeautifulSoup` and `lxml` dependencies and parse JSON payload natively.
-- Update message template string in `main.py`
-- Fix delivery verification false-negatives in `broadcaster.py` by improving the CSS selectors and wait conditions (BUG-007).
+- Anchor delivery verification to the physical last message row in `broadcaster.py` (BUG-008).
+- Update `connectivity_guard` selectors to catch "Connecting" variants (BUG-009).
+- Implement re-verification check right before send.
+- Improve logging for better remote diagnostics.
 
 ### Explicitly Excluded
-- New recipient support (Multi-recipient scheduling is a separate milestone).
+- New data source changes (SuperFinanciera API is stable).
 
 ## Tasks
 
 | Task | Assignee | Status | Est. Hours |
 |------|----------|--------|------------|
-| FEATURE: Scraper migration to Socrata API | Claude | ⬜ Todo | 0.5 |
-| FEATURE: Update message template in main.py | Claude | ⬜ Todo | 0.25 |
-| BUG-007: Fix delivery verification in broadcaster.py | Claude | ⬜ Todo | 0.75 |
+| BUG-008: Anchor delivery verification to last row | Claude | ✅ Done | 1.0 |
+| BUG-009: Robustify connectivity guard selectors | Claude | ✅ Done | 0.5 |
+| REFACTOR: Add re-verification check before send | Claude | ✅ Done | 0.25 |
+| DEPLOY: Manual verification on VM | Claude | ✅ Done | 0.5 |
 
 ## Daily Log
 
-### Day 1 (2026-04-17)
-- Sprint created to address data staleness with `dolar-colombia.com` and transition to the official Datos Abiertos API.
-- Included pending BUG-007 for delivery verification.
+### Day 1 (2026-04-19)
+- Sprint started after diagnosing false-positive successes in v1.0.4.
+- Discovered that checkmark verification was not anchored to the current message.
+- Discovered "Connecting" banner bypasses current guard logic.
 
 ## Risks & Blockers
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Socrata API downtime | Med | Implement a try/except that attempts to fall back to the old web-scraping if the API is down (optional for v1). |
-| Locator changes restrict verification | Low | Increase wait times and check for DOM structural markers instead of generic elements. |
-
-## Retrospective (end of sprint)
-
-### What Went Well
--
-
-### What Could Improve
--
-
-### Action Items
-- [ ]
+| WhatsApp DOM changes last row selector | Med | Use multiple fallback selectors for message rows. |
 
 ---
 
-*Last updated: 2026-04-17*
+*Last updated: 2026-04-19*
