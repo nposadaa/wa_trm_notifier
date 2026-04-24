@@ -1,6 +1,29 @@
 # JOURNAL.md — Project Log
 
-## Session: 2026-04-09 20:25 (COT)
+## Session: 2026-04-24 08:30 (COT)
+
+### Objective
+Diagnose the failure starting April 22nd and restore stability.
+
+### Accomplished
+- ✅ **Hardened Broadcaster**: Released **v1.0.7** with `jumpstart reload` for connectivity hangs and `recovery reload` for outbox hangs.
+- ✅ **Fixed Diagnostics**: Resolved the 10s screenshot timeout issue by adding better error handling and verified that stale April 13th screenshots were being incorrectly displayed locally.
+- ✅ **Confirmed Outbox Hang**: Verified that messages ARE reaching the chat but failing to send due to VM session bloat (531MB).
+- ✅ **Clean Handoff**: Commented out the VM crontab to prevent noise until a fresh session scan is performed.
+
+### Verification
+- [x] v1.0.7 deployed and confirmed on VM.
+- [x] Manual run verified message typing and "Enter" success.
+- [x] Crontab confirmed disabled via `crontab -l`.
+
+### Paused Because
+User requested pause. Waiting until tomorrow to perform a fresh session scan to resolve the 531MB bloat.
+
+### Handoff Notes
+Next session must start with the **Fresh Session Scan** (deleting `whatsapp_session` on VM and running `auth.py`). Once lean, re-enable the cron job.
+
+---
+
 
 ### Objective
 Diagnose Linux VM headless timeout loops and validate the Zip and Ship cross-OS profile transfer.
