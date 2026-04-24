@@ -10,20 +10,17 @@
 - **Status**: Stable
 
 ## Last Session Summary
-Finalized **v1.0.5** release focusing on delivery hardening:
-- **BUG-008**: Anchored delivery verification to the last message row in `#main` to eliminate false-positives from old checkmarks.
-- **BUG-009**: Hardened `connectivity_guard` with `data-icon` selectors and added a pre-composition check.
-- Updated documentation (CHANGELOG, BUGS, VERSION) and finalized Sprint 5.
-- Migrated `scraper.py` away from HTML parsing to directly query the official SuperFinanciera 'Datos Abiertos' Socrata API (`mcec-87by.json`).
-- Updated WhatsApp message template to cite `www.superfinanciera.gov.co`.
-- Fixed **BUG-007** (delivery verification false negative): Replaced polling loop with `wait_for(state="attached", timeout=180000)` and added `data-icon` permutation checks. Added robust clock-absence fallback.
-- Validated via `--headless` local run. Generated `v1.0.4` release tag.
+Diagnosed the persistent failures from April 22-24:
+- **Confirmed Outbox Hang**: Messages are being typed and "Enter" is successful, but they stay in the WhatsApp Web Outbox (Clock icon) or fail with a Red Exclamation.
+- **Improved Detection**: Hardened `broadcaster.py` to detect connectivity banners, outbox hangs, and send failures.
+- **Auto-Recovery**: Implemented a jumpstart reload for connectivity hangs and a recovery reload for outbox hangs.
+- **Session Bloat**: Identified a 531MB `whatsapp_session` folder as a likely source of instability on the e2-micro VM.
 
 ## In-Progress Work
-- None. Code pushed to `master`.
+- Monitoring automated recovery logic.
 
 ## Blockers
-- None.
+- **Persistent Outbox Hang**: Session appears corrupted or severely delayed due to bloat.
 
 ## Context Dump
 - **CRON**: User restored the VM crontab schedule back to its earlier slot (7:00 AM COT / 12:00 UTC) because the new source handles staleness organically.
