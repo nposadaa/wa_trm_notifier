@@ -31,28 +31,38 @@ def connectivity_guard(page, timeout=120):
     Version: 1.0.6
     """
     banner_selectors = (
-        'div:has-text("Connecting to WhatsApp")'
+        'div[role="alert"]'
+        ', [data-testid="connectivity-banner"]'
+        ', div:has-text("Connecting to WhatsApp")'
         ', div:has-text("Retrying")'
         ', div:has-text("Conectando")'
         ', div:has-text("Reintentando")'
-        ', div[role="alert"]:has-text("WhatsApp")'
+        ', span[data-icon="alert-phone-off"]'
+        ', span[data-icon="alert-computer-off"]'
     )
     # Quick initial check — if no banner, proceed immediately
     banner = page.locator(banner_selectors).first
-    if not banner.is_visible(timeout=5000): # Increased to catch transient flashes
-        print("[CONNECTIVITY] No connectivity banner detected — proceeding.")
+    if not banner.is_visible(timeout=8000): # Increased to catch transient flashes
         return
 
     print("[CONNECTIVITY] ⚠ Banner detected — waiting for WebSocket restore...")
     waited = 0
     backoff = [5, 5, 10, 10, 15, 15]  # ~60s total
-    for delay in backoff:
+    for i, delay in enumerate(backoff):
         time.sleep(delay)
         waited += delay
         banner = page.locator(banner_selectors).first
         if not banner.is_visible(timeout=2000):
             print(f"[CONNECTIVITY] Banner cleared after {waited}s — proceeding.")
             return
+        
+        # JUMPSTART: If we've waited 30s and still stuck, try a reload (DEC-031)
+        if waited >= 30 and i == 3:
+            print(f"[CONNECTIVITY] [{waited}s] Still stuck. Attempting page reload to jumpstart connection...")
+            page.reload()
+            page.wait_for_load_state("networkidle", timeout=30000)
+            time.sleep(10) # Post-reload settling
+
         print(f"[CONNECTIVITY] [{waited}s/{timeout}s] Still retrying...")
 
     # Timed out — save diag and abort
@@ -423,14 +433,28 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             
             try:
                 # Give the DOM a moment to generate the row after 'Enter'
-                time.sleep(2)
+                time.sleep(3)
                 
-                # 1. Locate the physical last message row in the chat window (#main)
+                # 1. Verify message presence (BUG-010: don't wait for checkmarks if message isn't even in the chat)
                 last_row = page.locator('#main div[role="row"]').last
+                row_text = last_row.inner_text()
+                # Use a snippet of the message to verify it's the right one
+                msg_snippet = message_text[:30].strip().replace("*", "")
+                if msg_snippet not in row_text:
+                    print(f"⚠️ WARNING: Last row text does not match our message. Send might have failed silently.")
+                    print(f"  Expected snippet: '{msg_snippet}'")
+                    print(f"  Found in row: '{row_text[:50]}...'")
+                    # Fallback: check if we are still focused on the input box (means Enter failed)
+                    if page.locator('#main div[contenteditable="true"]').first.is_focused():
+                        print("  Input box still focused. Emergency re-Enter...")
+                        page.keyboard.press("Enter")
+                        time.sleep(5)
+                        last_row = page.locator('#main div[role="row"]').last
                 
                 # 2. Wait for checkmark/double-checkmark WITHIN that row specifically
                 status_locator = last_row.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]')
                 
+                print(f"  [Verification] Waiting for anchored row checkmark...")
                 status_locator.wait_for(state="attached", timeout=300000) # Increased to 5m for high-latency VMs
                 elapsed_verify = int(time.time() - start_verify)
                 print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark (Ack took {elapsed_verify}s).")
