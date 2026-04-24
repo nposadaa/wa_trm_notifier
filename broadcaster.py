@@ -437,7 +437,10 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 
                 # 1. Verify message presence (BUG-010: don't wait for checkmarks if message isn't even in the chat)
                 last_row = page.locator('#main div[role="row"]').last
-                row_text = last_row.inner_text()
+                row_text = ""
+                try: row_text = last_row.inner_text()
+                except: pass
+                
                 # Use a snippet of the message to verify it's the right one
                 msg_snippet = message_text[:30].strip().replace("*", "")
                 if msg_snippet not in row_text:
@@ -455,26 +458,44 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 status_locator = last_row.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]')
                 
                 print(f"  [Verification] Waiting for anchored row checkmark...")
-                status_locator.wait_for(state="attached", timeout=300000) # Increased to 5m for high-latency VMs
-                elapsed_verify = int(time.time() - start_verify)
-                print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark (Ack took {elapsed_verify}s).")
-                delivery_verified = True
+                # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
+                for _ in range(60): # 5 minutes total (5s intervals)
+                    if status_locator.is_visible(timeout=1000):
+                        elapsed_verify = int(time.time() - start_verify)
+                        print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark (Ack took {elapsed_verify}s).")
+                        delivery_verified = True
+                        break
+                    
+                    # Check for "Failed to send" (Red circle/exclamation)
+                    if last_row.locator('span[data-icon="msg-exclamation"], [data-testid="msg-fail"], .status-error').first.is_visible(timeout=1000):
+                        print("❌ FAILURE: Message failed to send (Red exclamation detected).")
+                        break
+                        
+                    # Check for "Clock" (Outbox hang)
+                    if last_row.locator('span[data-testid="msg-clock"], span[data-icon="msg-clock"]').is_visible(timeout=1000):
+                        # If stuck for > 60s, try a JUMPSTART RELOAD (one time)
+                        if time.time() - start_verify > 60:
+                            print("⚠️ WARNING: Message stuck in outbox (Clock) for 60s. Attempting session recovery...")
+                            page.reload()
+                            page.wait_for_load_state("networkidle", timeout=30000)
+                            time.sleep(10)
+                            # After reload, check if it was actually sent
+                            print("  Post-recovery check...")
+                            last_row = page.locator('#main div[role="row"]').last
+                            if status_locator.is_visible(timeout=10000):
+                                print("✅ SUCCESS: Delivery confirmed after recovery reload.")
+                                delivery_verified = True
+                                break
+                    
+                    time.sleep(4)
+
             except Exception as e:
-                # Timeout occurred. Check if the SPECIFIC new message is stuck.
-                try:
-                    last_row = page.locator('#main div[role="row"]').last
-                    if last_row.locator('span[data-testid="msg-clock"], span[data-icon="msg-clock"]').is_visible(timeout=3000):
-                        print(f"❌ FAILURE: Message held in Outbox (Clock icon detected on last row).")
-                    else:
-                        # No clock and no checkmark found? Fallback to global audit (risk of false positive, but better than silent fail)
-                        print("⚠️ WARNING: Row-anchored checkmark timed out. Checking global DOM for any recent update...")
-                        if page.locator('span[data-testid="msg-check"], span[data-icon="msg-check"]').last.is_visible(timeout=2000):
-                            print("✅ SUCCESS: Found checkmark in global scope (Possible false-positive fallback).")
-                            delivery_verified = True
-                        else:
-                            print("❌ FAILURE: No checkmarks or clock found. Message state unknown.")
-                except Exception as nested_e:
-                    print(f"❌ FAILURE: Verification engine crashed ({nested_e})")
+                print(f"❌ FAILURE: Verification engine crashed ({e})")
+
+            if not delivery_verified:
+                print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving diag_delivery_failed_{name.replace('/', '_')}.png")
+                safe_screenshot(page, f"diag_delivery_failed_{name.replace('/', '_')}.png")
+                any_failure = True
 
             if not delivery_verified:
                 print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving diag_delivery_failed_{name.replace('/', '_')}.png")
