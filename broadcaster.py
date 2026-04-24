@@ -448,7 +448,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     print(f"  Expected snippet: '{msg_snippet}'")
                     print(f"  Found in row: '{row_text[:50]}...'")
                     # Fallback: check if we are still focused on the input box (means Enter failed)
-                    if page.locator('#main div[contenteditable="true"]').first.is_focused():
+                    is_focused = page.evaluate('() => document.activeElement === document.querySelector("#main div[contenteditable=\'true\']")')
+                    if is_focused:
                         print("  Input box still focused. Emergency re-Enter...")
                         page.keyboard.press("Enter")
                         time.sleep(5)
