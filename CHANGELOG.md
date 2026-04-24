@@ -2,7 +2,15 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
-## [1.0.6] - 2026-04-19
+## [1.0.7] - 2026-04-24
+> **Status**: Released. Outbox recovery and fail-state detection hardening.
+
+### Fixed
+- **(BUG-010)** Implemented `jumpstart reload` in `connectivity_guard` to resolve WebSocket hangs when the "Connecting to WhatsApp" banner persists.
+- **(BUG-011)** Added `recovery reload` for outbox hangs (Clock icon); script now reloads the page if a message is stuck for >60s and re-verifies delivery.
+- **(BUG-012)** Hardened `connectivity_guard` selectors to catch modern WhatsApp Web alert banners (`[data-testid="connectivity-banner"]`, `[role="alert"]`).
+- **(BUG-013)** Added explicit detection for "Failed to send" (Red exclamation) status to avoid unnecessary timeouts.
+- **Improved Verification**: Fixed false-positive in message presence check by normalizing emoji/text comparison in the anchored chat row.
 > **Status**: Released. Stability patch for high-latency VM environments.
 
 ### Fixed
