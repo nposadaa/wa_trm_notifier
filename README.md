@@ -99,7 +99,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current sprint**: Sprint 4 — `Data Source Migration` · Target: `v1.0.4`
+> **Current version**: `v1.0.7` — Outbox recovery & fail-state detection hardening
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*

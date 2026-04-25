@@ -11,6 +11,8 @@ All notable changes to the WhatsApp TRM Notifier project will be documented in t
 - **(BUG-012)** Hardened `connectivity_guard` selectors to catch modern WhatsApp Web alert banners (`[data-testid="connectivity-banner"]`, `[role="alert"]`).
 - **(BUG-013)** Added explicit detection for "Failed to send" (Red exclamation) status to avoid unnecessary timeouts.
 - **Improved Verification**: Fixed false-positive in message presence check by normalizing emoji/text comparison in the anchored chat row.
+
+## [1.0.6] - 2026-04-19
 > **Status**: Released. Stability patch for high-latency VM environments.
 
 ### Fixed
