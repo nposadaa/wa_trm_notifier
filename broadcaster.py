@@ -158,7 +158,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     session_state = "SYNCING"
                 
                 # Extract percentage to verify progress (e.g., "Loading your chats [19%]")
-                import re
                 match = re.search(r'\[(\d+)%\]', screen_content)
                 if match:
                     current_pct = int(match.group(1))
