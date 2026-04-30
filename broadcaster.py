@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import re
 from playwright.sync_api import sync_playwright
 from browser_config import get_browser_context, clean_browser_locks, apply_stealth_overrides
 from dotenv import load_dotenv
@@ -442,8 +443,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 except: pass
                 
                 # Use a snippet of the message to verify it's the right one
-                msg_snippet = message_text[:30].strip().replace("*", "")
-                if msg_snippet not in row_text:
+                # Strip non-ASCII (emojis) for robust matching on slow VMs (BUG-011)
+                msg_snippet = re.sub(r'[^\x00-\x7F]+', '', message_text[:40]).strip().replace("*", "")
+                if msg_snippet and msg_snippet not in row_text:
                     print(f"⚠️ WARNING: Last row text does not match our message. Send might have failed silently.")
                     print(f"  Expected snippet: '{msg_snippet}'")
                     print(f"  Found in row: '{row_text[:50]}...'")
@@ -492,11 +494,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
 
             except Exception as e:
                 print(f"❌ FAILURE: Verification engine crashed ({e})")
-
-            if not delivery_verified:
-                print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving diag_delivery_failed_{name.replace('/', '_')}.png")
-                safe_screenshot(page, f"diag_delivery_failed_{name.replace('/', '_')}.png")
-                any_failure = True
 
             if not delivery_verified:
                 print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving diag_delivery_failed_{name.replace('/', '_')}.png")

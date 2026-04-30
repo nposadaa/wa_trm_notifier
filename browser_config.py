@@ -1,5 +1,6 @@
 import os
 import glob
+import shutil
 
 # Constants
 USER_DATA_DIR = "./whatsapp_session"
@@ -16,6 +17,26 @@ def clean_browser_locks():
             print(f"[config] Cleaned up stale Singleton lock: {singleton}")
     except Exception as e:
         print(f"[config] Lock cleanup partial failure: {e}")
+    
+    # Also clean cache bloat (DEC-035)
+    clean_browser_bloat()
+
+def clean_browser_bloat():
+    """Removes Cache and Code Cache directories to prevent profile bloat on e2-micro."""
+    bloat_paths = [
+        os.path.join(USER_DATA_DIR, "Default", "Cache"),
+        os.path.join(USER_DATA_DIR, "Default", "Code Cache"),
+        os.path.join(USER_DATA_DIR, "Default", "GPUCache"),
+        os.path.join(USER_DATA_DIR, "GrShaderCache"),
+        os.path.join(USER_DATA_DIR, "ShaderCache"),
+    ]
+    for path in bloat_paths:
+        if os.path.exists(path):
+            try:
+                shutil.rmtree(path)
+                print(f"[config] Cleaned up bloat directory: {path}")
+            except Exception as e:
+                print(f"[config] Bloat cleanup warning for {path}: {e}")
 
 def get_browser_context(playwright, headless=True):
     """Returns a hardened, persistent browser context strictly tuned for wa_trm_notifier VMs."""
