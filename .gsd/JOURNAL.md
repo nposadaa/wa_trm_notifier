@@ -1,5 +1,30 @@
 # JOURNAL.md — Project Log
 
+## Session: 2026-04-30 09:55 (COT)
+
+### Objective
+Diagnose and resolve the April 30th broadcast failure.
+
+### Accomplished
+- ✅ **Diagnosed Resource Exhaustion**: Found the VM session profile bloated to 269MB, causing browser freezes and screenshot timeouts.
+- ✅ **Automated Bloat Cleanup**: Implemented `clean_browser_bloat()` in `browser_config.py` to auto-delete `Cache`, `Code Cache`, and `GPUCache` on every launch.
+- ✅ **Hardened Verification**: Updated `broadcaster.py` to strip emojis from verification snippets for more robust matching on slow VMs.
+- ✅ **Fixed Xvfb Startup**: Added explicit lock cleanup to `scripts/run_vm.sh`.
+- ✅ **Successful Redelivery**: Manually triggered a broadcast on the VM; message delivered successfully with an acknowledgment time reduced from 345s to 39s thanks to cleanup.
+
+### Verification
+- [x] Manual run delivered today's TRM ($3,621.86).
+- [x] Log confirmed 200MB+ bloat removed before launch.
+- [x] NameError fix verified on live VM.
+
+### Paused Because
+Current failure resolved. Waiting for next automated CRON run.
+
+### Handoff Notes
+The system is much leaner now. The automatic cache clearing should prevent the "Friday morning wall" where the VM runs out of RAM.
+
+---
+
 ## Session: 2026-04-25 12:06 (COT)
 
 ### Objective

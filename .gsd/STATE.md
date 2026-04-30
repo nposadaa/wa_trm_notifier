@@ -32,5 +32,5 @@
 - **Verification normalisation**: Normalised emoji handling in row-anchored checks to prevent false-negative warnings.
 
 ## Next Steps
-1. **Monitor CRON**: Verify first autonomous run succeeds (check logs after next scheduled time).
-2. **Cleanup**: Remove stale `whatsapp_session.zip` and diagnostic PNGs from local project root.
+1. **Monitor CRON**: Confirm tomorrow's run succeeds with the new auto-bloat cleanup.
+2. **Observe Profile Growth**: Check if 269MB was an anomaly or a trend.
