@@ -34,6 +34,7 @@ rm -f qr.png error_page.png
 # Kill any lingering Xvfb or Chrome processes to free RAM
 pkill -f Xvfb || true
 pkill -f chromium || true
+sudo rm -f /tmp/.X99-lock || true
 
 # 4. Run Synchronously (Foreground)
 echo "------------------------------------------------"
