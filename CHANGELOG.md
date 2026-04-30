@@ -2,6 +2,15 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.0.8] - 2026-04-30
+> **Status**: Released. Resource-efficiency patch and verification hardening.
+
+### Fixed
+- **(BUG-014)** Implemented automatic profile bloat cleanup (`Cache`, `Code Cache`, `GPUCache`, etc.) in `browser_config.py` to prevent OOM/browser freezes on 1GB RAM VMs.
+- **(BUG-015)** Hardened delivery verification by stripping emojis from match snippets, preventing false-negative mismatches on slow/headless browsers.
+- **(BUG-016)** Added Xvfb lock cleanup (`/tmp/.X99-lock`) to `run_vm.sh` to prevent startup failures after unclean kills.
+- **Code Cleanup**: Removed redundant NameError in `broadcaster.py` and duplicate screenshot blocks in failure handlers.
+
 ## [1.0.7] - 2026-04-24
 > **Status**: Released. Outbox recovery and fail-state detection hardening.
 
