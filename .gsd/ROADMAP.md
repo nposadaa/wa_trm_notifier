@@ -1,6 +1,6 @@
 # ROADMAP.md
 
-> **Current Milestone**: v1.1 — Financial Intelligence
+> **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Goal**: Enhance the notification with trend analysis, historical context, and optimized delivery.
 
 ## Must-Haves
@@ -8,7 +8,7 @@
 - [ ] Weekday-only CRON Schedule
 - [ ] Friday Weekly Summary Message
 
-## Phases (Milestone v1.1)
+## Phases (Milestone v1.1.0)
 
 ### Phase 1: Scheduling & Optimization
 **Status**: ⬜ Not Started

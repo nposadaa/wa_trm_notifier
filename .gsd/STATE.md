@@ -1,18 +1,18 @@
 # STATE.md - Project Memory
 
-> **Current Milestone**: v1.1 — Financial Intelligence
+> **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 1 — Scheduling & Optimization
 > **Status**: Active (Resumed 2026-05-03)
 
 ## Current Position
-- **Milestone**: v1.1 — Financial Intelligence
+- **Milestone**: v1.1.0 — Financial Intelligence
 - **Phase**: Phase 1 — Scheduling & Optimization
 - **Task**: Planning execution for weekday-only CRON.
-- **Status**: Milestone v1.1 defined and initialized.
+- **Status**: Milestone v1.1.0 defined and initialized.
 
 ## Last Session Summary
 - **Backlog Reset**: Cleared old backlog items and added 4 new features (Trend Emojis, Weekday CRON, Weekly Summary, 5-Year Alerts).
-- **Milestone v1.1 Defined**: Organized new items into a 4-phase execution plan.
+- **Milestone v1.1.0 Defined**: Organized new items into a 4-phase execution plan.
 - **v1.0.8 Stable**: Previous milestone (v1.0) finalized with auto-cleanup and verification hardening.
 
 ## In-Progress Work
