@@ -1,35 +1,31 @@
 # STATE.md - Project Memory
 
-> **Current Phase**: Phase 5 - Operations (Post-Sprint 5)
-> **Last Update**: 2026-04-30
-> **Status**: Paused at 2026-04-30T10:45:00-05:00
+> **Current Milestone**: v1.1 — Financial Intelligence
+> **Current Phase**: Phase 1 — Scheduling & Optimization
+> **Status**: Active (Resumed 2026-05-03)
 
 ## Current Position
-- **Phase**: Phase 5 - Operations
-- **Task**: Maintenance (v1.0.8 Released)
-- **Status**: Paused at 2026-04-30T10:45:00-05:00
+- **Milestone**: v1.1 — Financial Intelligence
+- **Phase**: Phase 1 — Scheduling & Optimization
+- **Task**: Planning execution for weekday-only CRON.
+- **Status**: Milestone v1.1 defined and initialized.
 
 ## Last Session Summary
-- **v1.0.8 Released**: Bumper version, tagged on GitHub, and pushed to master.
-- **Auto-Bloat Cleanup**: Implemented automatic clearing of browser cache/code-cache to save ~200MB RAM on launch.
-- **Verification Hardened**: Stripped emojis from matching logic to prevent false-negative delivery verification on slow VMs.
-- **Xvfb Startup Fix**: Added lock cleanup to `run_vm.sh` to prevent startup hangs.
-- **Confirmed Successful Run**: Manually verified a broadcast on the VM with the new fixes; acknowledgment time dropped from 345s to 39s.
+- **Backlog Reset**: Cleared old backlog items and added 4 new features (Trend Emojis, Weekday CRON, Weekly Summary, 5-Year Alerts).
+- **Milestone v1.1 Defined**: Organized new items into a 4-phase execution plan.
+- **v1.0.8 Stable**: Previous milestone (v1.0) finalized with auto-cleanup and verification hardening.
 
 ## In-Progress Work
-- None. All fixes committed, tagged, and deployed to VM.
+- Planning Phase 1: Adjusting CRON to exclude weekends.
 
 ## Blockers
-- None. All blockers resolved.
+- None.
 
 ## Context Dump
 ### Decisions Made
-- **(DEC-035) Auto-Cache Clearing**: Decided to delete `Cache` and `Code Cache` on every launch to keep the e2-micro RAM usage below the 1GB threshold.
-- **(DEC-036) Emoji Neutrality**: Decided to strip non-ASCII from verification snippets to overcome rendering inconsistencies in headless/low-resource browsers.
-
-### Approaches Tried
-- **Manual verification**: Confirmed that message presence check fails if emojis are missing from `inner_text()` but passes if stripped.
+- **(DEC-037) Milestone Pivot**: Decided to shift focus to "Financial Intelligence" for v1.1 to maximize value of the daily notifications.
+- **(DEC-038) Weekend Skip**: Decided that weekend broadcasts are a waste of resources since the TRM does not change when markets are closed.
 
 ## Next Steps
-1. **Monitor CRON**: Confirm tomorrow's run succeeds autonomously with the new v1.0.8 cleanup logic.
-2. **Cleanup Local Artifacts**: Remove stale `.png` diagnostics from the local project root.
+1. **Plan Phase 1**: Define the exact CRON changes and implementation steps.
+2. **Commit Milestone**: Finalize document updates and commit to Git.

@@ -1,63 +1,46 @@
 # ROADMAP.md
 
-> **Current Phase**: Phase 3 — Group Integration & Feasibility Check
-> **Milestone**: v1.0 — Daily TRM Broadcast
+> **Current Milestone**: v1.1 — Financial Intelligence
+> **Goal**: Enhance the notification with trend analysis, historical context, and optimized delivery.
 
-## Must-Haves (from SPEC)
-- [x] Automating Scraping logic (Python)
-- [x] Integration with WhatsApp Playwright Automation (Browser bypass for groups)
-- [ ] Automated execution on a schedule (GitHub Actions)
-- [ ] Native forwarding to multiple recipients/groups
+## Must-Haves
+- [ ] Trend Indicator Emoji (📈/📉)
+- [ ] Weekday-only CRON Schedule
+- [ ] Friday Weekly Summary Message
 
-## Phases
+## Phases (Milestone v1.1)
 
-### Phase 1: Local Foundation & Scraper
-**Status**: ✅ Complete
-**Objective**: Build a robust Python scraper to get TRM data from the web.
-- [x] Set up Python environment.
-- [x] Implement scraper for `dolar-colombia.com`.
-- [x] Local testing of output.
+### Phase 1: Scheduling & Optimization
+**Status**: ⬜ Not Started
+**Objective**: Adjust scheduling to exclude weekends and save resources.
+- [ ] Modify CRON expression on GCP VM.
+- [ ] Update `run_vm.sh` or `main.py` to handle skip logic if necessary.
 
-### Phase 2: 1-on-1 API Handshake & Template Registration
-**Status**: ✅ Complete
-**Objective**: Connect to the Meta Cloud API and send a "Hello World" notification to your test number.
-- [x] Configure Meta Developer App credentials (`.env`).
-- [x] Register and verify a TRM-specific Message Template.
-- [x] Implement `whatsapp_client.py` for 1-on-1 messaging.
-- [x] Test delivery to your test phone number.
+### Phase 2: Comparative Logic
+**Status**: ⬜ Not Started
+**Objective**: Implement historical data fetching to compare today's rate with the previous trading day.
+- [ ] Update `scraper.py` to fetch previous day's data.
+- [ ] Implement emoji logic in `main.py`.
 
-### Phase 3: Direct Playwright Broadcast Pivot (Phase 3.3)
-**Status**: ✅ Complete
-**Objective**: Automate WhatsApp Web using Python + Playwright to completely bypass the Meta Cloud API.
-- [x] Setup Playwright and Stealth context.
-- [x] Initialize persistent WhatsApp session via manual QR scan.
-- [x] Remove Meta API dependency (`whatsapp_client.py`).
-- [x] Refactor `forwarder.py` to `broadcaster.py`, directly injecting formatted strings into the chat inputs.
-- [x] Final E2E test verifying end-to-end direct delivery.
+### Phase 3: Weekly Intelligence
+**Status**: ⬜ Not Started
+**Objective**: Create a specialized summary message for Fridays.
+- [ ] Build weekly aggregator for High/Low/Trend.
+- [ ] Implement Friday-specific broadcast logic.
 
-### Phase 4: Cloud Deployment (GCP + Xvfb)
-**Status**: 🚧 In Progress
-**Objective**: Deploy to GCP Always Free VM for daily autonomous runs.
-- [x] Provision GCP VM (e2-micro, us-central1).
-- [x] Install Python3, Playwright, Xvfb on VM.
-- [x] Transfer WhatsApp session from local PC to VM.
-- [ ] Configure cron job for 7:00 AM COT (12:00 UTC).
-- [ ] Add file logging for unattended monitoring.
-- [ ] Update all documentation.
-
-
+### Phase 4: Historical Deep-Dive
+**Status**: ⬜ Not Started
+**Objective**: Add 5-year historical alerts for max/min rates.
+- [ ] Implement 5-year data fetch from Socrata API.
+- [ ] Add "5 YEAR HISTORICAL" alert formatting.
 
 ---
 
-### Phase 5: Live Support & Stability
-**Status**: 🔄 In Progress
-**Objective**: Harden production reliability through reactive bug fixing and proactive monitoring improvements. Operate in sprint-based cycles as issues surface from autonomous CRON runs.
-**Depends on**: Phase 4
+## Milestone Archive
 
-**Tasks**:
-- [ ] TBD (managed via sprints)
-
-**Verification**:
-- 5 consecutive successful autonomous CRON runs with confirmed delivery
-- main.py exits non-zero on any delivery failure
-- No silent failures in the log pipeline
+### v1.0 — Daily TRM Broadcast
+**Status**: ✅ Complete (v1.0.8 stable)
+**Objective**: Automate daily TRM notifications via WhatsApp Playwright on GCP.
+- [x] **Phase 1-3**: Local foundation, Meta API pivot to Playwright.
+- [x] **Phase 4**: GCP VM Deployment & Xvfb automation.
+- [x] **Phase 5**: Stability hardening (Auto-cleanup, emoji-neutral verification).
