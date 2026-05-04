@@ -25,9 +25,9 @@ Cron schedules use 5 asterisks: `Minute Hour Day Month DayOfWeek`.
 
 **Warning on Timezones:** GCP VM servers typically operate on **UTC** time. If you want the script to run at **7:00 AM (Colombia Time / UTC-5)**, you must schedule it for **12:00 PM (UTC)**.
 
-To schedule the script for every day at 12:00 (UTC):
+To schedule the script for weekdays only (Monday through Friday) at 12:00 (UTC), use `1-5` for the DayOfWeek field:
 ```bash
-0 12 * * * cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh
+0 12 * * 1-5 cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh
 ```
 
 Save and exit using the following **Nano** shortcuts:
