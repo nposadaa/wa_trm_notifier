@@ -17,10 +17,10 @@
 - [ ] Update `run_vm.sh` or `main.py` to handle skip logic if necessary.
 
 ### Phase 2: Comparative Logic
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Implement historical data fetching to compare today's rate with the previous trading day.
-- [ ] Update `scraper.py` to fetch previous day's data.
-- [ ] Implement emoji logic in `main.py`.
+- [x] Update `scraper.py` to fetch previous day's data.
+- [x] Implement emoji logic in `main.py`.
 
 ### Phase 3: Weekly Intelligence
 **Status**: ⬜ Not Started
