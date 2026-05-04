@@ -4,7 +4,7 @@ from datetime import datetime
 
 def scrape_trm():
     # Official SuperFinanciera TRM Open Data via Socrata
-    url = "https://www.datos.gov.co/resource/mcec-87by.json?$limit=1&$order=vigenciadesde DESC"
+    url = "https://www.datos.gov.co/resource/mcec-87by.json?$limit=2&$order=vigenciadesde DESC"
     
     try:
         response = requests.get(url, timeout=10)
@@ -19,11 +19,18 @@ def scrape_trm():
         # 1. Extract TRM numeric value
         trm_value = float(latest["valor"])
         
-        # 2. Extract Date from vigenciadesde (e.g. "2026-04-17T00:00:00.000")
+        # 2. Extract previous TRM numeric value
+        if len(data) > 1:
+            previous_trm = float(data[1]["valor"])
+        else:
+            previous_trm = trm_value
+        
+        # 3. Extract Date from vigenciadesde (e.g. "2026-04-17T00:00:00.000")
         reported_date = latest["vigenciadesde"].split("T")[0]
             
         result = {
             "trm": trm_value,
+            "previous_trm": previous_trm,
             "date": reported_date,
             "scraped_at": datetime.now().isoformat()
         }

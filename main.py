@@ -11,6 +11,12 @@ LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
 log_filename = os.path.join(LOG_DIR, f"notifier_{datetime.now().strftime('%Y-%m-%d')}.log")
 
+if sys.stdout.encoding.lower() != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except AttributeError:
+        pass
+
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] %(levelname)s: %(message)s",
@@ -26,6 +32,7 @@ def main():
     parser = argparse.ArgumentParser(description="TRM Notifier — Daily USD/COP Broadcaster")
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode (production)")
     parser.add_argument("--discovery", action="store_true", help="List available WhatsApp chats")
+    parser.add_argument("--dry-run", action="store_true", help="Print message and exit without sending")
     args = parser.parse_args()
 
     logger.info("--- Starting TRM Notifier ---")
@@ -39,8 +46,9 @@ def main():
         return
 
     trm_value = trm_data["trm"]
+    previous_trm = trm_data.get("previous_trm", trm_value)
     trm_date = trm_data["date"]
-    logger.info(f"Scraped TRM: {trm_value} for date: {trm_date}")
+    logger.info(f"Scraped TRM: {trm_value} (Prev: {previous_trm}) for date: {trm_date}")
 
     # --- Staleness check (BUG-005) ---
     today_str = datetime.now().strftime("%Y-%m-%d")
@@ -50,8 +58,25 @@ def main():
         stale_disclaimer = f"\n\n⚠️ _Datos del {trm_date} (sitio no actualizado al momento de consulta)_"
 
     # 2. Format the Message
-    message_text = f"📈 *TRM Oficial - {trm_date}*\n\n💵 Valor: ${trm_value:,.2f} COP. Fuente: www.superfinanciera.gov.co{stale_disclaimer}"
+    if trm_value > previous_trm:
+        trend_emoji = "📈"
+        sign = "+"
+    elif trm_value < previous_trm:
+        trend_emoji = "📉"
+        sign = "-"
+    else:
+        trend_emoji = "➖"
+        sign = ""
+        
+    delta = abs(trm_value - previous_trm)
+    delta_str = f" ({sign} ${delta:,.2f})" if delta > 0 else ""
+
+    message_text = f"{trend_emoji} *TRM Oficial - {trm_date}*\n\n💵 Valor: ${trm_value:,.2f} COP{delta_str}. Fuente: www.superfinanciera.gov.co{stale_disclaimer}"
     logger.info(f"Prepared Message:\n{message_text}")
+
+    if args.dry_run:
+        logger.info("Dry run complete. Exiting without broadcasting.")
+        return
 
     # 3. Broadcast using Playwright
     logger.info(f"Invoking Playwright Broadcaster (headless={args.headless})...")
