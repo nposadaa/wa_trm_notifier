@@ -386,9 +386,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     
                     # --- React DOM Trigger (BUG FIX) ---
                     # WhatsApp Web's React state sometimes doesn't register insert_text.
-                    # We type a space and delete it to force the Send button to appear.
-                    page.keyboard.press("Space")
-                    time.sleep(0.1)
+                    # We type a physical space using .type() to fire full IME events, then delete it.
+                    page.keyboard.type(" ", delay=50)
+                    time.sleep(0.5)
                     page.keyboard.press("Backspace")
                     time.sleep(0.5)
                     
@@ -412,7 +412,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         print(f"  [Attempt {attempt+1}/2] Typing verified: {len(typed_content)} chars in input box.")
 
                     # --- Robust Send Method ---
-                    send_button = page.locator('button:has(span[data-testid="send"]), [data-testid="send"]').first
+                    send_button = page.locator('span[data-icon="send"], button:has(span[data-testid="send"]), [data-testid="send"], button[aria-label="Send"], button[aria-label="Enviar"]').first
                     if send_button.is_visible(timeout=5000):
                         send_button.click()
                         print(f"  [Attempt {attempt+1}/2] Send button clicked.")
@@ -451,7 +451,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 
                 # Use a snippet of the message to verify it's the right one
                 # Strip non-ASCII (emojis) for robust matching on slow VMs (BUG-011)
-                msg_snippet = re.sub(r'[^\x00-\x7F]+', '', message_text[:40]).strip().replace("*", "")
+                msg_snippet = re.sub(r'[^\x00-\x7F]+', '', message_text[:100]).strip().replace("*", "")
                 if msg_snippet and msg_snippet not in row_text:
                     print(f"⚠️ WARNING: Last row text does not match our message. Send might have failed silently.")
                     print(f"  Expected snippet: '{msg_snippet}'")
@@ -462,21 +462,32 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         print("  Input box still focused. Emergency re-Enter...")
                         page.keyboard.press("Enter")
                         time.sleep(5)
-                        last_row = page.locator('#main div[role="row"]').last
+                # 2. Verify message presence and wait for checkmark
+                print(f"  [Verification] Waiting for message to appear in DOM...")
                 
-                # 2. Wait for checkmark/double-checkmark WITHIN that row specifically
+                # Poll the last row text for up to 30s to allow slow VMs to render the new message
+                row_matched = False
+                msg_snippet_norm = re.sub(r'\s+', ' ', msg_snippet).strip()
                 
-                # Hardening: Final check of the row text before waiting for checkmarks
-                final_row_text = ""
-                try: final_row_text = last_row.inner_text()
-                except: pass
+                for _ in range(10): # 10 * 3s = 30 seconds max
+                    last_row = page.locator('#main div[role="row"]').last
+                    final_row_text = ""
+                    try: final_row_text = last_row.inner_text()
+                    except: pass
+                    
+                    row_text_norm = re.sub(r'\s+', ' ', final_row_text).strip()
+                    if msg_snippet_norm and msg_snippet_norm in row_text_norm:
+                        row_matched = True
+                        break
+                    
+                    time.sleep(3)
                 
-                if msg_snippet and msg_snippet not in final_row_text:
-                    raise RuntimeError(f"Row text mismatch even after re-Enter. Found: {final_row_text[:50]}")
+                if not row_matched:
+                    raise RuntimeError(f"Row text mismatch after 30s. Expected: '{msg_snippet_norm}' Found: '{row_text_norm[:80]}'")
                 
                 status_locator = last_row.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]')
                 
-                print(f"  [Verification] Waiting for anchored row checkmark...")
+                print(f"  [Verification] Message matched in DOM. Waiting for anchored row checkmark...")
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
                 for _ in range(60): # 5 minutes total (5s intervals)
                     if status_locator.is_visible(timeout=1000):

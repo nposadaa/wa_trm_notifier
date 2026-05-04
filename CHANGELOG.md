@@ -2,6 +2,15 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.1] - 2026-05-04
+> **Status**: Released. Critical fixes for WhatsApp Web React DOM updates.
+
+### Fixed
+- **React DOM Sync**: Changed the trigger from `press("Space")` to `type(" ", delay=50)` to ensure full IME events are fired, forcing WhatsApp's React state to wake up and reveal the Send button.
+- **Send Button Locator**: Broadened the Send button locators to include `data-icon="send"` and `aria-label` fallbacks to combat recent WhatsApp Web DOM changes.
+- **Verification Hardening (Hotfix)**: The script now polls the DOM for up to 30 seconds to allow slow 1-core VMs to render the new message row before enforcing the strict snippet match.
+- **CRON Documentation**: Reverted the documented schedule in `CRON_SETUP.md` back to `0 12` (7:00 AM COT) to match the deployed state.
+
 ## [1.1.0] - 2026-05-03
 > **Status**: Released. Financial Intelligence (Phase 1 & 2).
 
