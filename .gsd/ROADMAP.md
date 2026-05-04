@@ -11,7 +11,7 @@
 ## Phases (Milestone v1.1.0)
 
 ### Phase 1: Scheduling & Optimization
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Adjust scheduling to exclude weekends and save resources.
 - [ ] Modify CRON expression on GCP VM.
 - [ ] Update `run_vm.sh` or `main.py` to handle skip logic if necessary.
