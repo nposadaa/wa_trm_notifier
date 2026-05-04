@@ -15,7 +15,9 @@ datos.gov.co (Datos Abiertos) → scraper.py → main.py → broadcaster.py → 
 
 ## ✨ Key Features
 - **Automated Scraper**: Extremely fast API consumer built exclusively for the official Colombian `Datos Abiertos` infrastructure.
+- **Financial Intelligence**: Dynamic message formatting computes rate changes between trading days with emojis (📈/📉/➖) and exact delta values.
 - **Direct Browser Broadcast**: Uses **Playwright** to natively type and send messages on WhatsApp Web — no Meta API or business account needed.
+- **Weekday Scheduling**: Optimized to run Monday-Friday, preserving compute resources on non-trading days.
 - **Self-Healing Interaction**: Uses Playwright **Locators** (DEC-021) to automatically recover if the DOM re-renders during slow cloud syncs.
 - **Zero-Cost**: Runs entirely on a GCP "Always Free" e2-micro instance.
 - **Diagnostic-First**: Includes robust remote logging and failure-screenshot sync tools.
@@ -99,7 +101,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current version**: `v1.0.8` — Resource-efficiency patch (Auto-bloat cleanup)
+> **Current version**: `v1.1.0` — Financial Intelligence (Trend indicators and Weekday scheduling)
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*

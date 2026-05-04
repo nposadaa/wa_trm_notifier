@@ -2,7 +2,7 @@
 
 | ID | Feature | Phase | Size | Value | Status | Description |
 |---|---|---|---|---|---|---|
-| 1 | **Trend Indicator Emoji** | 2 | 3 | High | Backlog | Add 📈 or 📉 to the daily message by comparing today's rate with the previous trading day. |
-| 2 | **Weekday-only Schedule** | 1 | 1 | High | Backlog | Adjust CRON/scheduling to exclude Saturdays and Sundays to save resources when the market is closed. |
+| 1 | **Trend Indicator Emoji** | 2 | 3 | High | Complete | Add 📈 or 📉 to the daily message by comparing today's rate with the previous trading day. |
+| 2 | **Weekday-only Schedule** | 1 | 1 | High | Complete | Adjust CRON/scheduling to exclude Saturdays and Sundays to save resources when the market is closed. |
 | 3 | **Friday Weekly Summary** | 3 | 8 | Med | Backlog | Send a special "Weekly Summary" message on Fridays with Low/High rates and overall weekly trend. |
 | 4 | **5-Year Historical Alert** | 4 | 5 | Med | Backlog | Analyze the last 5 years of data; if today is a historical max/min, add a red "5 YEAR HISTORICAL" alert title. |

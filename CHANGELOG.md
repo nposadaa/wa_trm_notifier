@@ -2,6 +2,14 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.0] - 2026-05-03
+> **Status**: Released. Financial Intelligence (Phase 1 & 2).
+
+### Added
+- **Trend Indicator (📈/📉/➖)**: The broadcaster now compares the current TRM with the previous trading day's rate and calculates the delta in the message.
+- **Weekday Optimization**: Modified scheduling instructions to only execute Monday-Friday, skipping the weekends to save GCP compute resources.
+- **Dry-Run Mode**: Added a `--dry-run` flag to `main.py` allowing users to preview the exact formatted message without invoking the WhatsApp Web headless browser.
+
 ## [1.0.8] - 2026-04-30
 > **Status**: Released. Resource-efficiency patch and verification hardening.
 
