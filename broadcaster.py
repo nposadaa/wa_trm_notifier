@@ -384,6 +384,14 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                             page.keyboard.press("Shift+Enter")
                             time.sleep(0.1)
                     
+                    # --- React DOM Trigger (BUG FIX) ---
+                    # WhatsApp Web's React state sometimes doesn't register insert_text.
+                    # We type a space and delete it to force the Send button to appear.
+                    page.keyboard.press("Space")
+                    time.sleep(0.1)
+                    page.keyboard.press("Backspace")
+                    time.sleep(0.5)
+                    
                     time.sleep(2.0)
 
                     # --- Post-typing verification (BUG-006) ---
@@ -457,6 +465,15 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         last_row = page.locator('#main div[role="row"]').last
                 
                 # 2. Wait for checkmark/double-checkmark WITHIN that row specifically
+                
+                # Hardening: Final check of the row text before waiting for checkmarks
+                final_row_text = ""
+                try: final_row_text = last_row.inner_text()
+                except: pass
+                
+                if msg_snippet and msg_snippet not in final_row_text:
+                    raise RuntimeError(f"Row text mismatch even after re-Enter. Found: {final_row_text[:50]}")
+                
                 status_locator = last_row.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]')
                 
                 print(f"  [Verification] Waiting for anchored row checkmark...")

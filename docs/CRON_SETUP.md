@@ -23,7 +23,7 @@ Scroll to the very bottom to add your schedule.
 ### Schedule Formatting
 Cron schedules use 5 asterisks: `Minute Hour Day Month DayOfWeek`.
 
-**Warning on Timezones:** GCP VM servers typically operate on **UTC** time. If you want the script to run at **7:00 AM (Colombia Time / UTC-5)**, you must schedule it for **12:00 PM (UTC)**.
+**Warning on Timezones:** GCP VM servers typically operate on **UTC** time. If you want the script to run at **7:00 AM (Colombia Time / UTC-5)**, you must schedule it for **12:00 (UTC)**.
 
 To schedule the script for weekdays only (Monday through Friday) at 12:00 (UTC), use `1-5` for the DayOfWeek field:
 ```bash
