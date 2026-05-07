@@ -501,12 +501,13 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 try: row_text = last_row.inner_text()
                 except: pass
                 
-                # Strip non-ASCII (emojis) for robust matching on slow VMs (BUG-011)
-                msg_snippet = re.sub(r'[^\x00-\x7F]+', '', message_text[:100]).strip().replace("*", "")
-                if msg_snippet and msg_snippet not in row_text:
+                # Strip non-ASCII (emojis) and normalize whitespace for robust matching (BUG-011/BUG-012)
+                msg_snippet = re.sub(r'\s+', ' ', re.sub(r'[^\x00-\x7F]+', '', message_text[:100])).strip().replace("*", "")
+                row_text_check = re.sub(r'\s+', ' ', row_text).strip()
+                if msg_snippet and msg_snippet not in row_text_check:
                     print(f"⚠️ WARNING: Last row text does not match our message.")
                     print(f"  Expected snippet: '{msg_snippet}'")
-                    print(f"  Found in row: '{row_text[:50]}...'")
+                    print(f"  Found in row: '{row_text_check[:80]}...'")
                     raise RuntimeError(f"Row text mismatch: new row doesn't contain our message")
                 # 2. Verify message presence and wait for checkmark
                 print(f"  [Verification] Waiting for message to appear in DOM...")
