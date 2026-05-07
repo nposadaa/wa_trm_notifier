@@ -358,6 +358,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # AND handles emoji/Unicode natively (designed for IME input).
             print(f"Typing message to {name}...")
             interaction_success = False
+            pre_send_row_count = None
             
             for attempt in range(2):
                 try:
@@ -411,6 +412,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     else:
                         print(f"  [Attempt {attempt+1}/2] Typing verified: {len(typed_content)} chars in input box.")
 
+                    # --- Pre-send row count (BUG-012: Anti-false-positive) ---
+                    pre_send_row_count = page.locator('#main div[role="row"]').count()
+                    
                     # --- Robust Send Method ---
                     send_button = page.locator('span[data-icon="send"], button:has(span[data-testid="send"]), [data-testid="send"], button[aria-label="Send"], button[aria-label="Enviar"]').first
                     if send_button.is_visible(timeout=5000):
@@ -419,6 +423,46 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     else:
                         page.keyboard.press("Enter")
                         print(f"  [Attempt {attempt+1}/2] Enter pressed (Send button not found).")
+                    
+                    time.sleep(2)
+                    
+                    # --- Post-send: Verify input emptied (BUG-012) ---
+                    post_send_content = ""
+                    try: post_send_content = chat_input.inner_text().strip()
+                    except: pass
+                    
+                    if post_send_content:
+                        print(f"  [Attempt {attempt+1}/2] ⚠️ Input NOT empty after send! Message stuck in composer.")
+                        for send_retry in range(3):
+                            chat_input.click()
+                            time.sleep(0.5)
+                            page.keyboard.type(" ", delay=100)
+                            time.sleep(0.5)
+                            page.keyboard.press("Backspace")
+                            time.sleep(1.0)
+                            send_btn = page.locator('span[data-icon="send"], [data-testid="send"], button[aria-label="Send"], button[aria-label="Enviar"]').first
+                            if send_btn.is_visible(timeout=3000):
+                                send_btn.click()
+                                print(f"    Send retry {send_retry+1}/3: Button clicked.")
+                            else:
+                                page.keyboard.press("Enter")
+                                print(f"    Send retry {send_retry+1}/3: Enter pressed.")
+                            time.sleep(2)
+                            retry_content = ""
+                            try: retry_content = chat_input.inner_text().strip()
+                            except: pass
+                            if not retry_content:
+                                print(f"    Send retry {send_retry+1}/3: ✅ Input emptied — send succeeded.")
+                                break
+                            print(f"    Send retry {send_retry+1}/3: Input still has content.")
+                        else:
+                            print(f"  [Attempt {attempt+1}/2] ❌ All send retries exhausted.")
+                            safe_screenshot(page, f"diag_send_stuck_{name.replace('/', '_')}.png")
+                            if attempt == 0:
+                                print("  Will re-type message on next attempt...")
+                                continue
+                    else:
+                        print(f"  [Attempt {attempt+1}/2] ✅ Input emptied — message dispatched.")
                     
                     interaction_success = True
                     break
@@ -443,25 +487,27 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 # Give the DOM a moment to generate the row after 'Enter'
                 time.sleep(3)
                 
-                # 1. Verify message presence (BUG-010: don't wait for checkmarks if message isn't even in the chat)
+                # 1. Anti-false-positive: Verify NEW row appeared (BUG-012)
+                post_send_row_count = page.locator('#main div[role="row"]').count()
+                print(f"  [Row Count] Before send: {pre_send_row_count}, After send: {post_send_row_count}")
+                
+                if pre_send_row_count is not None and post_send_row_count <= pre_send_row_count:
+                    print(f"  ❌ CRITICAL: No new message row appeared in DOM after send.")
+                    print(f"  Send CONFIRMED FAILED. Aborting verification to prevent false-positive.")
+                    raise RuntimeError(f"Send failed: no new row (before={pre_send_row_count}, after={post_send_row_count})")
+                
                 last_row = page.locator('#main div[role="row"]').last
                 row_text = ""
                 try: row_text = last_row.inner_text()
                 except: pass
                 
-                # Use a snippet of the message to verify it's the right one
                 # Strip non-ASCII (emojis) for robust matching on slow VMs (BUG-011)
                 msg_snippet = re.sub(r'[^\x00-\x7F]+', '', message_text[:100]).strip().replace("*", "")
                 if msg_snippet and msg_snippet not in row_text:
-                    print(f"⚠️ WARNING: Last row text does not match our message. Send might have failed silently.")
+                    print(f"⚠️ WARNING: Last row text does not match our message.")
                     print(f"  Expected snippet: '{msg_snippet}'")
                     print(f"  Found in row: '{row_text[:50]}...'")
-                    # Fallback: check if we are still focused on the input box (means Enter failed)
-                    is_focused = page.evaluate('() => document.activeElement === document.querySelector("#main div[contenteditable=\'true\']")')
-                    if is_focused:
-                        print("  Input box still focused. Emergency re-Enter...")
-                        page.keyboard.press("Enter")
-                        time.sleep(5)
+                    raise RuntimeError(f"Row text mismatch: new row doesn't contain our message")
                 # 2. Verify message presence and wait for checkmark
                 print(f"  [Verification] Waiting for message to appear in DOM...")
                 
