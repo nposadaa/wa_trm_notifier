@@ -303,28 +303,17 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"Auditing results for: {name}...")
             chat_found = False
             
-            # Give the VM up to 30s for the sidebar to populate (Slow VM Fix)
+                # Give the VM up to 30s for the sidebar to populate (Slow VM Fix)
             for attempt in range(5):
-                # --- Result Method A: Exact Title Match ---
+                # --- Result Method: Exact Title Match ---
                 try:
                     chat_title = page.locator(f'span[title="{name}"], [aria-label="{name}"]').first
-                    if chat_title.is_visible(timeout=4000):
+                    if chat_title.is_visible(timeout=8000):
                         chat_title.click()
                         chat_found = True
                         print(f"SUCCESS: Clicked {name} via Sidebar match ({attempt+1}/5).")
                         break
                 except: pass
-    
-                # --- Result Method B: Flexible Text Match ---
-                if not chat_found:
-                    try:
-                        result = page.get_by_text(name, exact=False).first
-                        if result.is_visible(timeout=3000):
-                            result.click()
-                            chat_found = True
-                            print(f"SUCCESS: Clicked {name} via Text fallback ({attempt+1}/5).")
-                            break
-                    except: pass
                 
                 if not chat_found:
                     print(f"Attempt {attempt+1}/5: Still searching sidebar...")
