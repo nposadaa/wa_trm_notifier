@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.2] - 2026-05-07
+> **Status**: Released. Verification engine fix for DOM whitespace normalization.
+
+### Fixed
+- **(BUG-012) Whitespace Normalization**: The snippet matching in the delivery verification engine crashed because the DOM rendered extra newlines (`\n\n\n`) between block-level elements compared to the constructed message text (`\n\n`). Applied whitespace normalization to fix the strict matching and prevent false-negative crashes.
+- **Verification Engine Guard**: Added row count tracking before and after `Send` is clicked to detect when a message gets stuck in the composer (silently failing) and failing fast instead of matching stale chat rows.
+
 ## [1.1.1] - 2026-05-04
 > **Status**: Released. Critical fixes for WhatsApp Web React DOM updates.
 

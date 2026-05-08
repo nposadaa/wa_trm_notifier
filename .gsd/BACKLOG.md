@@ -6,3 +6,4 @@
 | 2 | **Weekday-only Schedule** | 1 | 1 | High | Complete | Adjust CRON/scheduling to exclude Saturdays and Sundays to save resources when the market is closed. |
 | 3 | **Friday Weekly Summary** | 3 | 8 | Med | Backlog | Send a special "Weekly Summary" message on Fridays with Low/High rates and overall weekly trend. |
 | 4 | **5-Year Historical Alert** | 4 | 5 | Med | Backlog | Analyze the last 5 years of data; if today is a historical max/min, add a red "5 YEAR HISTORICAL" alert title. |
+| 5 | **Refactor Broadcaster Legacy Check** | 5 | 1 | Low | Backlog | Remove the legacy 'Emergency re-Enter' code in `broadcaster.py`, as it's been rendered redundant by the new 30s DOM polling logic from v1.1.1. |
