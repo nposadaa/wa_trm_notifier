@@ -2,7 +2,7 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-> **Status**: Active (resumed 2026-05-07T08:12:00-05:00)
+> **Status**: Paused at 2026-05-08T14:50:00-05:00
 
 ## Current Position
 - **Milestone**: v1.1.0 — Financial Intelligence
@@ -11,7 +11,7 @@
 - **Status**: Paused
 
 ## Last Session Summary
-Diagnosed and fixed critical failures in the automated broadcaster on the VM. Shipped `v1.1.1` hotfix which updated the WhatsApp React DOM typing trigger, broadened the Send button locators, and instituted a robust 30s DOM polling mechanism for delivery verification to handle the slow 1-core VM.
+Diagnosed and fixed a critical delivery failure where messages were sent to the wrong chat. The broadcaster's text fallback search logic was removed because it was clicking previous messages instead of the group chat. Increased exact match timeouts. Deployed `v1.1.3`.
 
 ## In-Progress Work
 - None
@@ -21,12 +21,10 @@ Diagnosed and fixed critical failures in the automated broadcaster on the VM. Sh
 
 ## Context Dump
 ### Decisions Made
-- **(DEC-040) DOM Polling for Verification**: Replaced immediate text verification with a 30s polling loop. The VM network is too slow, and immediate checks were causing false "Row mismatch" errors because the new chat row hadn't rendered yet.
-- **(DEC-041) Send Button Priority**: Broadened selectors to forcefully click the Send Button rather than relying entirely on `Enter` key behavior, since React's internal state on WhatsApp Web drops `Enter` presses if it misses the `input` events.
+- **(DEC-042) Strict Chat Matching**: Removed `get_by_text` fallback search. It's too dangerous because it can match past messages and send broadcasts to the wrong recipients. Increased exact match timeout to 8s instead.
 
 ### Files of Interest
-- `broadcaster.py`: Hardened verification and React triggers.
-- `.gsd/BACKLOG.md`: Contains a new cleanup task for legacy broadcaster checks (Item #5).
+- `broadcaster.py`: Search timeout and fallback logic.
 
 ## Next Steps
 1. /plan 3 — Weekly Intelligence

@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.3] - 2026-05-08
+> **Status**: Released. Critical fix for wrong chat selection (Text Fallback bug).
+
+### Fixed
+- **(BUG-017) Wrong Chat Selection**: Removed the dangerous `get_by_text` Text Fallback search method which caused the script to accidentally click past messages instead of the target group chat.
+- **Search Timeout**: Increased the Exact Title Match timeout from 4s to 8s to accommodate slower sidebar rendering on the 1-core GCP VM.
+
 ## [1.1.2] - 2026-05-07
 > **Status**: Released. Verification engine fix for DOM whitespace normalization.
 
