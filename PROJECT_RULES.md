@@ -158,12 +158,21 @@ type(scope): description
   1. Update the bug's `Fixed in release` field in `.gsd/phases/{N}/BUGS.md` with the target version tag (e.g., `v1.0.2`)
   2. Add a `### Fixed` entry in `CHANGELOG.md` under that version block referencing the `BUG-NNN` ID
   3. No bug may be marked `fixed` in the bug log without a corresponding CHANGELOG entry. No exceptions.
-- **Release tag naming convention**:
-  - Tag names contain only the version identifier: `v{major}.{minor}.{patch}` (e.g., `v1.0.2`)
-  - Suffixes (`-alpha`, `-beta`, `-rc1`) are reserved for genuine pre-stable builds that differ structurally from the release format
-  - **Pre-release status is marked on GitHub** via the "Set as pre-release" toggle — it is NOT part of the tag name
-  - A tag named `v1.0.2` with GitHub pre-release flag = planned/staged release awaiting promotion
-  - Only promote (un-flag as pre-release on GitHub) once Sprint verification is complete
+- Only promote (un-flag as pre-release on GitHub) once Sprint verification is complete
+
+---
+
+## Release Protocol
+
+When a release is requested (e.g., "add a release", "release v1.1.4"), the following MUST be completed in a single session:
+
+1. **Changelog**: Update `CHANGELOG.md` with the new version block, status, and categorized changes.
+2. **Readme**: Update `README.md` (specifically the "Current Version" badge/text and any new architecture/features).
+3. **State**: Update `.gsd/STATE.md` (mark current task as completed, update current position).
+4. **Version**: Update the `VERSION` file.
+5. **Journal**: Add a final session entry to `.gsd/JOURNAL.md` summarizing the release objective and verification.
+6. **Commit**: Git commit all changes with a `feat: release vX.Y.Z` or `fix: release vX.Y.Z` message.
+7. **Tag**: Create a git tag `vX.Y.Z`.
 
 ---
 

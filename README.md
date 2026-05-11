@@ -101,7 +101,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current version**: `v1.1.3` — Critical Fix for Wrong Chat Selection (Text Fallback bug)
+> **Current version**: `v1.1.4` — Resilient Scheduling & API Failure Notifications
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*
