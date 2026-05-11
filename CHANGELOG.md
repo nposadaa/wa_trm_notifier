@@ -2,6 +2,17 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.4] - 2026-05-11
+> **Status**: Released. Resilient scheduling and API failure notifications.
+
+### Added
+- **Resilient Scheduling**: Implemented a secondary "self-healing" CRON run at 15:00 UTC (10:00 AM COT) to retry broadcasts if the morning run fails.
+- **API Failure Notifications**: The bot now sends a proactive system update to the WhatsApp group if the official TRM API is down, informing users of the outage and scheduled retry.
+- **Success Tracking**: Added `.gsd/last_success.date` to track daily completions and prevent double-posting during secondary runs.
+
+### Fixed
+- **Session Cleanup**: Performed a hard purge of browser cache and temporary data on the GCP VM to resolve a 20-minute "SYNCING..." hang.
+
 ## [1.1.3] - 2026-05-08
 > **Status**: Released. Critical fix for wrong chat selection (Text Fallback bug).
 

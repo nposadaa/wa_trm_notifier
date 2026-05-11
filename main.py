@@ -6,6 +6,9 @@ from datetime import datetime
 from scraper import scrape_trm
 from broadcaster import run_broadcaster
 
+LAST_SUCCESS_FILE = ".gsd/last_success.date"
+LAST_FAIL_NOTIFICATION = ".gsd/last_fail_notify.date"
+
 # --- Logging Setup ---
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -37,12 +40,47 @@ def main():
 
     logger.info("--- Starting TRM Notifier ---")
     
+    # --- Pre-run Success Check ---
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    if os.path.exists(LAST_SUCCESS_FILE):
+        with open(LAST_SUCCESS_FILE, "r") as f:
+            if f.read().strip() == today_str:
+                logger.info(f"Broadcast for {today_str} already completed successfully. Skipping to avoid double-post.")
+                return
+
     # 1. Scrape the data
     logger.info("Scraping TRM data...")
     trm_data = scrape_trm()
     
     if "error" in trm_data:
-        logger.error(f"Error scraping TRM: {trm_data['error']}")
+        error_msg = trm_data['error']
+        logger.error(f"Error scraping TRM: {error_msg}")
+        
+        # If API is down, send a status update instead of just failing
+        current_hour = datetime.now().hour
+        retry_msg = ""
+        if current_hour < 14: # Usually the first run is at 12:00 UTC (7:00 COT)
+            retry_msg = " A second attempt is scheduled for 10:00 AM COT (3 hours from now)."
+            
+        status_update = f"⚠️ *Aviso de Sistema*\n\nLa API de la Superfinanciera no responde (Error: {error_msg}).{retry_msg}\n\n_El bot reintentará automáticamente._"
+        
+        if not args.dry_run:
+            # Only send the failure notification once per day
+            already_notified = False
+            if os.path.exists(LAST_FAIL_NOTIFICATION):
+                with open(LAST_FAIL_NOTIFICATION, "r") as f:
+                    if f.read().strip() == today_str:
+                        already_notified = True
+            
+            if not already_notified:
+                logger.info("Sending API Failure notification...")
+                run_broadcaster(status_update, headless=args.headless)
+                with open(LAST_FAIL_NOTIFICATION, "w") as f:
+                    f.write(today_str)
+            else:
+                logger.info("API Failure notification already sent today. Skipping redundant notification.")
+        else:
+            logger.info(f"[Dry Run] Would send failure notification:\n{status_update}")
         return
 
     trm_value = trm_data["trm"]
@@ -88,6 +126,9 @@ def main():
 
     if success:
         logger.info("Task completed successfully!")
+        # Record success to avoid double-posting by the secondary CRON
+        with open(LAST_SUCCESS_FILE, "w") as f:
+            f.write(trm_date) 
     else:
         logger.error("Broadcast failed — see diagnostics above.")
         sys.exit(1)
