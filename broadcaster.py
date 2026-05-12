@@ -104,7 +104,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         start_time = time.time()
         poll_start = time.time()
         # 20 minutes for initial deep sync on first heartbeats
-        MAX_INITIAL_WAIT = 1200 
+        MAX_INITIAL_WAIT = 1800 # 30 minutes for deep sync on throttled VM cold-boots
         session_state = "INITIALIZING"
         reload_triggered = False
         last_percentage = -1
@@ -152,9 +152,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             try: screen_content = page.locator("body").inner_text()[:2000]
             except: pass
 
-            if "Loading your chats" in screen_content or "Cargando tus chats" in screen_content:
+            if any(term in screen_content for term in ["Loading your chats", "Cargando tus chats", "Sincronizando", "Organizando", "Loading...", "Cargando..."]):
                 if session_state != "SYNCING":
-                    print(f"[{elapsed}s] Syncing detected... (First run decryption phase).")
+                    print(f"[{elapsed}s] Syncing/Loading detected... (CPU-intensive decryption phase).")
                     session_state = "SYNCING"
                 
                 # Extract percentage to verify progress (e.g., "Loading your chats [19%]")
@@ -162,9 +162,16 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 if match:
                     current_pct = int(match.group(1))
                     if current_pct > last_percentage:
-                        print(f"[{elapsed}s] Sync Progress: {current_pct}% (CPU Decrypting...)")
+                        print(f"[{elapsed}s] Sync Progress: {current_pct}% (Decrypting...)")
                         last_percentage = current_pct
                         poll_start = time.time() # Reset watchdog - we have progress!
+                    elif current_pct == last_percentage and elapsed > 300:
+                         # Stuck at the same percentage for 5 minutes
+                         print(f"[{elapsed}s] WARNING: Sync percentage stuck at {current_pct}%. Triggering recovery...")
+                         page.reload()
+                         poll_start = time.time()
+                         time.sleep(5)
+                         continue
 
                 # RECOVERY: If stuck at 0% or no % for > 240s, jumpstart
                 if elapsed > 240 and not reload_triggered and last_percentage <= 0:
@@ -180,6 +187,13 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     session_state = "LOGGED_IN"
                     break
                 except : pass
+            
+            # --- FINAL ATTEMPT: If near timeout, try one last reload ---
+            if elapsed > (MAX_INITIAL_WAIT - 60) and not reload_triggered:
+                print(f"[{elapsed}s] Near timeout! Final emergency reload...")
+                page.reload()
+                reload_triggered = True
+                time.sleep(10)
             
             # 4. QR CODE MARKERS
             if page.locator('canvas, [data-testid="qrcode-container"]').first.is_visible():

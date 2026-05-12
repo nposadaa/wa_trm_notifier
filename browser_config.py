@@ -20,6 +20,11 @@ def clean_browser_locks():
     
     # Also clean cache bloat (DEC-035)
     clean_browser_bloat()
+    
+    # Check for maintenance flag (BUG-018)
+    if os.path.exists(".gsd/needs_maintenance"):
+        print("[config] 🛠 Maintenance flag detected. Performing DEEP CLEAN...")
+        deep_clean_profile()
 
 def clean_browser_bloat():
     """Removes Cache and Code Cache directories to prevent profile bloat on e2-micro."""
@@ -27,6 +32,9 @@ def clean_browser_bloat():
         os.path.join(USER_DATA_DIR, "Default", "Cache"),
         os.path.join(USER_DATA_DIR, "Default", "Code Cache"),
         os.path.join(USER_DATA_DIR, "Default", "GPUCache"),
+        os.path.join(USER_DATA_DIR, "Default", "Service Worker", "CacheStorage"),
+        os.path.join(USER_DATA_DIR, "Default", "Service Worker", "ScriptCache"),
+        os.path.join(USER_DATA_DIR, "Default", "Blob Storage"),
         os.path.join(USER_DATA_DIR, "GrShaderCache"),
         os.path.join(USER_DATA_DIR, "ShaderCache"),
     ]
@@ -37,6 +45,20 @@ def clean_browser_bloat():
                 print(f"[config] Cleaned up bloat directory: {path}")
             except Exception as e:
                 print(f"[config] Bloat cleanup warning for {path}: {e}")
+
+def deep_clean_profile():
+    """Removes IndexedDB and Service Worker to force a fresh sync (preserves LocalStorage session)."""
+    deep_paths = [
+        os.path.join(USER_DATA_DIR, "Default", "IndexedDB"),
+        os.path.join(USER_DATA_DIR, "Default", "Service Worker"),
+    ]
+    for path in deep_paths:
+        if os.path.exists(path):
+            try:
+                shutil.rmtree(path)
+                print(f"[config] DEEP CLEAN: Removed {path}")
+            except Exception as e:
+                print(f"[config] DEEP CLEAN warning for {path}: {e}")
 
 def get_browser_context(playwright, headless=True):
     """Returns a hardened, persistent browser context strictly tuned for wa_trm_notifier VMs."""

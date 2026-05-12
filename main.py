@@ -74,9 +74,12 @@ def main():
             
             if not already_notified:
                 logger.info("Sending API Failure notification...")
-                run_broadcaster(status_update, headless=args.headless)
-                with open(LAST_FAIL_NOTIFICATION, "w") as f:
-                    f.write(today_str)
+                success = run_broadcaster(status_update, headless=args.headless)
+                if success:
+                    with open(LAST_FAIL_NOTIFICATION, "w") as f:
+                        f.write(today_str)
+                else:
+                    logger.error("Failed to send API Failure notification. Will try again on next run.")
             else:
                 logger.info("API Failure notification already sent today. Skipping redundant notification.")
         else:
@@ -129,8 +132,13 @@ def main():
         # Record success to avoid double-posting by the secondary CRON
         with open(LAST_SUCCESS_FILE, "w") as f:
             f.write(trm_date) 
+        # Clear maintenance flag if it exists
+        if os.path.exists(".gsd/needs_maintenance"):
+            os.remove(".gsd/needs_maintenance")
     else:
-        logger.error("Broadcast failed — see diagnostics above.")
+        logger.error("Broadcast failed — marking profile for deep clean and exiting.")
+        with open(".gsd/needs_maintenance", "w") as f:
+            f.write(datetime.now().isoformat())
         sys.exit(1)
 
 if __name__ == "__main__":

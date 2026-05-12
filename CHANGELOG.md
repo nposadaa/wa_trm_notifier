@@ -2,6 +2,17 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.5] - 2026-05-12
+> **Status**: Released. Self-Healing Maintenance Mode & Hardened Auth.
+
+### Added
+- **Self-Healing Maintenance**: Implemented `.gsd/needs_maintenance` flag. If a broadcast fails, the next run automatically performs a "Deep Clean" of `IndexedDB` and `Service Worker` to resolve persistent sync hangs while preserving the login session.
+- **Enhanced Sync Detection**: Added localized terms ("Sincronizando", "Organizando") and stuck-percentage detection to the auth loop to trigger faster recovery reloads.
+
+### Fixed
+- **Notification Logic Bug**: Fixed a bug where API failure notifications were marked as 'sent' even if the broadcaster failed, preventing the secondary CRON run from retrying the notification.
+- **Auth Resilience**: Increased `MAX_INITIAL_WAIT` to 30 minutes and added a "Final Emergency Reload" trigger before timeout to handle extremely throttled VM performance.
+
 ## [1.1.4] - 2026-05-11
 > **Status**: Released. Resilient scheduling and API failure notifications.
 
