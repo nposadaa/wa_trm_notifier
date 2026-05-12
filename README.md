@@ -90,7 +90,8 @@ If the cloud run fails or times out, pull the remote evidence to your local mach
 - ✅ Phase 2: API Handshake — Complete (deprecated in Phase 3.3)
 - ✅ Phase 3: Direct Playwright Broadcast — Complete
 - ✅ Phase 4: Cloud Automation (GCP) — Deployed & Running
-- 🔄 Phase 5: Live Support & Stability — Active
+- ✅ Phase 5: Live Support & Stability — Complete
+- 🔄 Phase 6: Financial Intelligence — Active
 
 ### Phase 5 — Live Support Model
 Post-deployment reliability work is managed in **time-boxed sprints** rather than monolithic planning cycles. Each sprint targets specific bugs or improvements surfaced from autonomous CRON runs.
@@ -101,7 +102,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current version**: `v1.1.4` — Resilient Scheduling & API Failure Notifications
+> **Current version**: `v1.1.5` — Self-Healing Maintenance Mode & Hardened Auth
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*

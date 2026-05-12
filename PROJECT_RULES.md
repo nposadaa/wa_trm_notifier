@@ -279,5 +279,23 @@ Before commit    → If decision made → DEC-NNN in DECISIONS.md
 
 ---
 
+## TRM Notifier Specific Rules
+
+### 1. Resilience & Self-Healing
+- **Success Tracking**: Always check `.gsd/last_success.date` before broadcasting. A successful run MUST write the TRM date to this file to prevent double-posting during secondary CRON windows.
+- **Maintenance Trigger**: If `run_broadcaster` fails, the script MUST create `.gsd/needs_maintenance`. 
+- **Deep Clean Protocol**: If `.gsd/needs_maintenance` exists at startup, `deep_clean_profile()` MUST be invoked to purge `IndexedDB` and `Service Worker` caches before launching the browser.
+- **Failure Notification Guard**: Only write to `.gsd/last_fail_notify.date` if the broadcaster successfully dispatches the "API Down" message.
+
+### 2. Browser Stability (e2-micro)
+- **Bloat Cleanup**: Every run MUST invoke `clean_browser_bloat()` to remove `Cache`, `Code Cache`, and `GPUCache` folders.
+- **Memory Flags**: The browser MUST launch with `--max-old-space-size=640` and `--disable-dev-shm-usage` to survive on 1GB RAM.
+- **Auth Sync Watchdog**: 
+    - Maximum auth wait: 30 minutes.
+    - If sync percentage stalls for >5 minutes: Trigger `page.reload()`.
+    - If 60 seconds from timeout: Trigger final emergency `page.reload()`.
+
+---
+
 *GSD Methodology — Model-Agnostic Edition*
 *Reference implementation for multi-LLM environments*
