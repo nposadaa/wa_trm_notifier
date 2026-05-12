@@ -2,8 +2,18 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.6] - 2026-05-12
+> **Status**: Released. False-Positive Verification Fix & Stale Composer Hardening.
+
+### Added
+- **Force Flag**: Added `--force` to `main.py` to allow manual overrides of successful runs (useful for recovery after false-positive success reports).
+- **Timestamped Diagnostics**: Failure screenshots now include HHMM timestamps (e.g., `diag_delivery_failed_..._1215.png`) to prevent confusion between different daily runs.
+
+### Fixed
+- **(BUG-020) False-Positive Success**: Fixed a critical bug where the verification engine would match a previous day's message/checkmark during a recovery reload. The engine now re-verifies the row text *inside* the status polling loop.
+- **(BUG-021) Stale Composer Persistence**: Hardened the composer clearing logic with a 3-pass loop and JavaScript fallback to ensure old drafts (e.g. from failed May 7th run) are thoroughly purged before typing new data.
+
 ## [1.1.5] - 2026-05-12
-> **Status**: Released. Self-Healing Maintenance Mode & Hardened Auth.
 
 ### Added
 - **Self-Healing Maintenance**: Implemented `.gsd/needs_maintenance` flag. If a broadcast fails, the next run automatically performs a "Deep Clean" of `IndexedDB` and `Service Worker` to resolve persistent sync hangs while preserving the login session.
