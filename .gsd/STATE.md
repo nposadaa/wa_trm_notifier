@@ -6,15 +6,14 @@
 
 ## Current Position
 - **Phase**: 5 — Live Support & Stability (Hotfixes)
-- **Task**: Fix False-Positive Verification & Stale Composer (v1.1.6)
-- **Status**: Completed at 2026-05-12T12:15:00-05:00
+- **Task**: Fix Missing Import & Finalize (v1.1.7)
+- **Status**: Completed at 2026-05-12T12:38:00-05:00
 
 ## Last Session Summary
-Resolved "False Success" bug where stale rows triggered delivery verification.
-- **Hardened Verification**: Re-verifies text in every poll loop to prevent matching previous day's messages during recovery.
-- **Robust Clear**: Added multi-pass composer clearing with JS fallback to prevent "Enter" sending old drafts.
-- **Force Flag**: Added `--force` to `main.py` for manual override of successful runs.
-- **Timestamped Diags**: Screenshots now include HHMM to distinguish between runs.
+Resolved critical NameError and false-positive delivery bugs.
+- **Hotfix (v1.1.7)**: Added missing `datetime` import to `broadcaster.py`.
+- **v1.1.6 Fixes**: Hardened verification to check text inside polling loops and improved composer clearing to purge stale drafts.
+- **Force Flag**: Added `--force` for manual recovery runs.
 
 ## In-Progress Work
 - None (All resilience features deployed and verified via manual test run).

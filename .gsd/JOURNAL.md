@@ -169,3 +169,23 @@ Hotfix v1.1.6 complete. Ready to deploy and run a manual recovery on the VM.
 
 ### Handoff Notes
 Run `git pull` on the VM followed by `python3 main.py --headless --force` to finally send today's correct data. The system is now significantly more resistant to stale-state false positives.
+
+---
+
+## Session: 2026-05-12 12:38 (COT)
+
+### Objective
+Fix the `NameError` crash introduced in v1.1.6.
+
+### AccomplISHED
+- ✅ **Hotfix v1.1.7**: Added missing `datetime` import to `broadcaster.py`.
+- ✅ **Protocol**: Updated Version, Changelog, and Pushed to remote.
+
+### Verification
+- [x] Code verified and pushed.
+
+### Paused Because
+Hotfix complete.
+
+### Handoff Notes
+Ready for final manual run on VM.
