@@ -2,6 +2,7 @@ import os
 import time
 import json
 import re
+from datetime import datetime
 from playwright.sync_api import sync_playwright
 from browser_config import get_browser_context, clean_browser_locks, apply_stealth_overrides
 from dotenv import load_dotenv

@@ -2,6 +2,12 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.7] - 2026-05-12
+> **Status**: Released. Hotfix for missing import.
+
+### Fixed
+- **(BUG-022) NameError**: Added missing `datetime` import in `broadcaster.py` which caused the v1.1.6 diagnostic logic to crash.
+
 ## [1.1.6] - 2026-05-12
 > **Status**: Released. False-Positive Verification Fix & Stale Composer Hardening.
 
