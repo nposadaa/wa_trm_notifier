@@ -6,16 +6,15 @@
 
 ## Current Position
 - **Phase**: 5 — Live Support & Stability (Hotfixes)
-- **Task**: Implement Self-Healing Maintenance Mode (v1.1.5)
-- **Status**: Completed at 2026-05-12T08:24:00-05:00
+- **Task**: Fix False-Positive Verification & Stale Composer (v1.1.6)
+- **Status**: Completed at 2026-05-12T12:15:00-05:00
 
 ## Last Session Summary
-Resolved silent broadcast failures on GCP VM.
-- **Maintenance Mode**: Added `.gsd/needs_maintenance` flag to trigger "Deep Clean" (IndexedDB/Service Worker purge) on next run after failure.
-- **Hardened Auth**: Increased sync timeout to 30 mins and added localized term detection ("Sincronizando") with emergency reloads.
-- **Fixed Notification Bug**: Ensured failure notices retry if the broadcaster fails.
-- **Project Rules**: Codified resilience and stability protocols in `PROJECT_RULES.md`.
-- **Deployment**: Pushed v1.1.5 to GitHub and verified pull on VM.
+Resolved "False Success" bug where stale rows triggered delivery verification.
+- **Hardened Verification**: Re-verifies text in every poll loop to prevent matching previous day's messages during recovery.
+- **Robust Clear**: Added multi-pass composer clearing with JS fallback to prevent "Enter" sending old drafts.
+- **Force Flag**: Added `--force` to `main.py` for manual override of successful runs.
+- **Timestamped Diags**: Screenshots now include HHMM to distinguish between runs.
 
 ## In-Progress Work
 - None (All resilience features deployed and verified via manual test run).
