@@ -36,16 +36,17 @@ def main():
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode (production)")
     parser.add_argument("--discovery", action="store_true", help="List available WhatsApp chats")
     parser.add_argument("--dry-run", action="store_true", help="Print message and exit without sending")
+    parser.add_argument("--force", action="store_true", help="Force broadcast even if already sent today")
     args = parser.parse_args()
 
     logger.info("--- Starting TRM Notifier ---")
     
     # --- Pre-run Success Check ---
     today_str = datetime.now().strftime("%Y-%m-%d")
-    if os.path.exists(LAST_SUCCESS_FILE):
+    if os.path.exists(LAST_SUCCESS_FILE) and not args.force:
         with open(LAST_SUCCESS_FILE, "r") as f:
             if f.read().strip() == today_str:
-                logger.info(f"Broadcast for {today_str} already completed successfully. Skipping to avoid double-post.")
+                logger.info(f"Broadcast for {today_str} already completed successfully. Skipping to avoid double-post (Use --force to override).")
                 return
 
     # 1. Scrape the data

@@ -138,7 +138,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         if (btn) btn.click();
                     });
                 }""")
-            except Exception as eval_err:
+            except Exception:
                 pass # Non-critical loop stability
 
             # 1. SUCCESS MARKERS (Search Box or Chat Pane)
@@ -228,7 +228,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"\n--- SESSION TIMEOUT ({session_state}) ---")
             print(f"Reached {MAX_INITIAL_WAIT}s without entering logged-in state.")
             print("Saving diagnostic screenshot to 'error_page.png'...")
-            safe_screenshot(page, "error_page.png")
+            safe_screenshot(page, f"error_page_{datetime.now().strftime('%H%M')}.png")
             context.close()
             return False
 
@@ -334,8 +334,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     time.sleep(5)
             
             if not chat_found:
-                print(f"CRITICAL: Search failed for '{name}'. Saving search_failed.png")
-                safe_screenshot(page, f"diag_search_failed_{name.replace('/', '_')}.png")
+                screenshot_name = f"diag_search_failed_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
+                print(f"CRITICAL: Search failed for '{name}'. Saving {screenshot_name}")
+                safe_screenshot(page, screenshot_name)
                 any_failure = True
                 continue
 
@@ -368,74 +369,72 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     # Ensure the box is ready (Increased timeout for VM stability)
                     chat_input.wait_for(state="visible", timeout=60000)
                     
-                    # Force Focus via Locator (BUG-006: no stale element_handle)
-                    print(f"  [Attempt {attempt+1}/2] Focusing input and clearing buffer...")
+                    # --- Robust Clear Loop (BUG-020) ---
+                    print(f"  [Attempt {attempt+1}/2] Clearing composer...")
                     chat_input.click()
-                    time.sleep(0.3)
-                    page.keyboard.press("Control+A")
-                    page.keyboard.press("Backspace")
                     time.sleep(0.5)
+                    for _ in range(3):
+                        page.keyboard.press("Control+A")
+                        page.keyboard.press("Backspace")
+                        time.sleep(0.5)
+                        if not chat_input.inner_text().strip():
+                            break
+                    else:
+                         # Brute force fallback via page.evaluate
+                         page.evaluate("(el) => { if(el) el.innerText = ''; }", chat_input.element_handle())
                     
                     # Insert message line-by-line via keyboard.insert_text
-                    # This fires proper browser InputEvent (compatible with React/Lexical)
+                    print(f"  [Attempt {attempt+1}/2] Typing message...")
                     lines = message_text.split('\n')
                     for i, line in enumerate(lines):
                         if line:
                             page.keyboard.insert_text(line)
                             time.sleep(0.3)
                         if i < len(lines) - 1:
-                            # Shift+Enter for newlines in WhatsApp
                             page.keyboard.press("Shift+Enter")
                             time.sleep(0.1)
                     
-                    # --- React DOM Trigger (BUG FIX) ---
-                    # WhatsApp Web's React state sometimes doesn't register insert_text.
-                    # We type a physical space using .type() to fire full IME events, then delete it.
+                    # React DOM Trigger
                     page.keyboard.type(" ", delay=50)
                     time.sleep(0.5)
                     page.keyboard.press("Backspace")
-                    time.sleep(0.5)
-                    
                     time.sleep(2.0)
 
-                    # --- Post-typing verification (BUG-006) ---
+                    # --- Post-typing verification ---
                     typed_content = ""
-                    try:
-                        typed_content = chat_input.inner_text().strip()
-                    except Exception:
-                        pass
+                    try: typed_content = chat_input.inner_text().strip()
+                    except: pass
                     
                     if not typed_content:
                         print(f"  [Attempt {attempt+1}/2] WARNING: Input box appears empty after typing!")
+                        screenshot_name = f"diag_empty_input_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
+                        safe_screenshot(page, screenshot_name)
                         if attempt == 0:
                             print("  Retrying...")
-                            safe_screenshot(page, f"diag_empty_input_{name.replace('/', '_')}.png")
                             time.sleep(3)
                             continue
                     else:
-                        print(f"  [Attempt {attempt+1}/2] Typing verified: {len(typed_content)} chars in input box.")
+                        print(f"  [Attempt {attempt+1}/2] Typing verified: {len(typed_content)} chars.")
 
-                    # --- Pre-send row count (BUG-012: Anti-false-positive) ---
                     pre_send_row_count = page.locator('#main div[role="row"]').count()
                     
-                    # --- Robust Send Method ---
                     send_button = page.locator('span[data-icon="send"], button:has(span[data-testid="send"]), [data-testid="send"], button[aria-label="Send"], button[aria-label="Enviar"]').first
                     if send_button.is_visible(timeout=5000):
                         send_button.click()
                         print(f"  [Attempt {attempt+1}/2] Send button clicked.")
                     else:
                         page.keyboard.press("Enter")
-                        print(f"  [Attempt {attempt+1}/2] Enter pressed (Send button not found).")
+                        print(f"  [Attempt {attempt+1}/2] Enter pressed.")
                     
                     time.sleep(2)
                     
-                    # --- Post-send: Verify input emptied (BUG-012) ---
+                    # --- Post-send: Verify input emptied ---
                     post_send_content = ""
                     try: post_send_content = chat_input.inner_text().strip()
                     except: pass
                     
                     if post_send_content:
-                        print(f"  [Attempt {attempt+1}/2] ⚠️ Input NOT empty after send! Message stuck in composer.")
+                        print(f"  [Attempt {attempt+1}/2] ⚠️ Input NOT empty after send!")
                         for send_retry in range(3):
                             chat_input.click()
                             time.sleep(0.5)
@@ -446,24 +445,17 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                             send_btn = page.locator('span[data-icon="send"], [data-testid="send"], button[aria-label="Send"], button[aria-label="Enviar"]').first
                             if send_btn.is_visible(timeout=3000):
                                 send_btn.click()
-                                print(f"    Send retry {send_retry+1}/3: Button clicked.")
                             else:
                                 page.keyboard.press("Enter")
-                                print(f"    Send retry {send_retry+1}/3: Enter pressed.")
                             time.sleep(2)
-                            retry_content = ""
-                            try: retry_content = chat_input.inner_text().strip()
-                            except: pass
-                            if not retry_content:
-                                print(f"    Send retry {send_retry+1}/3: ✅ Input emptied — send succeeded.")
+                            if not chat_input.inner_text().strip():
+                                print(f"    Send retry {send_retry+1}/3: ✅ Success.")
                                 break
-                            print(f"    Send retry {send_retry+1}/3: Input still has content.")
                         else:
                             print(f"  [Attempt {attempt+1}/2] ❌ All send retries exhausted.")
-                            safe_screenshot(page, f"diag_send_stuck_{name.replace('/', '_')}.png")
-                            if attempt == 0:
-                                print("  Will re-type message on next attempt...")
-                                continue
+                            screenshot_name = f"diag_send_stuck_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
+                            safe_screenshot(page, screenshot_name)
+                            if attempt == 0: continue
                     else:
                         print(f"  [Attempt {attempt+1}/2] ✅ Input emptied — message dispatched.")
                     
@@ -473,8 +465,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 except Exception as e:
                     print(f"  [Attempt {attempt+1}/2] Interaction error: {e}")
                     if attempt == 0:
-                        print("  Taking diagnostic screenshot and retrying...")
-                        safe_screenshot(page, f"diag_retry_{name.replace('/', '_')}.png")
+                        screenshot_name = f"diag_retry_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
+                        safe_screenshot(page, screenshot_name)
                         time.sleep(5)
             
             if not interaction_success:
@@ -540,6 +532,18 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print(f"  [Verification] Message matched in DOM. Waiting for anchored row checkmark...")
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
                 for _ in range(60): # 5 minutes total (5s intervals)
+                    # RE-VERIFY TEXT IN EVERY LOOP (Anti-false-positive BUG-020)
+                    last_row = page.locator('#main div[role="row"]').last
+                    current_row_text = ""
+                    try: current_row_text = last_row.inner_text()
+                    except: pass
+                    row_text_norm = re.sub(r'\s+', ' ', current_row_text).strip()
+                    
+                    if msg_snippet_norm not in row_text_norm:
+                        print("  [Verification] ⚠️ Last row text drifted (may be recovery noise). Continuing poll...")
+                        time.sleep(5)
+                        continue
+
                     if status_locator.is_visible(timeout=1000):
                         elapsed_verify = int(time.time() - start_verify)
                         print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark (Ack took {elapsed_verify}s).")
@@ -559,13 +563,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                             page.reload()
                             page.wait_for_load_state("networkidle", timeout=30000)
                             time.sleep(10)
-                            # After reload, check if it was actually sent
-                            print("  Post-recovery check...")
-                            last_row = page.locator('#main div[role="row"]').last
-                            if status_locator.is_visible(timeout=10000):
-                                print("✅ SUCCESS: Delivery confirmed after recovery reload.")
-                                delivery_verified = True
-                                break
+                            # Post-reload state might be messy, let the loop continue and re-verify text
                     
                     time.sleep(4)
 
@@ -573,8 +571,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print(f"❌ FAILURE: Verification engine crashed ({e})")
 
             if not delivery_verified:
-                print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving diag_delivery_failed_{name.replace('/', '_')}.png")
-                safe_screenshot(page, f"diag_delivery_failed_{name.replace('/', '_')}.png")
+                screenshot_name = f"diag_delivery_failed_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
+                print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving {screenshot_name}")
+                safe_screenshot(page, screenshot_name)
                 any_failure = True
 
             time.sleep(5)
