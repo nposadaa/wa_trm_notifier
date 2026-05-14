@@ -2,42 +2,44 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-> **Status**: Paused (2026-05-12T08:24:00-05:00)
+> **Status**: Active (resumed 2026-05-14T18:10:00-05:00)
 
 ## Current Position
 - **Phase**: 5 — Live Support & Stability (Hotfixes)
-- **Task**: Stability Hotfixes (v1.1.5 - v1.1.7)
-- **Status**: Paused at 2026-05-12T12:50:00-05:00
+- **Task**: Session Recovery (May 14th Failure)
+- **Status**: Paused at 2026-05-14T18:41:00-05:00
 
 ## Last Session Summary
-Resolved delivery reliability issues and hardened the broadcaster for v1.1.7.
-- ✅ **Verification Fix**: Prevented false-positive success by re-verifying message text after reloads.
-- ✅ **Input Hardening**: Implemented robust composer clearing and typing verification.
-- ✅ **Crash Fix**: Resolved a critical `NameError` (missing import) in the diagnostic logic.
-- ✅ **Manual Recovery**: Successfully executed a forced broadcast on the VM, delivering today's TRM.
+Diagnosed the silent May 14th failure.
+- ✅ **Root Cause**: Session invalidated (QR Required).
+- ✅ **Zip & Ship**: Successfully performed local authentication and transferred session to VM.
+- ✅ **Bug Found**: Identified that the `.gsd/needs_maintenance` flag (from a previous failure) was causing the script to "Deep Clean" (delete `IndexedDB`) from the fresh session on every start, triggering a loop.
 
 ## In-Progress Work
-- None (All resilience features deployed and verified via manual test run).
+- No code changes required. 
+- Operational fix pending: Remove maintenance flag and re-extract zip on VM.
 
 ## Blockers
 - None.
 
 ## Context Dump
 ### Decisions Made
-- **(DEC-044) Success Tracking**: Used a simple date file (`.gsd/last_success.date`) to manage multiple CRON runs without a complex database.
-- **(DEC-045) Proactive Failure Notice**: Decided to send a "API Down" message to the group to manage user expectations during government outages.
+- **(DEC-046) Maintenance Hygiene**: Realized that `needs_maintenance` must be manually cleared or the session must be re-extracted AFTER clearing it to avoid the auto-cleanup loop.
+
+### Approaches Tried
+- **Manual Log Analysis**: Confirmed `QR Required` error.
+- **Zip & Ship**: Successfully transferred folder, but script deleted the database on startup due to the stale flag.
 
 ### Current Hypothesis
-- The "SYNCING..." hang is likely caused by the extreme memory constraints (1GB) of the e2-micro VM when the WhatsApp profile bloat reaches a certain threshold. Regular purging is required.
+- Deleting `.gsd/needs_maintenance` on the VM followed by `unzip -o whatsapp_session.zip` will restore full stability.
 
 ### Files of Interest
-- `main.py`: Contains v1.1.5 resilience logic and maintenance triggering.
-- `broadcaster.py`: Hardened auth loop with sync watchdog.
-- `browser_config.py`: Expanded cleanup and deep clean (maintenance) routines.
-- `PROJECT_RULES.md`: New canonical rules for TRM Notifier stability.
+- `main.py`: Entry point where maintenance check happens.
+- `browser_config.py`: Contains the `deep_clean_profile()` logic that deletes `IndexedDB`.
+- `logs/vm_run.log`: Shows the "Maintenance flag detected" log line.
 
 ## Next Steps
-1. **Resume Development**: Pivot to **Phase 3: Weekly Intelligence** (Friday summaries).
-2. **Monitor Logs**: Ensure the automated 7:00 AM COT run tomorrow functions correctly without manual intervention.
-3. **Maintenance**: Periodically check logs for "Maintenance Triggered" events to confirm self-healing is active.
+1. **VM Cleanup**: Run `rm .gsd/needs_maintenance` on the GCP VM.
+2. **Re-extract**: Run `unzip -o whatsapp_session.zip` on the VM.
+3. **Catch Up**: Run `bash scripts/run_vm.sh --force` to send today's missed TRM.
 

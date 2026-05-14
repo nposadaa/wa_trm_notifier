@@ -189,3 +189,28 @@ Hotfix complete.
 
 ### Handoff Notes
 Ready for final manual run on VM.
+---
+
+## Session: 2026-05-14 18:05 (COT)
+
+### Objective
+Diagnose and fix May 14th delivery failure (silent failure on GCP VM).
+
+### Accomplished
+- ✅ **Diagnosed Failure**: Confirmed via VM logs that the session was invalidated (`QR Required`).
+- ✅ **Zip & Ship**: Guided user through local re-authentication and session transfer.
+- ✅ **Identified Maintenance Loop**: Discovered that a stale `.gsd/needs_maintenance` flag was causing the script to delete the `IndexedDB` of the newly transferred session on every run.
+
+### Verification
+- [x] `logs/vm_run.log` correctly identified session invalidation.
+- [x] `whatsapp_session.zip` successfully transferred and unzipped on VM.
+- [ ] Final successful broadcast (Pending removal of maintenance flag).
+
+### Paused Because
+User requested pause.
+
+### Handoff Notes
+The fix is operational:
+1. Run `rm .gsd/needs_maintenance` on the VM.
+2. Run `unzip -o whatsapp_session.zip` on the VM to restore the deleted database.
+3. Run `bash scripts/run_vm.sh --force`.
