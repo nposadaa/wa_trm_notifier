@@ -239,3 +239,24 @@ User requested pause. No code changes made — operational fix only.
 ### Handoff Notes
 Next priority is Backlog Item #6 (timezone fix in `main.py`). The `browser_config.py` already sets `timezone_id="America/Bogota"` for Playwright, but the Python-side date logic is timezone-unaware.
 
+---
+
+## Session: 2026-05-15 18:30 (COT)
+
+### Objective
+Diagnose the May 15th broadcast skip and fix the timezone drift bug (Backlog Item #6).
+
+### Accomplished
+- ✅ **Diagnosed False Success**: Discovered the script skipped execution because a manual run the previous evening (19:37 COT) executed at 00:37 UTC, writing the next day's date to `last_success.date`.
+- ✅ **Timezone Fix**: Injected `get_cot_now()` with `America/Bogota` timezone across `main.py` for staleness checking, success tracking, and log naming.
+- ✅ **Release Protocol**: Updated `CHANGELOG.md`, `README.md`, `VERSION`, and Git history to package and release `v1.1.8`.
+
+### Verification
+- [x] Local dry-run correctly displays today's date based on COT, without staleness warnings.
+- [x] `CHANGELOG.md` and `README.md` updated with `v1.1.8`.
+
+### Paused Because
+v1.1.8 Release Protocol is complete. Ready for next phase.
+
+### Handoff Notes
+The timezone logic is now stable regardless of VM time or execution time. Ready to tackle Phase 3: Weekly Intelligence or Backlog Item #5.

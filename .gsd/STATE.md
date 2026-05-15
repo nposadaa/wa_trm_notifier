@@ -2,22 +2,21 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-> **Status**: Paused at 2026-05-14T19:52:00-05:00
+> **Status**: Paused at 2026-05-15T18:40:00-05:00
 
 ## Current Position
 - **Phase**: 5 — Live Support & Stability (Hotfixes)
-- **Task**: None (between tasks)
-- **Status**: Paused at 2026-05-14T19:52:00-05:00
+- **Task**: Released v1.1.8
+- **Status**: Completed at 2026-05-15T18:40:00-05:00
 
 ## Last Session Summary
-Completed May 14th Session Recovery via fresh Zip & Ship. No code changes.
-- ✅ **Root Cause**: Session invalidated (QR Required) + maintenance flag loop destroyed fresh sessions.
-- ✅ **Fix**: Fresh local auth → zip → clean VM (rm flag + rm old session) → transfer → unpack → `--force` run.
-- ✅ **Broadcast Delivered**: Today's TRM successfully sent.
-- ⚠️ **New Bug Found**: Message displayed May 15 date instead of May 14 (UTC vs COT timezone mismatch). Added to BACKLOG as item #6.
+Diagnose the May 15th broadcast skip and fix the timezone drift bug.
+- ✅ **Diagnosed False Success**: Manual run previous evening (19:37 COT) executed at 00:37 UTC, writing next day's date to `last_success.date`.
+- ✅ **Timezone Fix**: Injected `get_cot_now()` with `America/Bogota` timezone across `main.py` for staleness checking, success tracking, and log naming.
+- ✅ **Release Protocol**: Updated `CHANGELOG.md`, `README.md`, `VERSION`, and Git history to package and release `v1.1.8`.
 
 ## In-Progress Work
-- None. No code changes made — operational fix only.
+- Released v1.1.8 which completes Backlog Item #6 (Timezone-Aware Date Display).
 
 ## Blockers
 - None.
@@ -33,6 +32,5 @@ Completed May 14th Session Recovery via fresh Zip & Ship. No code changes.
 - `browser_config.py`: Already sets `timezone_id="America/Bogota"` for the browser, but Python code is unaware
 
 ## Next Steps
-1. **Backlog Item #6**: Fix timezone-aware date display in `main.py`
-2. **Phase 3**: Weekly Intelligence (Friday Summary feature)
-3. **Backlog Item #5**: Refactor legacy broadcaster code
+1. **Phase 3**: Weekly Intelligence (Friday Summary feature)
+2. **Backlog Item #5**: Refactor legacy broadcaster code
