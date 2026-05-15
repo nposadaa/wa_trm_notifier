@@ -2,44 +2,37 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-> **Status**: Active (resumed 2026-05-14T18:10:00-05:00)
+> **Status**: Paused at 2026-05-14T19:52:00-05:00
 
 ## Current Position
 - **Phase**: 5 — Live Support & Stability (Hotfixes)
-- **Task**: Session Recovery (May 14th Failure)
-- **Status**: Paused at 2026-05-14T18:41:00-05:00
+- **Task**: None (between tasks)
+- **Status**: Paused at 2026-05-14T19:52:00-05:00
 
 ## Last Session Summary
-Diagnosed the silent May 14th failure.
-- ✅ **Root Cause**: Session invalidated (QR Required).
-- ✅ **Zip & Ship**: Successfully performed local authentication and transferred session to VM.
-- ✅ **Bug Found**: Identified that the `.gsd/needs_maintenance` flag (from a previous failure) was causing the script to "Deep Clean" (delete `IndexedDB`) from the fresh session on every start, triggering a loop.
+Completed May 14th Session Recovery via fresh Zip & Ship. No code changes.
+- ✅ **Root Cause**: Session invalidated (QR Required) + maintenance flag loop destroyed fresh sessions.
+- ✅ **Fix**: Fresh local auth → zip → clean VM (rm flag + rm old session) → transfer → unpack → `--force` run.
+- ✅ **Broadcast Delivered**: Today's TRM successfully sent.
+- ⚠️ **New Bug Found**: Message displayed May 15 date instead of May 14 (UTC vs COT timezone mismatch). Added to BACKLOG as item #6.
 
 ## In-Progress Work
-- No code changes required. 
-- Operational fix pending: Remove maintenance flag and re-extract zip on VM.
+- None. No code changes made — operational fix only.
 
 ## Blockers
 - None.
 
 ## Context Dump
 ### Decisions Made
-- **(DEC-046) Maintenance Hygiene**: Realized that `needs_maintenance` must be manually cleared or the session must be re-extracted AFTER clearing it to avoid the auto-cleanup loop.
-
-### Approaches Tried
-- **Manual Log Analysis**: Confirmed `QR Required` error.
-- **Zip & Ship**: Successfully transferred folder, but script deleted the database on startup due to the stale flag.
-
-### Current Hypothesis
-- Deleting `.gsd/needs_maintenance` on the VM followed by `unzip -o whatsapp_session.zip` will restore full stability.
+- **(DEC-046) Maintenance Hygiene**: `needs_maintenance` flag MUST be cleared on VM BEFORE extracting a fresh Zip & Ship session, or the deep_clean will destroy the transferred IndexedDB on first run.
+- **(DEC-047) Zip & Ship Order of Operations**: Always: (1) rm flag, (2) rm old session, (3) unzip fresh, (4) chmod 777, (5) run immediately.
 
 ### Files of Interest
-- `main.py`: Entry point where maintenance check happens.
-- `browser_config.py`: Contains the `deep_clean_profile()` logic that deletes `IndexedDB`.
-- `logs/vm_run.log`: Shows the "Maintenance flag detected" log line.
+- `BACKLOG.md`: Item #6 — Timezone-Aware Date Display (High priority)
+- `main.py`: Staleness check uses `datetime.now()` (UTC on VM) — needs `America/Bogota`
+- `browser_config.py`: Already sets `timezone_id="America/Bogota"` for the browser, but Python code is unaware
 
 ## Next Steps
-1. **VM Cleanup**: Run `rm .gsd/needs_maintenance` on the GCP VM.
-2. **Re-extract**: Run `unzip -o whatsapp_session.zip` on the VM.
-3. **Catch Up**: Run `bash scripts/run_vm.sh --force` to send today's missed TRM.
-
+1. **Backlog Item #6**: Fix timezone-aware date display in `main.py`
+2. **Phase 3**: Weekly Intelligence (Friday Summary feature)
+3. **Backlog Item #5**: Refactor legacy broadcaster code

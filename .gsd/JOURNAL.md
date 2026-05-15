@@ -214,3 +214,28 @@ The fix is operational:
 1. Run `rm .gsd/needs_maintenance` on the VM.
 2. Run `unzip -o whatsapp_session.zip` on the VM to restore the deleted database.
 3. Run `bash scripts/run_vm.sh --force`.
+
+---
+
+## Session: 2026-05-14 19:37 (COT)
+
+### Objective
+Complete the May 14th session recovery that was left unfinished by the previous agent.
+
+### Accomplished
+- ✅ **Diagnosed persistence**: Confirmed via `fetch-logs.ps1` that the maintenance flag loop had destroyed every Zip & Ship attempt. The 23:33 and 23:40 runs both failed because deep_clean wiped the fresh IndexedDB.
+- ✅ **Fresh Zip & Ship**: Ran full local auth → zip → SCP → unpack cycle with correct order of operations (clear flag + delete old session BEFORE unzip).
+- ✅ **Broadcast Delivered**: `run_vm.sh --force` successfully sent today's TRM.
+- ✅ **Backlog Item #6**: Added "Timezone-Aware Date Display" — message showed May 15 instead of May 14 because `main.py` uses UTC `datetime.now()` while the VM is in UTC but the audience is COT.
+
+### Verification
+- [x] VM broadcast successful.
+- [x] Backlog updated with timezone bug.
+- [ ] Tomorrow's autonomous CRON run (pending).
+
+### Paused Because
+User requested pause. No code changes made — operational fix only.
+
+### Handoff Notes
+Next priority is Backlog Item #6 (timezone fix in `main.py`). The `browser_config.py` already sets `timezone_id="America/Bogota"` for Playwright, but the Python-side date logic is timezone-unaware.
+
