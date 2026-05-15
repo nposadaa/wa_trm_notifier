@@ -2,17 +2,22 @@ import os
 import sys
 import logging
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from scraper import scrape_trm
 from broadcaster import run_broadcaster
 
 LAST_SUCCESS_FILE = ".gsd/last_success.date"
 LAST_FAIL_NOTIFICATION = ".gsd/last_fail_notify.date"
 
+COT_TZ = timezone(timedelta(hours=-5), name="America/Bogota")
+
+def get_cot_now():
+    return datetime.now(COT_TZ)
+
 # --- Logging Setup ---
 LOG_DIR = "logs"
 os.makedirs(LOG_DIR, exist_ok=True)
-log_filename = os.path.join(LOG_DIR, f"notifier_{datetime.now().strftime('%Y-%m-%d')}.log")
+log_filename = os.path.join(LOG_DIR, f"notifier_{get_cot_now().strftime('%Y-%m-%d')}.log")
 
 if sys.stdout.encoding.lower() != 'utf-8':
     try:
@@ -42,7 +47,7 @@ def main():
     logger.info("--- Starting TRM Notifier ---")
     
     # --- Pre-run Success Check ---
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    today_str = get_cot_now().strftime("%Y-%m-%d")
     if os.path.exists(LAST_SUCCESS_FILE) and not args.force:
         with open(LAST_SUCCESS_FILE, "r") as f:
             if f.read().strip() == today_str:
@@ -58,7 +63,7 @@ def main():
         logger.error(f"Error scraping TRM: {error_msg}")
         
         # If API is down, send a status update instead of just failing
-        current_hour = datetime.now().hour
+        current_hour = get_cot_now().hour
         retry_msg = ""
         if current_hour < 14: # Usually the first run is at 12:00 UTC (7:00 COT)
             retry_msg = " A second attempt is scheduled for 10:00 AM COT (3 hours from now)."
@@ -93,7 +98,7 @@ def main():
     logger.info(f"Scraped TRM: {trm_value} (Prev: {previous_trm}) for date: {trm_date}")
 
     # --- Staleness check (BUG-005) ---
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    today_str = get_cot_now().strftime("%Y-%m-%d")
     stale_disclaimer = ""
     if trm_date != today_str:
         logger.warning(f"TRM data is stale! Site date: {trm_date}, Today: {today_str}")
@@ -139,7 +144,7 @@ def main():
     else:
         logger.error("Broadcast failed — marking profile for deep clean and exiting.")
         with open(".gsd/needs_maintenance", "w") as f:
-            f.write(datetime.now().isoformat())
+            f.write(get_cot_now().isoformat())
         sys.exit(1)
 
 if __name__ == "__main__":

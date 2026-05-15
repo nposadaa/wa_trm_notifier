@@ -2,6 +2,12 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.8] - 2026-05-15
+> **Status**: Released. Hotfix for timezone-aware date logic on UTC VM.
+
+### Fixed
+- **(BUG-023) Timezone Drift in Staleness & Success Checks**: Replaced UTC `datetime.now()` calls in `main.py` with `America/Bogota` timezone logic. This prevents evening manual runs (e.g., 7 PM COT) from evaluating as the next day (UTC) and incorrectly skipping the following morning's automated broadcast.
+
 ## [1.1.7] - 2026-05-12
 > **Status**: Released. Hotfix for missing import.
 
