@@ -173,6 +173,7 @@ When a release is requested (e.g., "add a release", "release v1.1.4"), the follo
 5. **Journal**: Add a final session entry to `.gsd/JOURNAL.md` summarizing the release objective and verification.
 6. **Commit**: Git commit all changes with a `feat: release vX.Y.Z` or `fix: release vX.Y.Z` message.
 7. **Tag**: Create a git tag `vX.Y.Z`.
+8. **Push**: Push the commit and tag to the remote repository (`git push origin HEAD && git push --tags`).
 
 ---
 
