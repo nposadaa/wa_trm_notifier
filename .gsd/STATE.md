@@ -2,35 +2,34 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-> **Status**: Paused at 2026-05-19T09:20:18-05:00
+> **Sprint**: Bugfix: Deep Clean Destroys IndexedDB
+> **Status**: Paused at 2026-05-19T11:12:18-05:00
 
 ## Current Position
-- **Phase**: 5 — Live Support & Stability (Hotfixes)
-- **Task**: Monitoring 10:00 AM COT CRON run
-- **Status**: Paused at 2026-05-19T09:20:18-05:00
+- **Sprint**: Bugfix: Deep Clean Destroys IndexedDB
+- **Task**: Todo
+- **Status**: Paused at 2026-05-19T11:12:18-05:00
 
 ## Last Session Summary
-Analyzed the May 19 broadcast failure. Confirmed crash was due to a slow WhatsApp "offline resume" hanging the send button click on the VM. Verified the `.gsd/needs_maintenance` flag was correctly set to trigger a deep clean during the 10:00 AM fallback run.
+Analyzed the failed 10:00 AM fallback broadcast. Confirmed that `deep_clean_profile()` is lethal to modern WhatsApp Web sessions because it deletes `IndexedDB`, which now holds critical encryption keys. This caused a `Session Invalidated! (QR Required)` error. Packaged the fix into a new Sprint.
 
 ## In-Progress Work
-- Monitoring self-healing recovery for May 19 broadcast.
+- Ready to start Sprint 1: Bugfix: Deep Clean Destroys IndexedDB.
 
 ## Blockers
-- Waiting for 10:00 AM COT to pass so the VM's secondary CRON job can execute.
+- None. Ready for execution upon resuming.
 
 ## Context Dump
 
-### Decisions Made
-- **Wait and Monitor**: Instead of manually intervening, we are letting the built-in self-healing logic (`needs_maintenance` triggering a `deep_clean_profile()`) handle the recovery to prove the system's resilience.
-
 ### Current Hypothesis
-- WhatsApp's "offline resume" feature causes random internal page reloads on the resource-constrained e2-micro VM, interrupting Playwright interactions. Forcing a deep clean avoids "offline resume" in favor of a "heavy sync", which is slower but more stable.
+- WhatsApp's "offline resume" feature caused the original send failure. The self-healing `deep_clean_profile()` attempted to fix this by deleting caches, but deleted `IndexedDB` which permanently destroyed the session keys.
+- **Fix**: Stop deleting `IndexedDB` in `browser_config.py`.
 
 ### Files of Interest
-- `logs/vm_run.log` and `logs/notifier_2026-05-19.log`: Need to be checked after 10:00 AM.
-- `browser_config.py`: Contains the `deep_clean_profile()` logic.
+- `browser_config.py`: Needs update in `deep_clean_profile()` to preserve `IndexedDB`.
+- `.gsd/SPRINT.md`: Contains the sprint details.
 
 ## Next Steps
-1. **Pull Logs**: Run `./scripts/fetch-logs.ps1` after 10:00 AM COT.
-2. **Verify Delivery**: Confirm if the 10:00 AM retry successfully sent the message.
-3. **Plan Next Move**: If successful, proceed to Phase 3 (Weekly Intelligence). If it fails again, plan a more robust solution for the send button timeout/reload issue.
+1. **Implement Fix**: Run `/execute` or modify `browser_config.py` to remove `IndexedDB` from the deletion list.
+2. **Clear Flag**: Remove the `.gsd/needs_maintenance` flag on the VM.
+3. **Zip & Ship**: Re-authenticate locally and transfer the session using the proven zip-and-ship method to restore the VM's broadcasting capability.
