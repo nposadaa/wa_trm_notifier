@@ -26,7 +26,7 @@ The fallback 10:00 AM COT CRON job ran successfully but invalidated the WhatsApp
 
 | Task | Assignee | Status | Est. Hours |
 |------|----------|--------|------------|
-| Update `browser_config.py` to preserve IndexedDB | Claude | ⬜ Todo | 0.5 |
+| Update `browser_config.py` to preserve IndexedDB | Claude | ✅ Done | 0.5 |
 | Clear `.gsd/needs_maintenance` flag on VM | User | ⬜ Todo | 0.1 |
 | Re-authenticate and perform Zip & Ship | User / Claude | ⬜ Todo | 0.5 |
 

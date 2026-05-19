@@ -47,9 +47,8 @@ def clean_browser_bloat():
                 print(f"[config] Bloat cleanup warning for {path}: {e}")
 
 def deep_clean_profile():
-    """Removes IndexedDB and Service Worker to force a fresh sync (preserves LocalStorage session)."""
+    """Removes Service Worker to force a fresh sync (preserves IndexedDB and LocalStorage session)."""
     deep_paths = [
-        os.path.join(USER_DATA_DIR, "Default", "IndexedDB"),
         os.path.join(USER_DATA_DIR, "Default", "Service Worker"),
     ]
     for path in deep_paths:
