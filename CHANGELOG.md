@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.9] - 2026-05-19
+> **Status**: Released. Bugfix for self-healing deep clean profile corruption.
+
+### Fixed
+- **(BUG-024) Deep Clean Destroys WhatsApp Session**: Fixed `deep_clean_profile()` in `browser_config.py` to stop deleting `IndexedDB`. WhatsApp now stores critical session encryption keys in `IndexedDB`, making its deletion lethal to the session and triggering a permanent "QR Required" state.
+- **Robust Verification & Documentation**: Updated `docs/SESSION_TRANSFER.md` to include safety steps: running `git pull` on the VM and clearing any stuck `.gsd/needs_maintenance` flag prior to session extraction.
+
 ## [1.1.8] - 2026-05-15
 > **Status**: Released. Hotfix for timezone-aware date logic on UTC VM.
 
