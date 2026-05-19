@@ -40,6 +40,8 @@ Log into your VM via SSH, navigate to your `wa_trm_notifier` directory, and clea
 
 ```bash
 # Inside the VM:
+git pull # Ensure your VM code is up to date
+rm -f .gsd/needs_maintenance # Clear any pending deep-clean flags
 rm -rf whatsapp_session
 unzip -q whatsapp_session.zip
 chmod -R 777 whatsapp_session/
