@@ -2,35 +2,35 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-> **Status**: Paused at 2026-05-15T18:41:14-05:00
+> **Status**: Paused at 2026-05-19T09:20:18-05:00
 
 ## Current Position
 - **Phase**: 5 — Live Support & Stability (Hotfixes)
-- **Task**: None (between tasks)
-- **Status**: Paused at 2026-05-15T18:41:14-05:00
+- **Task**: Monitoring 10:00 AM COT CRON run
+- **Status**: Paused at 2026-05-19T09:20:18-05:00
 
 ## Last Session Summary
-Diagnose the May 15th broadcast skip and fix the timezone drift bug.
-- ✅ **Diagnosed False Success**: Manual run previous evening (19:37 COT) executed at 00:37 UTC, writing next day's date to `last_success.date`.
-- ✅ **Timezone Fix**: Injected `get_cot_now()` with `America/Bogota` timezone across `main.py` for staleness checking, success tracking, and log naming.
-- ✅ **Release Protocol**: Updated `CHANGELOG.md`, `README.md`, `VERSION`, and Git history to package and release `v1.1.8`.
+Analyzed the May 19 broadcast failure. Confirmed crash was due to a slow WhatsApp "offline resume" hanging the send button click on the VM. Verified the `.gsd/needs_maintenance` flag was correctly set to trigger a deep clean during the 10:00 AM fallback run.
 
 ## In-Progress Work
-- Released v1.1.8 which completes Backlog Item #6 (Timezone-Aware Date Display).
+- Monitoring self-healing recovery for May 19 broadcast.
 
 ## Blockers
-- None.
+- Waiting for 10:00 AM COT to pass so the VM's secondary CRON job can execute.
 
 ## Context Dump
+
 ### Decisions Made
-- **(DEC-046) Maintenance Hygiene**: `needs_maintenance` flag MUST be cleared on VM BEFORE extracting a fresh Zip & Ship session, or the deep_clean will destroy the transferred IndexedDB on first run.
-- **(DEC-047) Zip & Ship Order of Operations**: Always: (1) rm flag, (2) rm old session, (3) unzip fresh, (4) chmod 777, (5) run immediately.
+- **Wait and Monitor**: Instead of manually intervening, we are letting the built-in self-healing logic (`needs_maintenance` triggering a `deep_clean_profile()`) handle the recovery to prove the system's resilience.
+
+### Current Hypothesis
+- WhatsApp's "offline resume" feature causes random internal page reloads on the resource-constrained e2-micro VM, interrupting Playwright interactions. Forcing a deep clean avoids "offline resume" in favor of a "heavy sync", which is slower but more stable.
 
 ### Files of Interest
-- `BACKLOG.md`: Item #6 — Timezone-Aware Date Display (High priority)
-- `main.py`: Staleness check uses `datetime.now()` (UTC on VM) — needs `America/Bogota`
-- `browser_config.py`: Already sets `timezone_id="America/Bogota"` for the browser, but Python code is unaware
+- `logs/vm_run.log` and `logs/notifier_2026-05-19.log`: Need to be checked after 10:00 AM.
+- `browser_config.py`: Contains the `deep_clean_profile()` logic.
 
 ## Next Steps
-1. **Phase 3**: Weekly Intelligence (Friday Summary feature)
-2. **Backlog Item #5**: Refactor legacy broadcaster code
+1. **Pull Logs**: Run `./scripts/fetch-logs.ps1` after 10:00 AM COT.
+2. **Verify Delivery**: Confirm if the 10:00 AM retry successfully sent the message.
+3. **Plan Next Move**: If successful, proceed to Phase 3 (Weekly Intelligence). If it fails again, plan a more robust solution for the send button timeout/reload issue.

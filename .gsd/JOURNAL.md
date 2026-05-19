@@ -260,3 +260,25 @@ v1.1.8 Release Protocol is complete. Ready for next phase.
 
 ### Handoff Notes
 The timezone logic is now stable regardless of VM time or execution time. Ready to tackle Phase 3: Weekly Intelligence or Backlog Item #5.
+
+---
+
+## Session: 2026-05-19 09:20 (COT)
+
+### Objective
+Diagnose May 19 broadcast failure (Timeout on Send button).
+
+### Accomplished
+- ✅ **Log Analysis**: Pulled and analyzed `vm_run.log` and `notifier_2026-05-19.log`.
+- ✅ **Diagnosed Failure**: WhatsApp "offline resume" on the slow VM interrupted the Playwright click with an internal navigation/reload.
+- ✅ **Confirmed Self-Healing**: Verified `needs_maintenance` flag is set and will correctly trigger `deep_clean_profile()` on the 10:00 AM fallback run.
+
+### Verification
+- [x] Analyzed today's log files.
+- [ ] Verify 10:00 AM COT run successfully sends the message after deep clean.
+
+### Paused Because
+Waiting for the 10:00 AM CRON job to execute on the VM to verify self-healing recovery.
+
+### Handoff Notes
+Resume session after 10:00 AM COT. Pull logs using `./scripts/fetch-logs.ps1` to verify if the self-healing deep clean successfully bypassed the offline-resume bug and delivered the broadcast.
