@@ -6,12 +6,12 @@
 > **Status**: Completed (2026-05-19T13:15:00-05:00)
 
 ## Current Position
-- **Sprint**: Bugfix: Deep Clean Destroys IndexedDB (Completed)
+- **Sprint**: Bugfix: Deep Clean Destroys IndexedDB (Completed & Hardened)
 - **Task**: Complete
-- **Status**: Released (v1.1.9)
+- **Status**: Released (v1.1.10)
 
 ## Last Session Summary
-Successfully released v1.1.9. Fixed the automated `deep_clean_profile()` function in `browser_config.py` to stop deleting `IndexedDB`, which now contains critical WhatsApp session encryption keys. This prevents the self-healing routine from destroying valid sessions. Guided the user through VM updates (`git pull`, clearing `.gsd/needs_maintenance` flag) and performed a local re-authentication and session recovery via the "Zip and Ship" workflow to fully restore the broadcast system on the GCP VM.
+Successfully released v1.1.9 to preserve `IndexedDB` during deep cleans, followed by hotfix v1.1.10. Hotfix v1.1.10 hardens the system against slow-VM behaviors: it prevents duplicate messages by defensively verifying empty composer states when send clicks timeout, and solves false-negative verification crashes by polling the DOM for new message rows for up to 15 seconds. Guided the user through VM updates (`git pull`, clearing `.gsd/needs_maintenance` flag) and performed a local re-authentication and session recovery via the "Zip and Ship" workflow to fully restore the broadcast system on the GCP VM.
 
 ## In-Progress Work
 - None. Ready for next feature cycle.

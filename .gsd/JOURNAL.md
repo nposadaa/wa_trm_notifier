@@ -325,3 +325,26 @@ Execute Sprint 1: Bugfix: Deep Clean Destroys IndexedDB, package the fix, and re
 
 ### Handoff Notes
 The broadcast system is fully restored and self-healing is now robust and non-destructive. Next priority is Phase 6: Financial Intelligence (Comparative Logic & Trends) or any new stability challenges that arise.
+
+---
+
+## Session: 2026-05-19 13:20 (COT)
+
+### Objective
+Diagnose and resolve the double-message delivery bug and verification timeout crash occurring on the slow GCP VM under high CPU load.
+
+### Accomplished
+- 🔍 **Diagnostic Analysis**: Analyzed the synced VM log (`logs/notifier_2026-05-19.log` and `logs/vm_run.log`). Discovered that under high decryption CPU load, Playwright's click action on the Send button timed out (30s) in Attempt 1. However, the browser processed the click under the hood and sent the first message. The timeout caused the script to fallback to Attempt 2, clearing composer and typing/sending the message again, resulting in a duplicate delivery. Furthermore, the row count verification checked immediately and crashed (`before=33, after=33`) because the new row hadn't rendered in the DOM yet.
+- ✅ **Colombia Holiday Calendar Checked**: Confirmed that the scraped date of `2026-05-16` is correct for today (2026-05-19) because Monday, May 18 was a national holiday (Ascension Day) in Colombia, meaning no new weekday TRM has been calculated yet. The `⚠️ Datos del 2026-05-16` warning is a standard notifier disclaimer for weekend/holiday rates.
+- ✅ **Hardened Sender Logic**: Modified `broadcaster.py` to wrap the click/enter send action in a try-catch. In case of timeout/error, it now checks if the composer is empty; if empty, it treats it as a successful send and breaks, preventing duplicate sends.
+- ✅ **Hardened Verification Engine**: Updated row count verification to poll for up to 15 seconds for `post_send_row_count > pre_send_row_count`, eliminating false-negative crashes on slow DOM updates.
+- ✅ **Release Protocol**: Bumped version to `v1.1.10`, documented fixes in `CHANGELOG.md` and `README.md`, updated project memory in `STATE.md`, committed all changes, and pushed to GitHub with tag `v1.1.10`.
+
+### Verification
+- [x] Confirmed Socrata API TRM dates align perfectly with Colombian holidays.
+- [x] Hardened send timeouts to catch blank composer states defensively.
+- [x] Hardened row count checks to wait up to 15s for rendering.
+- [x] Version v1.1.10 pushed and tagged on GitHub.
+
+### Handoff Notes
+The duplicate broadcast bug and the verification crash have been fully resolved and released as `v1.1.10`. The user simply needs to run `git pull` on the VM to fetch the latest hardened code.

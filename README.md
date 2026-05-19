@@ -102,7 +102,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current version**: `v1.1.9` — Deep Clean Fix
+> **Current version**: `v1.1.10` — Throttled VM Hotfixes
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*

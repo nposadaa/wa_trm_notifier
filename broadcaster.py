@@ -420,12 +420,25 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     pre_send_row_count = page.locator('#main div[role="row"]').count()
                     
                     send_button = page.locator('span[data-icon="send"], button:has(span[data-testid="send"]), [data-testid="send"], button[aria-label="Send"], button[aria-label="Enviar"]').first
-                    if send_button.is_visible(timeout=5000):
-                        send_button.click()
-                        print(f"  [Attempt {attempt+1}/2] Send button clicked.")
-                    else:
-                        page.keyboard.press("Enter")
-                        print(f"  [Attempt {attempt+1}/2] Enter pressed.")
+                    try:
+                        if send_button.is_visible(timeout=5000):
+                            send_button.click(timeout=15000)
+                            print(f"  [Attempt {attempt+1}/2] Send button clicked.")
+                        else:
+                            page.keyboard.press("Enter")
+                            print(f"  [Attempt {attempt+1}/2] Enter pressed.")
+                    except Exception as click_err:
+                        print(f"  [Attempt {attempt+1}/2] Send button click action encountered error: {click_err}")
+                        # Double check if message was dispatched anyway by verifying if composer is now empty
+                        time.sleep(1.0)
+                        composer_text = ""
+                        try: composer_text = chat_input.inner_text().strip()
+                        except: pass
+                        if not composer_text:
+                            print(f"  [Attempt {attempt+1}/2] Composer is empty. Message was likely dispatched successfully despite the click error!")
+                        else:
+                            # Re-raise the exception if the composer is still full, meaning it actually failed to send
+                            raise click_err
                     
                     time.sleep(2)
                     
@@ -480,15 +493,22 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             start_verify = time.time()
             
             try:
-                # Give the DOM a moment to generate the row after 'Enter'
-                time.sleep(3)
-                
                 # 1. Anti-false-positive: Verify NEW row appeared (BUG-012)
-                post_send_row_count = page.locator('#main div[role="row"]').count()
+                # Poll for up to 15 seconds to allow slow VMs to render the new row (BUG-025 Slow DOM Row Sync)
+                row_added = False
+                post_send_row_count = pre_send_row_count
+                for verify_attempt in range(5):
+                    post_send_row_count = page.locator('#main div[role="row"]').count()
+                    if pre_send_row_count is not None and post_send_row_count > pre_send_row_count:
+                        row_added = True
+                        break
+                    print(f"  [Verification] Waiting for new row count ({verify_attempt+1}/5)...")
+                    time.sleep(3)
+                
                 print(f"  [Row Count] Before send: {pre_send_row_count}, After send: {post_send_row_count}")
                 
-                if pre_send_row_count is not None and post_send_row_count <= pre_send_row_count:
-                    print(f"  ❌ CRITICAL: No new message row appeared in DOM after send.")
+                if not row_added:
+                    print(f"  ❌ CRITICAL: No new message row appeared in DOM after 15s.")
                     print(f"  Send CONFIRMED FAILED. Aborting verification to prevent false-positive.")
                     raise RuntimeError(f"Send failed: no new row (before={pre_send_row_count}, after={post_send_row_count})")
                 

@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.10] - 2026-05-19
+> **Status**: Released. Hotfix for duplicate messages and verification timeouts.
+
+### Fixed
+- **(BUG-025) Duplicate Message Prevention**: Fixed a race condition where the Playwright `.click()` command on the Send button timed out due to CPU-throttled VM performance, triggering a redundant second attempt and sending duplicate messages. The interaction engine now intercepts send action errors and checks if the composer was emptied under the hood, treating it as a success if so.
+- **(BUG-026) Slow DOM Row Verification Crash**: Overhauled the delivery row count verification to poll for up to 15 seconds for a new message row to render in the DOM, preventing false-negative delivery verification failures on high-latency VM environments.
+
 ## [1.1.9] - 2026-05-19
 > **Status**: Released. Bugfix for self-healing deep clean profile corruption.
 
