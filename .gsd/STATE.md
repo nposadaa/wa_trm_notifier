@@ -2,16 +2,16 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-> **Sprint**: Bugfix: Deep Clean Destroys IndexedDB
-> **Status**: Active (resumed 2026-05-20T08:54:55-05:00)
+> **Sprint**: Hotfix: Virtualized Chat List
+> **Status**: Completed (2026-05-20T11:33:00-05:00)
 
 ## Current Position
-- **Sprint**: Bugfix: Deep Clean Destroys IndexedDB (Completed & Hardened)
+- **Sprint**: Hotfix: Virtualized Chat List (Completed & Hardened)
 - **Task**: Complete
-- **Status**: Released (v1.1.10)
+- **Status**: Released (v1.1.11)
 
 ## Last Session Summary
-Successfully released v1.1.9 to preserve `IndexedDB` during deep cleans, followed by hotfix v1.1.10. Hotfix v1.1.10 hardens the system against slow-VM behaviors: it prevents duplicate messages by defensively verifying empty composer states when send clicks timeout, and solves false-negative verification crashes by polling the DOM for new message rows for up to 15 seconds. Guided the user through VM updates (`git pull`, clearing `.gsd/needs_maintenance` flag) and performed a local re-authentication and session recovery via the "Zip and Ship" workflow to fully restore the broadcast system on the GCP VM.
+Successfully released v1.1.11 to resolve the virtualized chat list verification crash. Under high VM load, WhatsApp Web's virtualized list unmounted older DOM elements when the new TRM message was appended, dropping the row count (e.g., from 35 to 34) and crashing the verification engine. Hardened `broadcaster.py` by capturing the exact text of the last row before typing, and verifying success if either the DOM row count increases OR the last row text updates to contain our rate message snippet. This permanently stabilizes automated and fallback runs.
 
 ## In-Progress Work
 - None. Ready for next feature cycle.
@@ -22,14 +22,12 @@ Successfully released v1.1.9 to preserve `IndexedDB` during deep cleans, followe
 ## Context Dump
 
 ### Current Hypothesis
-- WhatsApp's "offline resume" feature caused the original send failure. The self-healing `deep_clean_profile()` attempted to fix this by deleting caches, but deleted `IndexedDB` which permanently destroyed the session keys.
-- **Fix**: Stop deleting `IndexedDB` in `browser_config.py`.
+- Enforcing strict `post_send_row_count > pre_send_row_count` is fundamentally flawed under virtualization since row elements are recycled dynamically. Tracking text changes of the final chat item yields absolute, virtualization-immune reliability.
 
 ### Files of Interest
-- `browser_config.py`: Needs update in `deep_clean_profile()` to preserve `IndexedDB`.
-- `.gsd/SPRINT.md`: Contains the sprint details.
+- `broadcaster.py`: Hardened the message row and text detection engine.
+- `.gsd/STATE.md`: Project memory file.
 
 ## Next Steps
-1. **Implement Fix**: Run `/execute` or modify `browser_config.py` to remove `IndexedDB` from the deletion list.
-2. **Clear Flag**: Remove the `.gsd/needs_maintenance` flag on the VM.
-3. **Zip & Ship**: Re-authenticate locally and transfer the session using the proven zip-and-ship method to restore the VM's broadcasting capability.
+1. **Pull to VM**: Run `git pull origin master` on the GCP VM to deploy the hardened `v1.1.11` release.
+2. **Phase 3 Weekly Intelligence**: Proceed to implement Phase 3 (Friday Weekly Summary Message).

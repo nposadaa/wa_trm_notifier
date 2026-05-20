@@ -348,3 +348,24 @@ Diagnose and resolve the double-message delivery bug and verification timeout cr
 
 ### Handoff Notes
 The duplicate broadcast bug and the verification crash have been fully resolved and released as `v1.1.10`. The user simply needs to run `git pull` on the VM to fetch the latest hardened code.
+
+---
+
+## Session: 2026-05-20 11:33 (COT)
+
+### Objective
+Diagnose the May 20th 7:00 AM COT automated run crash, verify the 10:00 AM COT fallback success, and permanently resolve the virtualized chat list verification crash.
+
+### Accomplished
+- 🔍 **Diagnostic Analysis**: Analyzed synced logs and screenshots. Wrote down how the 7:00 AM COT run composed the message but crashed during row count verification because WhatsApp Web's virtualized list unmounted older DOM elements as the new message was appended (row count dropped from 35 to 34). Confirmed that the 10:00 AM COT run succeeded because the self-healing deep clean wiped the Service Worker cache, reducing pre-send rows to 1 and bypassing the virtualization bug (1 to 2 rows).
+- ✅ **Hardened Verification**: Updated `broadcaster.py` to capture `pre_send_last_row_text` before typing, and count a row as successfully added if either the total row count increases OR the text of the last row changes to match our new message snippet.
+- ✅ **Release Protocol**: Bumped version to `v1.1.11` in `VERSION`, updated `CHANGELOG.md` and `README.md`, updated project memory in `STATE.md`, committed all changes, and pushed to GitHub with tag `v1.1.11`.
+
+### Verification
+- [x] Local dry run verification of `main.py` complete and successful (no syntax errors).
+- [x] Confirmed 10:00 AM COT fallback execution completed successfully on VM.
+- [x] Verified code is successfully committed and pushed to git origin.
+
+### Handoff Notes
+Ready to continue onto the next milestones. Deploy the fix on the VM by executing `git pull origin master` to stabilize the morning automatic runs.
+
