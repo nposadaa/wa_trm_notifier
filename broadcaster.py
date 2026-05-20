@@ -364,6 +364,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"Typing message to {name}...")
             interaction_success = False
             pre_send_row_count = None
+            pre_send_last_row_text = ""
             
             for attempt in range(2):
                 try:
@@ -418,6 +419,12 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         print(f"  [Attempt {attempt+1}/2] Typing verified: {len(typed_content)} chars.")
 
                     pre_send_row_count = page.locator('#main div[role="row"]').count()
+                    try:
+                        pre_send_last_row = page.locator('#main div[role="row"]').last
+                        if pre_send_last_row.count() > 0:
+                            pre_send_last_row_text = pre_send_last_row.inner_text()
+                    except Exception as last_row_err:
+                        print(f"  [Warning] Failed to capture pre-send last row text: {last_row_err}")
                     
                     send_button = page.locator('span[data-icon="send"], button:has(span[data-testid="send"]), [data-testid="send"], button[aria-label="Send"], button[aria-label="Enviar"]').first
                     try:
@@ -494,31 +501,53 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             
             try:
                 # 1. Anti-false-positive: Verify NEW row appeared (BUG-012)
-                # Poll for up to 15 seconds to allow slow VMs to render the new row (BUG-025 Slow DOM Row Sync)
+                # Poll for up to 15 seconds to allow slow VMs to render the new row or update text (BUG-025/BUG-035 virtualization-robust)
                 row_added = False
                 post_send_row_count = pre_send_row_count
+                
+                # Strip non-ASCII (emojis) and normalize whitespace for robust matching (BUG-011/BUG-012)
+                msg_snippet = re.sub(r'\s+', ' ', re.sub(r'[^\x00-\x7F]+', '', message_text[:100])).strip().replace("*", "")
+                msg_snippet_norm = re.sub(r'\s+', ' ', msg_snippet).strip()
+                
                 for verify_attempt in range(5):
                     post_send_row_count = page.locator('#main div[role="row"]').count()
-                    if pre_send_row_count is not None and post_send_row_count > pre_send_row_count:
+                    
+                    # Fetch current last row text
+                    last_row = page.locator('#main div[role="row"]').last
+                    last_row_text = ""
+                    if last_row.count() > 0:
+                        try: last_row_text = last_row.inner_text()
+                        except: pass
+                    
+                    # Normalize whitespace for comparison
+                    last_row_norm = re.sub(r'\s+', ' ', last_row_text).strip()
+                    pre_row_norm = re.sub(r'\s+', ' ', pre_send_last_row_text).strip()
+                    
+                    # A new row is successfully added if:
+                    # A. The DOM row count increased (direct append without virtualization unmounting)
+                    # B. OR the last row text changed and now contains our message snippet (virtualized recycle occurred)
+                    # C. OR the last row text contains our snippet and pre-send text was empty
+                    if (pre_send_row_count is not None and post_send_row_count > pre_send_row_count) or \
+                       (last_row_norm != pre_row_norm and msg_snippet_norm in last_row_norm) or \
+                       (not pre_row_norm and msg_snippet_norm in last_row_norm):
                         row_added = True
                         break
-                    print(f"  [Verification] Waiting for new row count ({verify_attempt+1}/5)...")
+                    print(f"  [Verification] Waiting for new row count or text change ({verify_attempt+1}/5)...")
                     time.sleep(3)
                 
                 print(f"  [Row Count] Before send: {pre_send_row_count}, After send: {post_send_row_count}")
                 
                 if not row_added:
-                    print(f"  ❌ CRITICAL: No new message row appeared in DOM after 15s.")
+                    print(f"  ❌ CRITICAL: No new message row appeared in DOM or text did not update after 15s.")
                     print(f"  Send CONFIRMED FAILED. Aborting verification to prevent false-positive.")
-                    raise RuntimeError(f"Send failed: no new row (before={pre_send_row_count}, after={post_send_row_count})")
+                    raise RuntimeError(f"Send failed: no new row/text change (before={pre_send_row_count}, after={post_send_row_count})")
                 
+                # Fetch final last row for checkmark verification
                 last_row = page.locator('#main div[role="row"]').last
                 row_text = ""
                 try: row_text = last_row.inner_text()
                 except: pass
                 
-                # Strip non-ASCII (emojis) and normalize whitespace for robust matching (BUG-011/BUG-012)
-                msg_snippet = re.sub(r'\s+', ' ', re.sub(r'[^\x00-\x7F]+', '', message_text[:100])).strip().replace("*", "")
                 row_text_check = re.sub(r'\s+', ' ', row_text).strip()
                 if msg_snippet and msg_snippet not in row_text_check:
                     print(f"⚠️ WARNING: Last row text does not match our message.")

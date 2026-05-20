@@ -2,6 +2,12 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.11] - 2026-05-20
+> **Status**: Released. Hotfix for virtualized chat list verification crash.
+
+### Fixed
+- **(BUG-035) Virtualized Row Count Verification Crash**: Fixed an intermittent verification engine crash where the row count check failed (e.g. from 35 rows before to 34 rows after) because WhatsApp Web's virtualized list unmounted older DOM elements when the new message was appended. The verification engine is now robust to list virtualization: it tracks the text content of the last chat message before sending, confirming success if the last message row's text changes to match the new message snippet or if the overall row count increases.
+
 ## [1.1.10] - 2026-05-19
 > **Status**: Released. Hotfix for duplicate messages and verification timeouts.
 
