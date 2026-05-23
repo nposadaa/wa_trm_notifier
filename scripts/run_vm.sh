@@ -42,7 +42,11 @@ echo "🚀 Starting TRM Notifier..."
 echo "------------------------------------------------"
 
 export PYTHONUNBUFFERED=1
-xvfb-run --server-args="-screen 0 1280x1024x24" python3 main.py --headless "$@" | tee logs/vm_run.log
+echo "" >> logs/vm_run.log
+echo "==========================================================" >> logs/vm_run.log
+echo "🚀 RUN START: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> logs/vm_run.log
+echo "==========================================================" >> logs/vm_run.log
+xvfb-run --server-args="-screen 0 1280x1024x24" python3 main.py --headless "$@" 2>&1 | tee -a logs/vm_run.log
 
 echo "------------------------------------------------"
 echo "✅ Execution completed. Check output above or in logs/vm_run.log"

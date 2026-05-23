@@ -2,10 +2,25 @@ import os
 import time
 import json
 import re
+import logging
 from datetime import datetime
 from playwright.sync_api import sync_playwright
 from browser_config import get_browser_context, clean_browser_locks, apply_stealth_overrides
 from dotenv import load_dotenv
+
+logger = logging.getLogger("trm_notifier.broadcaster")
+
+# Redefine print to route to logger
+def print(*args, **kwargs):
+    message = " ".join(str(arg) for arg in args).strip()
+    if message:
+        msg_upper = message.upper()
+        if "CRITICAL" in msg_upper or "❌" in message or "FAILED" in msg_upper or "FAILURE" in msg_upper:
+            logger.error(message)
+        elif "WARNING" in msg_upper or "⚠️" in message:
+            logger.warning(message)
+        else:
+            logger.info(message)
 
 # Load env variables
 load_dotenv()
@@ -637,6 +652,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
 
 if __name__ == "__main__":
     import sys
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(asctime)s] %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"
+    )
     # Check for flags
     disco = "--discovery" in sys.argv
     run_broadcaster(message_text="Discovery Test", headless=False, discovery_mode=disco)

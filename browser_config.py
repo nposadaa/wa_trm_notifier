@@ -1,6 +1,15 @@
 import os
 import glob
 import shutil
+import logging
+
+logger = logging.getLogger("trm_notifier.config")
+
+# Redefine print to route to logger
+def print(*args, **kwargs):
+    message = " ".join(str(arg) for arg in args).strip()
+    if message:
+        logger.info(message)
 
 # Constants
 USER_DATA_DIR = "./whatsapp_session"

@@ -2,6 +2,16 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.12] - 2026-05-23
+> **Status**: Released. Hotfix to route broadcaster diagnostics through the central logger, and prevent VM run logs from being overwritten.
+
+### Added
+- **Stderr capturing in vm_run.log**: Appended `2>&1` in the VM runner script to capture Python stdout, stderr, and crash stack traces.
+
+### Fixed
+- **(BUG-036) Overwritten VM Run Logs**: Modified `run_vm.sh` to use append mode (`tee -a`) and output a clean, timestamped separator line for each run. This ensures multiple runs in the same day (e.g. primary and fallback) do not wipe each other's logs.
+- **(BUG-037) Missing Broadcaster Diagnostics**: Injected a module-level print interceptor in `broadcaster.py` and `browser_config.py` to transparently route all inner browser, page interaction, and verification outputs to the central Python `logging` pipeline. All broadcaster lines now reach the persistent daily `notifier_YYYY-MM-DD.log` file, eliminating diagnostic blindspots.
+
 ## [1.1.11] - 2026-05-20
 > **Status**: Released. Hotfix for virtualized chat list verification crash.
 
