@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.13] - 2026-05-25
+> **Status**: Released. Hotfix to prevent TimeoutError during Playwright page reloads on slow, throttled VMs.
+
+### Fixed
+- **(BUG-038) Playwright Reload Timeout Crashes**: Introduced a robust `safe_reload(page, timeout_ms=60000)` helper function in `broadcaster.py` that waits for `domcontentloaded` (which completes much faster than standard `load`) and catches any timeout exceptions gracefully. Replaced all standard `page.reload()` calls across the broadcaster codebase to guarantee slow VM reloads do not crash daily execution.
+- **Handoff & Outbox Hardening**: Wrapped subsequent `page.wait_for_load_state("networkidle")` statements in try-except blocks to prevent OOM/network-stalls from crashing the script during decryption sync and message verification paths.
+
 ## [1.1.12] - 2026-05-23
 > **Status**: Released. Hotfix to route broadcaster diagnostics through the central logger, and prevent VM run logs from being overwritten.
 

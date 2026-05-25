@@ -40,6 +40,16 @@ def safe_screenshot(page, path, timeout_ms=10000):
         print(f"  WARNING: Screenshot failed ({e}). Browser may be frozen.")
 
 
+def safe_reload(page, timeout_ms=60000):
+    """Safely reload the page, using a higher timeout, waiting for DOMContentLoaded, and catching errors. (BUG-038)"""
+    try:
+        print(f"  [Reload] Reloading page (timeout={timeout_ms}ms, wait=domcontentloaded)...")
+        page.reload(timeout=timeout_ms, wait_until="domcontentloaded")
+        time.sleep(5)  # Post-reload settling
+    except Exception as e:
+        print(f"  [Reload] WARNING: Reload encountered timeout/error ({e}). Proceeding anyway.")
+
+
 def connectivity_guard(page, timeout=120):
     """Abort early if WhatsApp Web is in a 'Connecting/Retrying' state. (BUG-001)
 
@@ -76,9 +86,11 @@ def connectivity_guard(page, timeout=120):
         # JUMPSTART: If we've waited 30s and still stuck, try a reload (DEC-031)
         if waited >= 30 and i == 3:
             print(f"[CONNECTIVITY] [{waited}s] Still stuck. Attempting page reload to jumpstart connection...")
-            page.reload()
-            page.wait_for_load_state("networkidle", timeout=30000)
-            time.sleep(10) # Post-reload settling
+            safe_reload(page)
+            try:
+                page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception as e:
+                print(f"[CONNECTIVITY] wait_for_load_state timed out/failed ({e}). Continuing.")
 
         print(f"[CONNECTIVITY] [{waited}s/{timeout}s] Still retrying...")
 
@@ -110,7 +122,10 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         page.on("console", lambda msg: print(f"[BROWSER-LOG] {msg.type.upper()}: {msg.text}") if msg.type in ["error", "warning"] else None)
         
         print(f"Navigating to {WHATSAPP_URL}...")
-        page.goto(WHATSAPP_URL)
+        try:
+            page.goto(WHATSAPP_URL, timeout=60000, wait_until="domcontentloaded")
+        except Exception as e:
+            print(f"WARNING: Initial page.goto encountered error ({e}). Continuing anyway.")
         
         # Wait for the chat list to load (indicator of login)
         print("Waiting for WhatsApp Web to load. If this is your first run, please scan the QR code.")
@@ -184,15 +199,14 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     elif current_pct == last_percentage and elapsed > 300:
                          # Stuck at the same percentage for 5 minutes
                          print(f"[{elapsed}s] WARNING: Sync percentage stuck at {current_pct}%. Triggering recovery...")
-                         page.reload()
+                         safe_reload(page)
                          poll_start = time.time()
-                         time.sleep(5)
                          continue
 
                 # RECOVERY: If stuck at 0% or no % for > 240s, jumpstart
                 if elapsed > 240 and not reload_triggered and last_percentage <= 0:
                     print(f"[{elapsed}s] WARNING: Sync hang suspected. Triggering jumpstart reload...")
-                    page.reload()
+                    safe_reload(page)
                     reload_triggered = True
                     poll_start = time.time()
                     time.sleep(5)
@@ -207,9 +221,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # --- FINAL ATTEMPT: If near timeout, try one last reload ---
             if elapsed > (MAX_INITIAL_WAIT - 60) and not reload_triggered:
                 print(f"[{elapsed}s] Near timeout! Final emergency reload...")
-                page.reload()
+                safe_reload(page)
                 reload_triggered = True
-                time.sleep(10)
             
             # 4. QR CODE MARKERS
             if page.locator('canvas, [data-testid="qrcode-container"]').first.is_visible():
@@ -625,9 +638,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         # If stuck for > 60s, try a JUMPSTART RELOAD (one time)
                         if time.time() - start_verify > 60:
                             print("⚠️ WARNING: Message stuck in outbox (Clock) for 60s. Attempting session recovery...")
-                            page.reload()
-                            page.wait_for_load_state("networkidle", timeout=30000)
-                            time.sleep(10)
+                            safe_reload(page)
+                            try:
+                                page.wait_for_load_state("networkidle", timeout=15000)
+                            except Exception as e:
+                                print(f"  [Reload] wait_for_load_state timed out/failed ({e}). Continuing.")
                             # Post-reload state might be messy, let the loop continue and re-verify text
                     
                     time.sleep(4)
