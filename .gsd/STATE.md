@@ -2,13 +2,13 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-> **Sprint**: Hotfix: Virtualized Chat List
-> **Status**: Paused at 2026-05-23T13:30:00-05:00
+> **Sprint**: Hotfix: Verification Timeout & Deduplication Guard
+> **Status**: Released at 2026-05-26T09:00:00-05:00
 
 ## Current Position
-- **Sprint**: Hotfix: Log Transparency & VM Appending (v1.1.12)
+- **Sprint**: Hotfix: Verification Timeout & Deduplication Guard (v1.1.13)
 - **Task**: Complete
-- **Status**: Released (v1.1.12)
+- **Status**: Released (v1.1.13)
 
 ## Last Session Summary
 Successfully released v1.1.12 to permanently resolve diagnostic visibility limitations on the GCP VM. Following a silent false-positive send on Friday May 22, we discovered two critical logging gaps: first, standard errors (stderr) and broadcaster console outputs were not routed to the daily notifier log file; second, the fallback execution completely overwrote the primary run's VM execution log.
@@ -29,9 +29,9 @@ All cloud runs now compile full interaction logs, preventing diagnostic blindspo
 - Enforcing strict `post_send_row_count > pre_send_row_count` is fundamentally flawed under virtualization since row elements are recycled dynamically. Tracking text changes of the final chat item yields absolute, virtualization-immune reliability.
 
 ### Files of Interest
-- `broadcaster.py`: Hardened the message row and text detection engine.
-- `.gsd/STATE.md`: Project memory file.
+- `broadcaster.py`: Extended checkmark verification polling timeout to 10 minutes and added pre-send deduplication guard.
+- `CHANGELOG.md`: Logged modifications under version v1.1.13.
 
 ## Next Steps
-1. **Pull to VM**: Completed (v1.1.12 successfully deployed on VM).
+1. **Pull to VM**: User to pull v1.1.13 on the GCP VM and trigger recovery run.
 2. **Phase 3 Weekly Intelligence**: Proceed to implement Phase 3 (Friday Weekly Summary Message).
