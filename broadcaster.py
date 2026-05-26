@@ -384,6 +384,30 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"Finding input box for {name}...")
             chat_input = page.locator('#main div[contenteditable="true"], footer div[contenteditable="true"]').first
             
+            # --- Anti-duplicate Deduplication Guard (BUG-020/BUG-039 Hardening) ---
+            # If the last row in the chat already contains our message snippet, we skip sending
+            # to prevent duplicate posts during retry / fallback / verification-recovery runs.
+            msg_snippet = re.sub(r'\s+', ' ', re.sub(r'[^\x00-\x7F]+', '', message_text[:100])).strip().replace("*", "")
+            msg_snippet_norm = re.sub(r'\s+', ' ', msg_snippet).strip()
+            
+            already_sent = False
+            try:
+                # Ensure DOM is ready and load last row
+                last_row = page.locator('#main div[role="row"]').last
+                if last_row.count() > 0:
+                    last_row_text = last_row.inner_text()
+                    last_row_norm = re.sub(r'\s+', ' ', last_row_text).strip()
+                    if msg_snippet_norm and msg_snippet_norm in last_row_norm:
+                        print(f"  [Deduplication] Last message in chat already matches our message snippet! Skipping send.")
+                        already_sent = True
+            except Exception as e:
+                print(f"  [Deduplication Warning] Failed to check last message for duplication: {e}")
+
+            if already_sent:
+                print(f"✅ SUCCESS: Deduplication activated — delivery confirmed via pre-existing last row.")
+                time.sleep(5)
+                continue
+
             # 4. Type message using keyboard.insert_text (BUG-006 / DEC-024)
             # press_sequentially mangles emoji surrogate pairs.
             # execCommand('insertText') modifies DOM but NOT React/Lexical state.
