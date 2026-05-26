@@ -609,7 +609,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 
                 print(f"  [Verification] Message matched in DOM. Waiting for anchored row checkmark...")
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
-                for _ in range(60): # 5 minutes total (5s intervals)
+                for _ in range(120): # 10 minutes total (5s intervals) — VM ack can take up to 583s
                     # RE-VERIFY TEXT IN EVERY LOOP (Anti-false-positive BUG-020)
                     last_row = page.locator('#main div[role="row"]').last
                     current_row_text = ""
