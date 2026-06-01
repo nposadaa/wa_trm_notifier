@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.14] - 2026-06-01
+> **Status**: Released. Hotfix for session decryption sync hangs on slow virtualized environments (GCP VM).
+
+### Fixed
+- **(BUG-041) Decryption Sync Watchdog Hangs**: Modified the state-aware login and sync watchdog in `broadcaster.py` to trigger a safe page reload (`safe_reload`) and reset the progress timer (`poll_start`) upon hitting the 5-minute inactivity threshold instead of aborting the execution entirely. This provides multiple self-healing recovery attempts during the 30-minute deep sync window when CPU-intensive decryption stalls the browser.
+- **Sync Stuck Percentage Guard**: Fixed a bug where the progress recovery reload checked overall elapsed script time instead of the duration spent stuck at the current percentage. Updated the condition to correctly reload only when the progress percentage remains unchanged for more than 5 minutes.
+
 ## [1.1.13] - 2026-05-26
 > **Status**: Released. Hotfix to prevent TimeoutError during Playwright page reloads on slow, throttled VMs, extend verification timeout, and add pre-send deduplication.
 

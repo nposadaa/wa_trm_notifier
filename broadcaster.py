@@ -143,10 +143,12 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         while time.time() - start_time < MAX_INITIAL_WAIT:
             elapsed = int(time.time() - start_time)
             
-            # Watchdog: If no state change or percentage progress for 5 mins, fail
+            # Watchdog: If no state change or percentage progress for 5 mins, reload and reset (BUG-041)
             if time.time() - poll_start > 300:
-                print(f"[{elapsed}s] CRITICAL: No progress for 5 minutes. Timing out.")
-                break
+                print(f"[{elapsed}s] WARNING: No progress or state change for 5 minutes. Triggering recovery reload...")
+                safe_reload(page)
+                poll_start = time.time()
+                continue
 
             # 0. DISMISS BLOCKING MODALS & BANNERS (Bypass / DEC-022)
             try:
@@ -196,7 +198,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         print(f"[{elapsed}s] Sync Progress: {current_pct}% (Decrypting...)")
                         last_percentage = current_pct
                         poll_start = time.time() # Reset watchdog - we have progress!
-                    elif current_pct == last_percentage and elapsed > 300:
+                    elif current_pct == last_percentage and (time.time() - poll_start) > 300:
                          # Stuck at the same percentage for 5 minutes
                          print(f"[{elapsed}s] WARNING: Sync percentage stuck at {current_pct}%. Triggering recovery...")
                          safe_reload(page)

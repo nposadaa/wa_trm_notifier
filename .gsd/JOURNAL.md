@@ -415,4 +415,24 @@ Diagnose and resolve the checkmark verification timeout on slow GCP VM, prevent 
 ### Handoff Notes
 We are ready for deployment! The user can now pull the latest changes on the VM (`git pull origin master`) and run the script manually or let the automated cron job run.
 
+---
+
+## Session: 2026-06-01 09:30 (COT)
+
+### Objective
+Diagnose the June 1st Monday morning broadcast sync timeout failure on the GCP VM and implement a resilient session decryption watchdog self-healing mechanism.
+
+### Accomplished
+- 🔍 **Root Cause Diagnostics**: Analyzed synced VM logs (`logs/notifier_2026-06-01.log`) and identified that the morning 7:00 AM COT automated run got stuck decrypting at 59% sync progress due to heavy CPU throttling on the e2-micro VM. Because the existing watchdog timer was designed to abort immediately after 5 minutes of no progress, the execution exited with a failure before completing the sync.
+- ✅ **Decryption Sync Watchdog Resilience (BUG-041)**: Modified the 5-minute inactivity watchdog in `broadcaster.py` to trigger a safe page reload (`safe_reload`) and reset the `poll_start` tracker instead of aborting the script. This gives the browser multiple self-healing reload attempts to clear memory, WebSocket, and LevelDB locks during the 30-minute deep sync window.
+- ✅ **Progress stuck reload bugfix**: Corrected a logical error in the sync percentage recovery check where the script evaluated overall elapsed time (`elapsed > 300`) instead of time spent stuck at the current percentage (`time.time() - poll_start > 300`), which would have caused premature reloads under slow normal decryption progress.
+- ✅ **Release Protocol (v1.1.14)**: Bumped the project version to `v1.1.14` in `VERSION`, documented changes in `CHANGELOG.md`, updated GSD project memory in `.gsd/STATE.md`, and committed all changes locally.
+
+### Verification
+- [x] Confirmed local dry run execution (`python main.py --dry-run`) completes successfully without syntax or logic errors.
+- [x] Verified watchdog reload and recovery conditions in `broadcaster.py`.
+
+### Handoff Notes
+Ready for VM pull and manual/automatic recovery run! The user simply needs to run `git pull origin master` on the GCP VM and let the scheduled 10:00 AM COT cron fallback job automatically execute it, or run the broadcast manually with `--force`.
+
 
