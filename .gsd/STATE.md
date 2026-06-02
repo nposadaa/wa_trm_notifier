@@ -3,23 +3,18 @@
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
 > **Sprint**: Hotfix: Session Decryption Sync Resilience (v1.1.14)
-> **Status**: Released at 2026-06-01T09:30:00-05:00
+> **Status**: Paused at 2026-06-02T08:27:11-05:00
 
 ## Current Position
-- **Sprint**: Hotfix: Session Decryption Sync Resilience (v1.1.14)
+- **Phase**: Phase 5 — Live Support & Stability (Hotfixes)
 - **Task**: Complete
-- **Status**: Released (v1.1.14)
+- **Status**: Paused at 2026-06-02T08:27:11-05:00
 
 ## Last Session Summary
-Successfully released v1.1.14 to resolve a critical session decryption hang on the slow GCP VM. During the Monday morning (June 1st) run, the WhatsApp Web session decryption stalled under heavy CPU load, getting stuck at 59% sync progress. Because the existing watchdog timer was designed to abort execution immediately after 5 minutes of no progress, the entire run failed.
-We resolved this by:
-1. Enhancing the 5-minute inactivity watchdog in `broadcaster.py` to trigger a `safe_reload` and reset the progress tracker instead of aborting the run. This allows multiple recovery attempts within the 30-minute maximum initial wait window.
-2. Fixing a bug where the progress recovery reload checked overall elapsed script time instead of the time spent stuck at the current percentage, making the reload guard behave correctly under normal slow decryption.
-
-All local dry runs passed, and the hotfix is packaged and ready for VM deployment.
+Resumed the session to verify that the release protocol for version v1.1.14 was fully completed. Confirmed that all code modifications, VERSION file, CHANGELOG, and README were correctly committed and tagged locally. Successfully pushed the master branch and tag `v1.1.14` to remote (origin/master) so that the GCP VM can pull the changes. Ran a local dry-run of the script using the local virtualenv to confirm there are no syntax or runtime exceptions.
 
 ## In-Progress Work
-- None. Ready for VM pull and manual recovery run.
+- None.
 
 ## Blockers
 - None.
@@ -35,5 +30,6 @@ All local dry runs passed, and the hotfix is packaged and ready for VM deploymen
 - `VERSION`: Bumped to v1.1.14.
 
 ## Next Steps
-1. **Pull to VM**: Pull v1.1.14 on the GCP VM and run the broadcaster (or let the scheduled 10:00 AM COT cron fallback execute it).
-2. **Phase 3 Weekly Summary Message**: Resume implementing the Friday Weekly Summary Message feature.
+1. **Pull to VM**: Run `git pull origin master` on the GCP VM to fetch the v1.1.14 hotfix.
+2. **Execute on VM**: Run the broadcaster on the VM using `bash scripts/run_vm.sh --force` (or wait for the scheduled cron).
+3. **Phase 3 Weekly Summary Message**: Start implementing the Friday Weekly Summary Message feature.
