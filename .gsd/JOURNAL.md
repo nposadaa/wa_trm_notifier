@@ -458,4 +458,29 @@ User requested pause.
 ### Handoff Notes
 Ready to pull the changes on the GCP VM (`git pull origin master`) and run the script. Next feature is Phase 3: Weekly Intelligence.
 
+---
+
+## Session: 2026-06-13 18:01 (COT)
+
+### Objective
+Diagnose and resolve the 3-day broadcast failure loop (June 10-12) and implement VM search stabilization.
+
+### Accomplished
+- ✅ **Resumed Session**: Loaded GSD state, journal, and analyzed the previous agent's failure analysis.
+- ✅ **Fixed Self-Perpetuating Maintenance Loop**: Modified `clean_browser_locks()` in `browser_config.py` to delete the `.gsd/needs_maintenance` flag immediately after running a deep clean, preventing infinite loop runs upon consecutive failures.
+- ✅ **Implemented Settling Window**: Modified `broadcaster.py` to poll `#pane-side div[role="row"]` after login if a deep clean occurred. Wait between 30 and 120 seconds for the chat index list to populate before starting searches.
+- ✅ **Dynamic Search Attempts**: Increased sidebar search attempts to 10 (up from 5) dynamically if `deep_cleaned` is `True`, allowing the slow e2-micro VM to resolve search indexing.
+- ✅ **Added Search Diagnostics**: Added logging in `broadcaster.py` to count and output the number of visible chat rows in the sidebar if the target chat is not found on an attempt.
+- ✅ **Granular Maintenance Triggers**: Updated `run_broadcaster` to return a tuple `(success, needs_maintenance)`. The maintenance flag is now only set for session initialization/login timeouts (decryption hangs) rather than transient search/verification failures.
+- ✅ **CLI Runner Adaptation**: Updated `main.py` to unpack the returned tuple and write the maintenance flag conditionally.
+- ✅ **Release Protocol (v1.1.15)**: Bumped version to `v1.1.15` in `VERSION`, updated `CHANGELOG.md` and `STATE.md`.
+
+### Verification
+- [x] Tested syntax and runtime execution with a local dry-run (handled external API 503 error correctly).
+- [x] Mocked the maintenance flag locally and verified immediate cleanup and return status.
+
+### Handoff Notes
+Ready for VM pull and manual/automatic recovery run! The user simply needs to run `git pull origin master` on the GCP VM, clear any old maintenance flag using `rm -f .gsd/needs_maintenance`, and execute the broadcaster manually using `bash scripts/run_vm.sh --force` (or wait for the scheduled fallback cron).
+
+
 

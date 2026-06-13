@@ -80,7 +80,7 @@ def main():
             
             if not already_notified:
                 logger.info("Sending API Failure notification...")
-                success = run_broadcaster(status_update, headless=args.headless)
+                success, _ = run_broadcaster(status_update, headless=args.headless)
                 if success:
                     with open(LAST_FAIL_NOTIFICATION, "w") as f:
                         f.write(today_str)
@@ -128,7 +128,7 @@ def main():
     # 3. Broadcast using Playwright
     logger.info(f"Invoking Playwright Broadcaster (headless={args.headless})...")
     try:
-        success = run_broadcaster(message_text, headless=args.headless, discovery_mode=args.discovery)
+        success, needs_maintenance = run_broadcaster(message_text, headless=args.headless, discovery_mode=args.discovery)
     except RuntimeError as e:
         logger.error(f"Broadcaster fatal error: {e}")
         sys.exit(1)
@@ -142,9 +142,12 @@ def main():
         if os.path.exists(".gsd/needs_maintenance"):
             os.remove(".gsd/needs_maintenance")
     else:
-        logger.error("Broadcast failed — marking profile for deep clean and exiting.")
-        with open(".gsd/needs_maintenance", "w") as f:
-            f.write(get_cot_now().isoformat())
+        if needs_maintenance:
+            logger.error("Broadcast failed with session issues — marking profile for deep clean and exiting.")
+            with open(".gsd/needs_maintenance", "w") as f:
+                f.write(get_cot_now().isoformat())
+        else:
+            logger.error("Broadcast failed due to temporary/interaction issues — exiting without marking for deep clean.")
         sys.exit(1)
 
 if __name__ == "__main__":

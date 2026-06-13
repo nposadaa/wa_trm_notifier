@@ -2,6 +2,16 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.15] - 2026-06-13
+> **Status**: Released. Hotfix for the 3-day broadcast failure loop and sidebar search stabilization.
+
+### Fixed
+- **Self-Perpetuating Maintenance Loop**: Modified `clean_browser_locks()` to clear the `.gsd/needs_maintenance` flag immediately after a deep clean is executed, rather than waiting for a successful run. Prevents the system from getting trapped in an infinite deep-cleaning loop upon consecutive failures.
+- **Dynamic Search Attempts**: Sidebar search window is now dynamically adjusted. Search attempts are increased to 10 (up from 5) if a deep clean was performed, giving the VM time to rebuild the chat list cache.
+- **Post-Deep-Clean Settling Window**: Added a dynamic settling window post-login when a deep clean has occurred. It polls `#pane-side div[role="row"]` to wait for at least 5 chats to populate (minimum 30 seconds wait, maximum 120 seconds wait) before starting any searches.
+- **Sidebar Search Diagnostics**: Logged the number of currently visible chat rows in the sidebar if the target chat is not found during a search attempt.
+- **Granular Maintenance Triggers**: Updated `run_broadcaster` to return a tuple `(success, needs_maintenance)`. The `.gsd/needs_maintenance` flag is now only written for session initialization/login timeouts (decryption hangs) rather than transient search or verification failures.
+
 ## [1.1.14] - 2026-06-01
 > **Status**: Released. Hotfix for session decryption sync hangs on slow virtualized environments (GCP VM).
 

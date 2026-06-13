@@ -16,7 +16,10 @@ USER_DATA_DIR = "./whatsapp_session"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
 def clean_browser_locks():
-    """Removes orphaned LevelDB and Singleton locks left by unclean kills."""
+    """Removes orphaned LevelDB and Singleton locks left by unclean kills.
+    Returns True if a deep clean was performed.
+    """
+    deep_clean_run = False
     try:
         for lock in glob.glob(os.path.join(USER_DATA_DIR, "**", "LOCK"), recursive=True):
             os.remove(lock)
@@ -34,6 +37,14 @@ def clean_browser_locks():
     if os.path.exists(".gsd/needs_maintenance"):
         print("[config] 🛠 Maintenance flag detected. Performing DEEP CLEAN...")
         deep_clean_profile()
+        deep_clean_run = True
+        try:
+            os.remove(".gsd/needs_maintenance")
+            print("[config] Maintenance flag cleared after successful deep clean execution.")
+        except Exception as e:
+            print(f"[config] WARNING: Failed to clear maintenance flag: {e}")
+            
+    return deep_clean_run
 
 def clean_browser_bloat():
     """Removes Cache and Code Cache directories to prevent profile bloat on e2-micro."""

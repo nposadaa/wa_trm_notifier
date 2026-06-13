@@ -106,7 +106,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
     If discovery_mode is True, it will print the names of available chats.
     Otherwise, it loops through recipients, finds their chat, and sends `message_text`.
     """
-    clean_browser_locks()
+    deep_cleaned = clean_browser_locks()
     with sync_playwright() as p:
         # --- Browser Initialization ---
         context = get_browser_context(p, headless=headless)
@@ -242,6 +242,28 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # --- SETTLING WINDOW (DEC-014) ---
         if session_state == "LOGGED_IN":
             print("Session fully stabilized. Checking for background sync activity...")
+            
+            # If a deep clean occurred, wait for the chat list to populate.
+            # WhatsApp Web under deep clean has to download and index chats.
+            if deep_cleaned:
+                print("[Deep Clean Recovery] Deep clean was performed. Waiting for chat list to populate...")
+                # Wait for up to 120 seconds (2 minutes) to allow initial indexing.
+                # During this time, we poll for the number of chats to be > 5.
+                start_settle = time.time()
+                while time.time() - start_settle < 120:
+                    try:
+                        chat_count = page.locator('#pane-side div[role="row"]').count()
+                        print(f"  [Deep Clean Recovery] Found {chat_count} chat rows in sidebar.")
+                        if chat_count > 5:
+                            if time.time() - start_settle > 30:
+                                print("  [Deep Clean Recovery] Sidebar populated with chats. Proceeding.")
+                                break
+                    except Exception as e:
+                        print(f"  [Deep Clean Recovery] Error checking sidebar rows: {e}")
+                    time.sleep(10)
+                else:
+                    print("  [Deep Clean Recovery] Settle window completed. Proceeding to search.")
+
             # EXTRA: Wait for the sidebar 'Syncing chats...' message to disappear
             for _ in range(20): # Up to 5 more minutes of grace
                 sync_status = page.locator('div:has-text("Syncing chats"), div:has-text("Sincronizando")').first
@@ -261,7 +283,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print("Saving diagnostic screenshot to 'error_page.png'...")
             safe_screenshot(page, f"error_page_{datetime.now().strftime('%H%M')}.png")
             context.close()
-            return False
+            return False, True
 
         print("Session fully stabilized.")
 
@@ -283,17 +305,17 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             
             input("Press Enter to close discovery mode...")
             context.close()
-            return
+            return True, False
 
         if not message_text:
             print("CRITICAL: message_text is empty. Nothing to broadcast.")
             context.close()
-            return
+            return False, False
 
         if not os.path.exists(RECIPIENTS_FILE):
              print(f"Error: {RECIPIENTS_FILE} not found.")
              context.close()
-             return
+             return False, False
              
         with open(RECIPIENTS_FILE, "r") as f:
             data = json.load(f)
@@ -348,20 +370,26 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"Auditing results for: {name}...")
             chat_found = False
             
-                # Give the VM up to 30s for the sidebar to populate (Slow VM Fix)
-            for attempt in range(5):
+                # Give the VM up to 30s (or 60s if deep_cleaned) for the sidebar to populate (Slow VM Fix)
+            max_search_attempts = 10 if deep_cleaned else 5
+            for attempt in range(max_search_attempts):
                 # --- Result Method: Exact Title Match ---
                 try:
                     chat_title = page.locator(f'span[title="{name}"], [aria-label="{name}"]').first
                     if chat_title.is_visible(timeout=8000):
                         chat_title.click()
                         chat_found = True
-                        print(f"SUCCESS: Clicked {name} via Sidebar match ({attempt+1}/5).")
+                        print(f"SUCCESS: Clicked {name} via Sidebar match ({attempt+1}/{max_search_attempts}).")
                         break
                 except: pass
                 
                 if not chat_found:
-                    print(f"Attempt {attempt+1}/5: Still searching sidebar...")
+                    try:
+                        visible_chats = page.locator('#pane-side div[role="row"]').count()
+                        print(f"  [Search Diagnostic] Current visible chat rows in sidebar: {visible_chats}")
+                    except Exception as e:
+                        print(f"  [Search Diagnostic] Error counting sidebar rows: {e}")
+                    print(f"Attempt {attempt+1}/{max_search_attempts}: Still searching sidebar...")
                     time.sleep(5)
             
             if not chat_found:
@@ -688,7 +716,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # EXTENDED: Give the slow VM a full minute to ensure all WebSockets are closed cleanly
         time.sleep(60)
         context.close()
-        return not any_failure
+        return not any_failure, False
 
 
 if __name__ == "__main__":
