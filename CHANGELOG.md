@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.17] - 2026-06-20
+> **Status**: Released. Hotfix for delivery verification and row-count crashes due to WhatsApp Web DOM updates.
+
+### Fixed
+- **(BUG-043) WhatsApp Web DOM Updates (`role="row"`)**: WhatsApp Web began phasing out the `role="row"` attribute for message bubbles and chat list items for some users/sessions. Updated the DOM locators in `broadcaster.py` to use a combination of `div[data-id]`, `div[role="row"]`, `div[role="listitem"]`, and `div[data-testid="list-item"]` ensuring compatibility across all active A/B testing variants of the WhatsApp Web interface.
+- **(BUG-044) VM Message Render Latency**: Increased the post-send delivery verification loop from 15 seconds to 30 seconds. In heavily throttled virtualized environments, inserting a message into the DOM can take over 15 seconds to visually appear in the chat pane, which previously triggered false-negative "Send CONFIRMED FAILED" errors.
+
 ## [1.1.16] - 2026-06-20
 > **Status**: Released. Hotfix for search input blocking by late-appearing modals.
 

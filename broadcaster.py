@@ -259,7 +259,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 start_settle = time.time()
                 while time.time() - start_settle < 120:
                     try:
-                        chat_count = page.locator('#pane-side div[role="row"]').count()
+                        chat_count = page.locator('#pane-side div[role="row"], #pane-side div[role="listitem"], #pane-side div[data-testid="list-item"]').count()
                         print(f"  [Deep Clean Recovery] Found {chat_count} chat rows in sidebar.")
                         if chat_count > 5:
                             if time.time() - start_settle > 30:
@@ -396,7 +396,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 
                 if not chat_found:
                     try:
-                        visible_chats = page.locator('#pane-side div[role="row"]').count()
+                        visible_chats = page.locator('#pane-side div[role="row"], #pane-side div[role="listitem"], #pane-side div[data-testid="list-item"]').count()
                         print(f"  [Search Diagnostic] Current visible chat rows in sidebar: {visible_chats}")
                     except Exception as e:
                         print(f"  [Search Diagnostic] Error counting sidebar rows: {e}")
@@ -434,7 +434,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             already_sent = False
             try:
                 # Ensure DOM is ready and load last row
-                last_row = page.locator('#main div[role="row"]').last
+                last_row = page.locator('#main div[role="row"], #main div[data-id]').last
                 if last_row.count() > 0:
                     last_row_text = last_row.inner_text()
                     last_row_norm = re.sub(r'\s+', ' ', last_row_text).strip()
@@ -511,9 +511,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     else:
                         print(f"  [Attempt {attempt+1}/2] Typing verified: {len(typed_content)} chars.")
 
-                    pre_send_row_count = page.locator('#main div[role="row"]').count()
+                    pre_send_row_count = page.locator('#main div[role="row"], #main div[data-id]').count()
                     try:
-                        pre_send_last_row = page.locator('#main div[role="row"]').last
+                        pre_send_last_row = page.locator('#main div[role="row"], #main div[data-id]').last
                         if pre_send_last_row.count() > 0:
                             pre_send_last_row_text = pre_send_last_row.inner_text()
                     except Exception as last_row_err:
@@ -602,11 +602,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 msg_snippet = re.sub(r'\s+', ' ', re.sub(r'[^\x00-\x7F]+', '', message_text[:100])).strip().replace("*", "")
                 msg_snippet_norm = re.sub(r'\s+', ' ', msg_snippet).strip()
                 
-                for verify_attempt in range(5):
-                    post_send_row_count = page.locator('#main div[role="row"]').count()
+                for verify_attempt in range(10): # Increased to 10 iterations (30s max) for VM rendering
+                    post_send_row_count = page.locator('#main div[role="row"], #main div[data-id]').count()
                     
                     # Fetch current last row text
-                    last_row = page.locator('#main div[role="row"]').last
+                    last_row = page.locator('#main div[role="row"], #main div[data-id]').last
                     last_row_text = ""
                     if last_row.count() > 0:
                         try: last_row_text = last_row.inner_text()
@@ -625,18 +625,18 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                        (not pre_row_norm and msg_snippet_norm in last_row_norm):
                         row_added = True
                         break
-                    print(f"  [Verification] Waiting for new row count or text change ({verify_attempt+1}/5)...")
+                    print(f"  [Verification] Waiting for new row count or text change ({verify_attempt+1}/10)...")
                     time.sleep(3)
                 
                 print(f"  [Row Count] Before send: {pre_send_row_count}, After send: {post_send_row_count}")
                 
                 if not row_added:
-                    print(f"  ❌ CRITICAL: No new message row appeared in DOM or text did not update after 15s.")
+                    print(f"  ❌ CRITICAL: No new message row appeared in DOM or text did not update after 30s.")
                     print(f"  Send CONFIRMED FAILED. Aborting verification to prevent false-positive.")
                     raise RuntimeError(f"Send failed: no new row/text change (before={pre_send_row_count}, after={post_send_row_count})")
                 
                 # Fetch final last row for checkmark verification
-                last_row = page.locator('#main div[role="row"]').last
+                last_row = page.locator('#main div[role="row"], #main div[data-id]').last
                 row_text = ""
                 try: row_text = last_row.inner_text()
                 except: pass
@@ -655,7 +655,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 msg_snippet_norm = re.sub(r'\s+', ' ', msg_snippet).strip()
                 
                 for _ in range(10): # 10 * 3s = 30 seconds max
-                    last_row = page.locator('#main div[role="row"]').last
+                    last_row = page.locator('#main div[role="row"], #main div[data-id]').last
                     final_row_text = ""
                     try: final_row_text = last_row.inner_text()
                     except: pass
@@ -676,7 +676,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
                 for _ in range(120): # 10 minutes total (5s intervals) — VM ack can take up to 583s
                     # RE-VERIFY TEXT IN EVERY LOOP (Anti-false-positive BUG-020)
-                    last_row = page.locator('#main div[role="row"]').last
+                    last_row = page.locator('#main div[role="row"], #main div[data-id]').last
                     current_row_text = ""
                     try: current_row_text = last_row.inner_text()
                     except: pass
