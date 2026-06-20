@@ -2,6 +2,12 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.16] - 2026-06-20
+> **Status**: Released. Hotfix for search input blocking by late-appearing modals.
+
+### Fixed
+- **(BUG-042) Modal Blocks Search Input**: The `diag_search_failed` screenshots revealed that a "What's new on WhatsApp Web" modal was appearing late in the load cycle, overlaying the chat list and completely blocking the search box interaction. Added a `dismiss_blocking_modals(page)` function that presses `Escape` and forces click on `aria-label="Close"` buttons right before processing each recipient, ensuring the search input is never blocked by unexpected UI updates.
+
 ## [1.1.15] - 2026-06-13
 > **Status**: Released. Hotfix for the 3-day broadcast failure loop and sidebar search stabilization.
 
