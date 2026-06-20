@@ -100,6 +100,34 @@ def connectivity_guard(page, timeout=120):
         f"[CONNECTIVITY] WebSocket not restored after {timeout}s. Aborting send."
     )
 
+def dismiss_blocking_modals(page):
+    """Dismisses blocking modals and banners. (BUG-042)"""
+    try:
+        page.keyboard.press("Escape")
+        page.evaluate("""() => {
+            const dismiss = (selector, textMatch = null) => {
+                const items = document.querySelectorAll(selector);
+                items.forEach(el => {
+                    if (!textMatch || el.innerText.includes(textMatch)) {
+                        el.click();
+                    }
+                });
+            };
+            // Generic Buttons
+            ['Actualizar', 'Update', 'Cerrar', 'Close', 'Más tarde', 'Later', 'OK'].forEach(t => dismiss('button, [role="button"]', t));
+            
+            // Specific "Notifications are off" banner close button (data-icon is safer)
+            document.querySelectorAll('span[data-icon="x-alt"], span[data-icon="x"]').forEach(icon => {
+                const btn = icon.closest('div[role="button"], button');
+                if (btn) btn.click();
+            });
+            
+            // Look for aria-label="Close" or aria-label="Cerrar"
+            document.querySelectorAll('button[aria-label="Close"], button[aria-label="Cerrar"], div[aria-label="Close"], div[aria-label="Cerrar"]').forEach(btn => btn.click());
+        }""")
+    except Exception as e:
+        print(f"  [Modal Dismiss] Failed: {e}")
+
 def run_broadcaster(message_text="", headless=False, discovery_mode=False):
     """
     Launches WhatsApp Web with a persistent session.
@@ -151,28 +179,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 continue
 
             # 0. DISMISS BLOCKING MODALS & BANNERS (Bypass / DEC-022)
-            try:
-                # Defensive UI Cleanup: Only target common overlays
-                page.evaluate("""() => {
-                    const dismiss = (selector, textMatch = null) => {
-                        const items = document.querySelectorAll(selector);
-                        items.forEach(el => {
-                            if (!textMatch || el.innerText.includes(textMatch)) {
-                                el.click();
-                            }
-                        });
-                    };
-                    // Generic Buttons
-                    ['Actualizar', 'Update', 'Cerrar', 'Close', 'Más tarde', 'Later', 'OK'].forEach(t => dismiss('button, [role="button"]', t));
-                    
-                    // Specific "Notifications are off" banner close button (data-icon is safer)
-                    document.querySelectorAll('span[data-icon="x-alt"], span[data-icon="x"]').forEach(icon => {
-                        const btn = icon.closest('div[role="button"], button');
-                        if (btn) btn.click();
-                    });
-                }""")
-            except Exception:
-                pass # Non-critical loop stability
+            dismiss_blocking_modals(page)
 
             # 1. SUCCESS MARKERS (Search Box or Chat Pane)
             if page.locator('#pane-side, [data-testid="chat-list-search-filtered"], #side [contenteditable="true"]').first.is_visible():
@@ -332,6 +339,10 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         for rec in recipients:
             name = rec.get("name")
             print(f"--- Processing: {name} ---")
+            
+            # Dismiss any late-appearing modals (BUG-042)
+            dismiss_blocking_modals(page)
+            time.sleep(1)
             
             # 1. Focus the main search box (Persistent Structural Locator)
             search_box = page.locator('#side div[contenteditable="true"], div[data-tab="3"], div[aria-label="Search input textbox"]').first
