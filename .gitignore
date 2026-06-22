@@ -5,6 +5,10 @@ __pycache__/
 .env
 recipients.json
 whatsapp_session/
+whatsapp_session_debug/
+debug_main.html
+wa_dom.html
+scripts/dump_dom.py
 session.zip
 whatsapp_session.zip
 logs/
