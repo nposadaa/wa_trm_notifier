@@ -10,6 +10,38 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger("trm_notifier.broadcaster")
 
+
+def is_recoverable_browser_error(error):
+    """Return True when Playwright errors indicate the browser/page/context died mid-session."""
+    if error is None:
+        return False
+
+    text = str(error).lower()
+    patterns = [
+        "target page, context or browser has been closed",
+        "target closed",
+        "execution context was destroyed",
+        "browser has been closed",
+        "context has been closed",
+        "page has been closed",
+        "execution context was destroyed",
+    ]
+    return any(pattern in text for pattern in patterns)
+
+
+def ensure_page_alive(page):
+    """Probe the page and return False if the underlying browser context is already dead."""
+    try:
+        page.evaluate("() => document.readyState")
+        return True
+    except Exception as exc:
+        if is_recoverable_browser_error(exc):
+            print(f"[RECOVERY] Browser page became unusable: {exc}")
+            return False
+        print(f"[RECOVERY] Browser page probe failed: {exc}")
+        return False
+
+
 # Redefine print to route to logger
 def print(*args, **kwargs):
     message = " ".join(str(arg) for arg in args).strip()
@@ -136,19 +168,21 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
     """
     deep_cleaned = clean_browser_locks()
     with sync_playwright() as p:
-        # --- Browser Initialization ---
-        context = get_browser_context(p, headless=headless)
-        page = context.new_page()
-        
-        # --- HARDENING & STEALTH: Manual Navigator Overrides ---
-        apply_stealth_overrides(page)
-        
-        # (DEC-014: Resource filtering disabled for stability)
+        def create_browser_session():
+            context = get_browser_context(p, headless=headless)
+            page = context.new_page()
 
-        # --- Console Mirroring (DEC-009) ---
-        # Mirrors browser-level errors/warnings to VM console for remote diagnostics
-        page.on("console", lambda msg: print(f"[BROWSER-LOG] {msg.type.upper()}: {msg.text}") if msg.type in ["error", "warning"] else None)
-        
+            # --- HARDENING & STEALTH: Manual Navigator Overrides ---
+            apply_stealth_overrides(page)
+
+            # --- Console Mirroring (DEC-009) ---
+            # Mirrors browser-level errors/warnings to VM console for remote diagnostics
+            page.on("console", lambda msg: print(f"[BROWSER-LOG] {msg.type.upper()}: {msg.text}") if msg.type in ["error", "warning"] else None)
+            return context, page
+
+        # --- Browser Initialization ---
+        context, page = create_browser_session()
+
         print(f"Navigating to {WHATSAPP_URL}...")
         try:
             page.goto(WHATSAPP_URL, timeout=60000, wait_until="domcontentloaded")
@@ -167,9 +201,29 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         session_state = "INITIALIZING"
         reload_triggered = False
         last_percentage = -1
+        recovery_attempts = 0
         
         while time.time() - start_time < MAX_INITIAL_WAIT:
             elapsed = int(time.time() - start_time)
+
+            if not ensure_page_alive(page):
+                if recovery_attempts >= 2:
+                    print("[RECOVERY] Browser session died repeatedly during auth loop. Marking as session failure.")
+                    context.close()
+                    return False, True
+
+                recovery_attempts += 1
+                print(f"[RECOVERY] Browser session died during auth loop. Restarting session ({recovery_attempts}/2)...")
+                try:
+                    context.close()
+                except Exception as close_err:
+                    print(f"[RECOVERY] Failed to close dead context: {close_err}")
+                context, page = create_browser_session()
+                try:
+                    page.goto(WHATSAPP_URL, timeout=60000, wait_until="domcontentloaded")
+                except Exception as nav_err:
+                    print(f"[RECOVERY] Failed to navigate after restart: {nav_err}")
+                continue
             
             # Watchdog: If no state change or percentage progress for 5 mins, reload and reset (BUG-041)
             if time.time() - poll_start > 300:
@@ -179,13 +233,20 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 continue
 
             # 0. DISMISS BLOCKING MODALS & BANNERS (Bypass / DEC-022)
+            if not ensure_page_alive(page):
+                continue
             dismiss_blocking_modals(page)
 
             # 1. SUCCESS MARKERS (Search Box or Chat Pane)
-            if page.locator('#pane-side, [data-testid="chat-list-search-filtered"], #side [contenteditable="true"]').first.is_visible():
-                print(f"[{elapsed}s] Login successful! Chat UI detected.")
-                session_state = "LOGGED_IN"
-                break
+            try:
+                if page.locator('#pane-side, [data-testid="chat-list-search-filtered"], #side [contenteditable="true"]').first.is_visible():
+                    print(f"[{elapsed}s] Login successful! Chat UI detected.")
+                    session_state = "LOGGED_IN"
+                    break
+            except Exception as detect_err:
+                if not ensure_page_alive(page):
+                    continue
+                print(f"[{elapsed}s] Login detection check failed: {detect_err}")
             
             # 3. SYNCING & PROGRESS MARKERS
             screen_content = ""
@@ -234,9 +295,15 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 reload_triggered = True
             
             # 4. QR CODE MARKERS
-            if page.locator('canvas, [data-testid="qrcode-container"]').first.is_visible():
-                context.close()
-                raise RuntimeError("Session Invalidated! (QR Required).")
+            try:
+                if page.locator('canvas, [data-testid="qrcode-container"]').first.is_visible():
+                    context.close()
+                    raise RuntimeError("Session Invalidated! (QR Required).")
+            except Exception as qr_err:
+                if not ensure_page_alive(page):
+                    continue
+                if "qrcode-container" not in str(qr_err):
+                    print(f"[{elapsed}s] QR detection check failed: {qr_err}")
             
             # 5. SPLASH SCREEN (Initial)
             if "WhatsApp" in screen_content and session_state == "INITIALIZING":
