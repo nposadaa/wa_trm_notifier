@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.18] - 2026-06-22
+> **Status**: Released. Hotfix for WhatsApp Web browser session teardown during startup and sync recovery.
+
+### Fixed
+- **(BUG-045) Browser Session Teardown During Auth Sync**: Added recovery logic in `broadcaster.py` to detect when the Playwright page/context/browser has already closed during the WhatsApp Web startup/sync loop. The broadcaster now restarts the session automatically instead of crashing the run, improving resilience on the VM during long decryption/sync periods.
+- **Regression Coverage**: Added a dedicated regression test for closed-browser recovery detection to prevent this class of startup failure from regressing.
+
 ## [1.1.17] - 2026-06-20
 > **Status**: Released. Hotfix for delivery verification and row-count crashes due to WhatsApp Web DOM updates.
 
