@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.19] - 2026-06-22
+> **Status**: Release candidate. Hardening for WhatsApp Web chat-search selection on the current UI.
+
+### Fixed
+- **(BUG-046) Chat Search Selector Drift**: Updated the broadcaster to target the current WhatsApp Web search input (`input[aria-label="Search or start a new chat"]`) and added normalized chat-name matching so the bot can still find the requested conversation when the visible label differs slightly from the recipient name.
+- **Regression Coverage**: Added test coverage for the new chat-name normalization and selector fallback logic.
+
 ## [1.1.18] - 2026-06-22
 > **Status**: Released. Hotfix for WhatsApp Web browser session teardown during startup and sync recovery.
 

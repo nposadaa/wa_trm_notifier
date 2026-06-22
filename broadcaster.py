@@ -42,6 +42,20 @@ def ensure_page_alive(page):
         return False
 
 
+def chat_name_matches_target(candidate, target):
+    """Return True when a visible chat label is equivalent to the requested recipient name."""
+    if not candidate or not target:
+        return False
+
+    def normalize(text):
+        value = text.lower().strip()
+        value = value.replace("&", " and ")
+        value = re.sub(r"[^a-z0-9]+", " ", value)
+        return re.sub(r"\s+", " ", value).strip()
+
+    return normalize(candidate) == normalize(target)
+
+
 # Redefine print to route to logger
 def print(*args, **kwargs):
     message = " ".join(str(arg) for arg in args).strip()
@@ -80,6 +94,30 @@ def safe_reload(page, timeout_ms=60000):
         time.sleep(5)  # Post-reload settling
     except Exception as e:
         print(f"  [Reload] WARNING: Reload encountered timeout/error ({e}). Proceeding anyway.")
+
+
+def find_search_box(page):
+    """Locate the WhatsApp chat-search input across current UI variants."""
+    selectors = [
+        'input[aria-label="Search or start a new chat"]',
+        'input[placeholder="Search or start a new chat"]',
+        'div[role="textbox"][aria-label="Search or start a new chat"]',
+        'div[role="textbox"][aria-label*="Search"]',
+        'div[aria-label="Search input textbox"]',
+        '#side div[contenteditable="true"]',
+        'div[contenteditable="true"]',
+        'input[type="text"]',
+    ]
+
+    for selector in selectors:
+        try:
+            locator = page.locator(selector).first
+            if locator.count() > 0 and locator.is_visible(timeout=2000):
+                return locator
+        except Exception:
+            continue
+
+    return page.locator('input, div[contenteditable="true"]').first
 
 
 def connectivity_guard(page, timeout=120):
@@ -412,32 +450,28 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             time.sleep(1)
             
             # 1. Focus the main search box (Persistent Structural Locator)
-            search_box = page.locator('#side div[contenteditable="true"], div[data-tab="3"], div[aria-label="Search input textbox"]').first
-            
+            search_box = find_search_box(page)
             try:
-                if not search_box.is_visible(timeout=8000):
+                if search_box.count() == 0 or not search_box.is_visible(timeout=8000):
                     print("CRITICAL: search box not found after 8s. Auditing DOM...")
-                    # Fallback check for any input
-                    search_box = page.locator('div[contenteditable="true"], input').first
+                    search_box = page.locator('input, div[contenteditable="true"]').first
             except Exception as e:
                 print(f"Search box detection warning: {e}. Attempting brute force...")
-                search_box = page.locator('#side [contenteditable="true"]').first
-            
-            if not search_box:
-                 print("CRITICAL: Final search box locator failed.")
-                 continue
+                search_box = page.locator('input, div[contenteditable="true"]').first
 
-                
+            if search_box.count() == 0:
+                print("CRITICAL: Final search box locator failed.")
+                continue
+
             # Use keyboard-only trigger (DEC-016) to bypass GPU-desync on clicks
             print(f"Executing keyboard-only search for: {name}...")
             try:
-                search_box.focus() 
-                # Robust clear using keyboard
+                search_box.click()
+                search_box.focus()
                 page.keyboard.press("Control+A")
                 page.keyboard.press("Backspace")
-                time.sleep(1.0) # Increased for stability
-                # Type characters with tiny delay to satisfy React listeners on slow VM
-                page.keyboard.type(name, delay=70) 
+                time.sleep(0.5)
+                search_box.type(name, delay=70)
                 time.sleep(2.0)
                 page.keyboard.press("Enter")
             except Exception as e:
@@ -447,20 +481,31 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # 2. Click the chat in the search results pane (Retry Loop)
             print(f"Auditing results for: {name}...")
             chat_found = False
-            
-                # Give the VM up to 30s (or 60s if deep_cleaned) for the sidebar to populate (Slow VM Fix)
+
+            # Give the VM up to 30s (or 60s if deep_cleaned) for the sidebar to populate (Slow VM Fix)
             max_search_attempts = 10 if deep_cleaned else 5
             for attempt in range(max_search_attempts):
-                # --- Result Method: Exact Title Match ---
                 try:
-                    chat_title = page.locator(f'span[title="{name}"], [aria-label="{name}"]').first
-                    if chat_title.is_visible(timeout=8000):
-                        chat_title.click()
-                        chat_found = True
-                        print(f"SUCCESS: Clicked {name} via Sidebar match ({attempt+1}/{max_search_attempts}).")
+                    chat_candidates = page.locator('#pane-side span[title], #pane-side [aria-label], #pane-side [title]').all()
+                    for chat in chat_candidates:
+                        try:
+                            candidate_text = chat.get_attribute('title') or chat.get_attribute('aria-label') or chat.inner_text()
+                        except Exception:
+                            continue
+                        if chat_name_matches_target(candidate_text, name):
+                            try:
+                                chat.click()
+                                chat_found = True
+                                print(f"SUCCESS: Clicked {name} via normalized sidebar match ({attempt+1}/{max_search_attempts}).")
+                                break
+                            except Exception as exc:
+                                print(f"  [Search] Click attempt failed for {name}: {exc}")
+                                continue
+                    if chat_found:
                         break
-                except: pass
-                
+                except Exception as exc:
+                    print(f"  [Search] Sidebar scan warning: {exc}")
+
                 if not chat_found:
                     try:
                         visible_chats = page.locator('#pane-side div[role="row"], #pane-side div[role="listitem"], #pane-side div[data-testid="list-item"]').count()
