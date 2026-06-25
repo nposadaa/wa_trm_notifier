@@ -1,5 +1,26 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-06-25 12:00 (COT)
+
+### Objective
+Finalize and tag the WhatsApp session recovery hotfix release for the VM.
+
+### Accomplished
+- ✅ Hardened session recovery in `broadcaster.py` to detect closed page/context failures during auth.
+- ✅ Added VM stability browser flags in `browser_config.py` for low-memory headless Chrome.
+- ✅ Completed release protocol by updating `VERSION`, `README.md`, `CHANGELOG.md`, `.gsd/STATE.md`, and `.gsd/JOURNAL.md`.
+- ✅ Verified targeted tests pass for recovery and stale TRM success marker behavior.
+- ✅ Updated `.gitignore` to exclude local debug artifacts from source control.
+
+### Verification
+- [x] `venv\Scripts\python.exe -m pytest tests/test_broadcaster_recovery.py tests/test_main_duplicate_prevention.py -q` passed.
+- [x] Git working tree is clean aside from ignored debug files.
+
+### Handoff Notes
+Push the release tag, then run `git pull origin master` on the VM and execute `bash scripts/run_vm.sh --force`.
+
+---
+
 ## Session: 2026-05-03 18:36 (COT)
 
 ### Objective

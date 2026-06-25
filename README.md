@@ -102,7 +102,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current version**: `v1.1.14` — Session Decryption Sync Resilience Hotfix
+> **Current version**: `v1.1.20` — WhatsApp Session Recovery & VM Stability Hotfix
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*

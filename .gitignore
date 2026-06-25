@@ -14,3 +14,5 @@ whatsapp_session.zip
 logs/
 *.log
 *.png
+.planning/
+tmp_*.py

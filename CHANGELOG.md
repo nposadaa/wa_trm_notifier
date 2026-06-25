@@ -2,6 +2,14 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.20] - 2026-06-25
+> **Status**: Released. Hotfix for WhatsApp Web auth session stability and VM browser recovery.
+
+### Fixed
+- **WhatsApp session recovery hardening**: Improved `broadcaster.py` startup recovery to detect and recover from closed Playwright pages or contexts during `SPLASH`/auth loops.
+- **VM Chrome stability**: Added headless VM-friendly Chromium flags in `browser_config.py` to reduce background throttling and renderer backgrounding on low-RAM GCP instances.
+- **Release protocol completion**: Updated `VERSION`, `README.md`, `CHANGELOG.md`, `.gsd/STATE.md`, and `.gsd/JOURNAL.md` for the new hotfix release.
+
 ## [1.1.19] - 2026-06-22
 > **Status**: Release candidate. Hardening for WhatsApp Web chat-search selection on the current UI.
 
