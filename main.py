@@ -135,9 +135,10 @@ def main():
 
     if success:
         logger.info("Task completed successfully!")
-        # Record success to avoid double-posting by the secondary CRON
+        # Record success for the current local day to avoid double-posting by the secondary CRON
+        # even when the scraped TRM date is stale.
         with open(LAST_SUCCESS_FILE, "w") as f:
-            f.write(trm_date) 
+            f.write(today_str)
         # Clear maintenance flag if it exists
         if os.path.exists(".gsd/needs_maintenance"):
             os.remove(".gsd/needs_maintenance")

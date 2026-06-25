@@ -32,6 +32,16 @@ def is_recoverable_browser_error(error):
 def ensure_page_alive(page):
     """Probe the page and return False if the underlying browser context is already dead."""
     try:
+        if page.is_closed():
+            print("[RECOVERY] Page object is already closed.")
+            return False
+        try:
+            if page.context.is_closed():
+                print("[RECOVERY] Browser context is already closed.")
+                return False
+        except Exception:
+            pass
+
         page.evaluate("() => document.readyState")
         return True
     except Exception as exc:
@@ -216,6 +226,12 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # --- Console Mirroring (DEC-009) ---
             # Mirrors browser-level errors/warnings to VM console for remote diagnostics
             page.on("console", lambda msg: print(f"[BROWSER-LOG] {msg.type.upper()}: {msg.text}") if msg.type in ["error", "warning"] else None)
+            page.on("close", lambda: print("[RECOVERY] Page close event fired."))
+            try:
+                page.on("crash", lambda: print("[RECOVERY] Page crash event fired."))
+            except Exception:
+                pass
+
             return context, page
 
         # --- Browser Initialization ---

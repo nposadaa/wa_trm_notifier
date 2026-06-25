@@ -94,6 +94,8 @@ def get_browser_context(playwright, headless=True):
         "--disable-setuid-sandbox",
         "--no-first-run",
         "--disable-background-networking",
+        "--disable-background-timer-throttling",
+        "--disable-renderer-backgrounding",
         "--disable-web-security",
         "--password-store=basic",
         "--use-mock-keychain",
