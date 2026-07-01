@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.21] - 2026-07-01
+> **Status**: Released. Hotfix for message delivery verification loop and search typing timeout.
+
+### Fixed
+- **Verification Drift Hardening**: Restructured verification polling checkmark loop to enforce a hard 10-minute timeout. Dynamically retrieve status checkmark locators to prevent node staleness. Added reverse scan fallback through active DOM chat rows and End-key scrolling to handle unmounting/virtualization.
+- **Search Typing Timeout**: Added 10-second timeout on search-box typing to quickly fail-over to raw keypresses.
+
 ## [1.1.20] - 2026-06-25
 > **Status**: Released. Hotfix for WhatsApp Web auth session stability and VM browser recovery.
 

@@ -487,7 +487,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 page.keyboard.press("Control+A")
                 page.keyboard.press("Backspace")
                 time.sleep(0.5)
-                search_box.type(name, delay=70)
+                search_box.type(name, delay=70, timeout=10000)
                 time.sleep(2.0)
                 page.keyboard.press("Enter")
             except Exception as e:
@@ -798,23 +798,58 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 if not row_matched:
                     raise RuntimeError(f"Row text mismatch after 30s. Expected: '{msg_snippet_norm}' Found: '{row_text_norm[:80]}'")
                 
-                status_locator = last_row.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]')
-                
                 print(f"  [Verification] Message matched in DOM. Waiting for anchored row checkmark...")
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
-                for _ in range(120): # 10 minutes total (5s intervals) — VM ack can take up to 583s
-                    # RE-VERIFY TEXT IN EVERY LOOP (Anti-false-positive BUG-020)
+                verify_deadline = time.time() + 600 # 10 minutes hard limit (BUG-047)
+                consecutive_drifts = 0
+                
+                while time.time() < verify_deadline:
+                    # Find our message row (robust to virtualization/drifts)
+                    target_row = None
                     last_row = page.locator('#main div[role="row"], #main div[data-id]').last
+                    
+                    # 1. Try last row first (most common)
                     current_row_text = ""
                     try: current_row_text = last_row.inner_text()
                     except: pass
                     row_text_norm = re.sub(r'\s+', ' ', current_row_text).strip()
                     
-                    if msg_snippet_norm not in row_text_norm:
-                        print("  [Verification] ⚠️ Last row text drifted (may be recovery noise). Continuing poll...")
-                        time.sleep(5)
-                        continue
-
+                    if msg_snippet_norm in row_text_norm:
+                        target_row = last_row
+                        consecutive_drifts = 0
+                    else:
+                        # 2. Fall back to scanning all rows in reverse if last row drifted
+                        try:
+                            all_rows = page.locator('#main div[role="row"], #main div[data-id]').all()
+                            for r in reversed(all_rows):
+                                try:
+                                    r_text = re.sub(r'\s+', ' ', r.inner_text()).strip()
+                                    if msg_snippet_norm in r_text:
+                                        target_row = r
+                                        break
+                                except:
+                                    pass
+                        except Exception as e_scan:
+                            print(f"  [Verification] Error scanning chat rows: {e_scan}")
+                        
+                        if target_row:
+                            consecutive_drifts = 0
+                        else:
+                            consecutive_drifts += 1
+                            print(f"  [Verification] ⚠️ Last row text drifted (consecutive drifts: {consecutive_drifts}). Continuing poll...")
+                            if consecutive_drifts >= 5:
+                                print("  [Verification] ⚠️ Scrolling to bottom to force DOM re-render...")
+                                try:
+                                    page.keyboard.press("End")
+                                except Exception as se:
+                                    print(f"  [Verification] Scroll error: {se}")
+                                consecutive_drifts = 0
+                            time.sleep(5)
+                            continue
+                    
+                    # Create status locator dynamically on the identified row
+                    status_locator = target_row.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]')
+                    
                     if status_locator.is_visible(timeout=1000):
                         elapsed_verify = int(time.time() - start_verify)
                         print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark (Ack took {elapsed_verify}s).")
@@ -822,12 +857,12 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         break
                     
                     # Check for "Failed to send" (Red circle/exclamation)
-                    if last_row.locator('span[data-icon="msg-exclamation"], [data-testid="msg-fail"], .status-error').first.is_visible(timeout=1000):
+                    if target_row.locator('span[data-icon="msg-exclamation"], [data-testid="msg-fail"], .status-error').first.is_visible(timeout=1000):
                         print("❌ FAILURE: Message failed to send (Red exclamation detected).")
                         break
                         
                     # Check for "Clock" (Outbox hang)
-                    if last_row.locator('span[data-testid="msg-clock"], span[data-icon="msg-clock"]').is_visible(timeout=1000):
+                    if target_row.locator('span[data-testid="msg-clock"], span[data-icon="msg-clock"]').is_visible(timeout=1000):
                         # If stuck for > 60s, try a JUMPSTART RELOAD (one time)
                         if time.time() - start_verify > 60:
                             print("⚠️ WARNING: Message stuck in outbox (Clock) for 60s. Attempting session recovery...")

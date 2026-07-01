@@ -1,5 +1,27 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-07-01 17:20 (COT)
+
+### Objective
+Diagnose and resolve the message verification drift loop and search box typing timeout issues on the VM.
+
+### Accomplished
+- ✅ Hardened message delivery verification: Added a hard 10-minute timeout to the checkmark polling loop to prevent infinite loops.
+- ✅ Dynamic Checkmark Locator: Re-bound locator queries to prevent stale references when DOM elements are recycled.
+- ✅ Resilient List Virtualization: Implemented reverse scanning on DOM rows as a fallback. After 5 consecutive drifts, simulate an `End` keypress to scroll and force DOM re-rendering.
+- ✅ Search Typing Timeout: Configured search typing to fast-fail after 10 seconds and switch to the raw keypress fallback.
+- ✅ Release Protocol: Bumped version to `1.1.21` in `VERSION`, updated `CHANGELOG.md`, `STATE.md`, and `JOURNAL.md`.
+
+### Verification
+- [x] Compilation checks passed.
+- [x] Local dry run completed successfully.
+- [x] Test suite: `test_broadcaster_recovery.py` and `test_main_duplicate_prevention.py` passed successfully.
+
+### Handoff Notes
+Commit changes, push `master`, pull on VM (`git pull origin master`), and monitor VM execution.
+
+---
+
 ## Session: 2026-06-25 12:00 (COT)
 
 ### Objective
