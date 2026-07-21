@@ -1,5 +1,27 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-07-21 09:19 (COT)
+
+### Objective
+Fetch VM logs and analyze the perceived broadcast failure for July 21, 2026.
+
+### Accomplished
+- ✅ Downloaded `notifier_2026-07-21.log` and `vm_run.log` from the GCP VM via `scripts/fetch-logs.ps1`.
+- ✅ Analyzed logs and confirmed the script executed successfully without crashing.
+- ✅ Identified that the deduplication guard safely skipped sending the message because the TRM data for `2026-07-18` was still active (due to July 20th holiday), generating an exact duplicate of the previously sent message.
+
+### Verification
+- [x] Verified `notifier_2026-07-21.log` output for successful task completion.
+- [x] Confirmed the deduplication engine behaved exactly as designed.
+
+### Paused Because
+User requested pause after the log analysis was completed.
+
+### Handoff Notes
+The script is healthy and operating exactly as intended. The "failure" was a successful suppression of a duplicate message due to a national holiday delaying the API update. If a manual run is desired later today after the API updates, use `bash scripts/run_vm.sh --force` on the VM. Otherwise, wait for tomorrow's automated run.
+
+---
+
 ## Session: 2026-07-01 17:20 (COT)
 
 ### Objective
