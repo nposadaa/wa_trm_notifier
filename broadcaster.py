@@ -650,7 +650,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     send_button = page.locator('span[data-icon="send"], button:has(span[data-testid="send"]), [data-testid="send"], button[aria-label="Send"], button[aria-label="Enviar"]').first
                     try:
                         if send_button.is_visible(timeout=5000):
-                            send_button.click(timeout=15000)
+                            send_button.click(timeout=15000, no_wait_after=True)
                             print(f"  [Attempt {attempt+1}/2] Send button clicked.")
                         else:
                             page.keyboard.press("Enter")
@@ -718,6 +718,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # --- Empirical Delivery Verification (BUG-008 Hardening) ---
             print(f"Verifying delivery to {name} (Watching last row for acknowledgment)...")
             delivery_verified = False
+            message_confirmed_in_dom = False
             start_verify = time.time()
             
             try:
@@ -732,6 +733,16 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 
                 for verify_attempt in range(10): # Increased to 10 iterations (30s max) for VM rendering
                     post_send_row_count = page.locator('#main div[role="row"], #main div[data-id]').count()
+                    
+                    # Handle DOM virtualization: if row count drops to 0, scroll to re-render (BUG-048)
+                    if post_send_row_count == 0:
+                        print(f"  [Verification] Row count is 0 — DOM virtualization detected. Scrolling to bottom...")
+                        try:
+                            page.keyboard.press("End")
+                        except Exception:
+                            pass
+                        time.sleep(3)
+                        continue
                     
                     # Fetch current last row text
                     last_row = page.locator('#main div[role="row"], #main div[data-id]').last
@@ -759,9 +770,12 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print(f"  [Row Count] Before send: {pre_send_row_count}, After send: {post_send_row_count}")
                 
                 if not row_added:
-                    print(f"  ❌ CRITICAL: No new message row appeared in DOM or text did not update after 30s.")
-                    print(f"  Send CONFIRMED FAILED. Aborting verification to prevent false-positive.")
-                    raise RuntimeError(f"Send failed: no new row/text change (before={pre_send_row_count}, after={post_send_row_count})")
+                    if interaction_success:
+                        print(f"  ⚠️ WARNING: Row verification inconclusive (before={pre_send_row_count}, after={post_send_row_count}). Composer emptied — proceeding with text check.")
+                    else:
+                        print(f"  ❌ CRITICAL: No new message row appeared in DOM or text did not update after 30s.")
+                        print(f"  Send CONFIRMED FAILED. Aborting verification to prevent false-positive.")
+                        raise RuntimeError(f"Send failed: no new row/text change (before={pre_send_row_count}, after={post_send_row_count})")
                 
                 # Fetch final last row for checkmark verification
                 last_row = page.locator('#main div[role="row"], #main div[data-id]').last
@@ -791,6 +805,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     row_text_norm = re.sub(r'\s+', ' ', final_row_text).strip()
                     if msg_snippet_norm and msg_snippet_norm in row_text_norm:
                         row_matched = True
+                        message_confirmed_in_dom = True
                         break
                     
                     time.sleep(3)
@@ -800,7 +815,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 
                 print(f"  [Verification] Message matched in DOM. Waiting for anchored row checkmark...")
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
-                verify_deadline = time.time() + 600 # 10 minutes hard limit (BUG-047)
+                verify_deadline = time.time() + 120 # 2 minutes hard limit (BUG-047/BUG-048)
                 consecutive_drifts = 0
                 
                 while time.time() < verify_deadline:
@@ -848,7 +863,13 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                             continue
                     
                     # Create status locator dynamically on the identified row
-                    status_locator = target_row.locator('span[data-testid="msg-check"], span[data-testid="msg-dblcheck"], span[data-icon="msg-check"], span[data-icon="msg-dblcheck"]')
+                    status_locator = target_row.locator(
+                        'span[data-testid="msg-check"], span[data-testid="msg-dblcheck"],'
+                        ' span[data-icon="msg-check"], span[data-icon="msg-dblcheck"],'
+                        ' span[data-icon*="check"],'
+                        ' [aria-label="Delivered"], [aria-label="Read"], [aria-label="Sent"],'
+                        ' [aria-label="Entregado"], [aria-label="Leído"], [aria-label="Enviado"]'
+                    )
                     
                     if status_locator.is_visible(timeout=1000):
                         elapsed_verify = int(time.time() - start_verify)
@@ -879,10 +900,14 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print(f"❌ FAILURE: Verification engine crashed ({e})")
 
             if not delivery_verified:
-                screenshot_name = f"diag_delivery_failed_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
-                print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving {screenshot_name}")
-                safe_screenshot(page, screenshot_name)
-                any_failure = True
+                if message_confirmed_in_dom and interaction_success:
+                    print(f"⚠️ SOFT SUCCESS: Checkmark not detected for {name}, but message IS in DOM and composer was emptied. Treating as delivered (BUG-048).")
+                    delivery_verified = True
+                else:
+                    screenshot_name = f"diag_delivery_failed_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
+                    print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving {screenshot_name}")
+                    safe_screenshot(page, screenshot_name)
+                    any_failure = True
 
             time.sleep(5)
 

@@ -1,5 +1,26 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-08-05 14:00 (COT)
+
+### Objective
+Resume session, finalize delivery verification and DOM virtualization hotfixes, and release v1.1.22.
+
+### Accomplished
+- ✅ **Resumed Session**: Loaded project state, checked uncommitted changes in `broadcaster.py`.
+- ✅ **DOM Virtualization Recovery (BUG-048)**: Added detection for zero-row DOM virtualization during post-send verification, automatically sending `End` keypresses to force bottom re-rendering.
+- ✅ **Expanded Checkmark Locators**: Added ARIA labels (`Delivered`, `Read`, `Sent`, `Entregado`, `Leído`, `Enviado`) and wildcard icon attributes (`span[data-icon*="check"]`).
+- ✅ **Soft-Success Delivery Verification**: Implemented soft-success fallback to mark delivery as successful when the message snippet is matched in the chat DOM and composer was emptied.
+- ✅ **Release Protocol (v1.1.22)**: Bumped `VERSION` to `1.1.22`, updated `CHANGELOG.md`, `.gsd/STATE.md`, and `.gsd/JOURNAL.md`.
+
+### Verification
+- [x] Test suite: `venv\Scripts\python.exe -m pytest` passed (3/3 tests passed).
+- [x] Local dry run: `python main.py --dry-run` completed successfully.
+
+### Handoff Notes
+Commit changes, tag `v1.1.22`, push `master` to remote, and pull on GCP VM (`git pull origin master`).
+
+---
+
 ## Session: 2026-07-21 09:19 (COT)
 
 ### Objective

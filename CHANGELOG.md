@@ -2,6 +2,14 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.22] - 2026-08-05
+> **Status**: Released. Hotfix for DOM virtualization row recovery and soft-success checkmark verification.
+
+### Fixed
+- **DOM Virtualization Recovery (BUG-048)**: Added detection for zero-row DOM virtualization during post-send verification, automatically issuing `End` keypresses to trigger bottom re-rendering.
+- **Checkmark Soft-Success & Status Locator Expansion**: Expanded delivery checkmark locators to include ARIA labels (`Delivered`, `Sent`, `Read`, `Entregado`, etc.) and wildcard icon attributes. Integrated a soft-success fallback that marks delivery as successful when the message is confirmed present in the DOM and the composer was emptied, preventing false-positive failures on slow VMs.
+- **Verification Deadline Tuning**: Optimized checkmark verification deadline to 2 minutes (down from 10 minutes) for faster execution.
+
 ## [1.1.21] - 2026-07-01
 > **Status**: Released. Hotfix for message delivery verification loop and search typing timeout.
 
