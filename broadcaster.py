@@ -817,6 +817,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
                 verify_deadline = time.time() + 120 # 2 minutes hard limit (BUG-047/BUG-048)
                 consecutive_drifts = 0
+                is_stuck_in_outbox = False
+                reload_attempted = False
                 
                 while time.time() < verify_deadline:
                     # Find our message row (robust to virtualization/drifts)
@@ -875,24 +877,36 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         elapsed_verify = int(time.time() - start_verify)
                         print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark (Ack took {elapsed_verify}s).")
                         delivery_verified = True
+                        is_stuck_in_outbox = False
                         break
                     
                     # Check for "Failed to send" (Red circle/exclamation)
                     if target_row.locator('span[data-icon="msg-exclamation"], [data-testid="msg-fail"], .status-error').first.is_visible(timeout=1000):
                         print("❌ FAILURE: Message failed to send (Red exclamation detected).")
+                        is_stuck_in_outbox = False
                         break
                         
-                    # Check for "Clock" (Outbox hang)
-                    if target_row.locator('span[data-testid="msg-clock"], span[data-icon="msg-clock"]').is_visible(timeout=1000):
+                    # Check for "Clock" (Outbox hang / Pending state)
+                    clock_locator = target_row.locator(
+                        'span[data-testid="msg-clock"], span[data-icon="msg-clock"],'
+                        ' span[data-testid="msg-time"], span[data-icon="msg-time"],'
+                        ' span[data-testid="time"], span[data-icon="time"],'
+                        ' [aria-label*="Pending"], [aria-label*="Pendiente"], [aria-label*="Clock"]'
+                    )
+                    if clock_locator.is_visible(timeout=1000):
+                        is_stuck_in_outbox = True
+                        print(f"  [Verification] ⏳ Outbox pending state detected (Clock icon visible).")
                         # If stuck for > 60s, try a JUMPSTART RELOAD (one time)
-                        if time.time() - start_verify > 60:
-                            print("⚠️ WARNING: Message stuck in outbox (Clock) for 60s. Attempting session recovery...")
+                        if time.time() - start_verify > 60 and not reload_attempted:
+                            print("⚠️ WARNING: Message stuck in outbox (Clock) for >60s. Attempting session recovery...")
+                            reload_attempted = True
                             safe_reload(page)
                             try:
                                 page.wait_for_load_state("networkidle", timeout=15000)
                             except Exception as e:
                                 print(f"  [Reload] wait_for_load_state timed out/failed ({e}). Continuing.")
-                            # Post-reload state might be messy, let the loop continue and re-verify text
+                    else:
+                        is_stuck_in_outbox = False
                     
                     time.sleep(4)
 
@@ -900,14 +914,17 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print(f"❌ FAILURE: Verification engine crashed ({e})")
 
             if not delivery_verified:
-                if message_confirmed_in_dom and interaction_success:
+                if message_confirmed_in_dom and interaction_success and not is_stuck_in_outbox:
                     print(f"⚠️ SOFT SUCCESS: Checkmark not detected for {name}, but message IS in DOM and composer was emptied. Treating as delivered (BUG-048).")
                     delivery_verified = True
                 else:
+                    reason = "Message stuck in outbox (Clock icon detected)" if is_stuck_in_outbox else "Checkmark not detected"
                     screenshot_name = f"diag_delivery_failed_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
-                    print(f"❌ FAILURE: Delivery could not be verified for {name}. Saving {screenshot_name}")
+                    print(f"❌ FAILURE: Delivery could not be verified for {name} ({reason}). Saving {screenshot_name}")
                     safe_screenshot(page, screenshot_name)
                     any_failure = True
+                    if is_stuck_in_outbox:
+                        needs_maintenance = True
 
             time.sleep(5)
 
@@ -915,7 +932,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         # EXTENDED: Give the slow VM a full minute to ensure all WebSockets are closed cleanly
         time.sleep(60)
         context.close()
-        return not any_failure, False
+        return not any_failure, needs_maintenance
 
 
 if __name__ == "__main__":

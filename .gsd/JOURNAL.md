@@ -1,5 +1,57 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-08-14 09:16 (COT)
+
+### Objective
+Resume session and analyze why the broadcast job has not sent for the past 3 days (August 12, 13, 14).
+
+### Accomplished
+- ✅ **Remote Log Sync**: Pulled `notifier_2026-08-12.log`, `notifier_2026-08-13.log`, `notifier_2026-08-14.log`, `vm_run.log`, and diagnostic screenshots via `scripts/fetch-logs.ps1`.
+- ✅ **Root Cause Analysis**: Identified a false-positive bug introduced in `v1.1.22`'s `SOFT SUCCESS` feature (BUG-048).
+  - On Aug 12, 13, and 14, WhatsApp Web typed the message into the composer and clicked send.
+  - The message appeared in the local chat DOM with a **CLOCK ICON** (`🕒` / outbox pending state).
+  - Checkmark verification timed out after 2 minutes because the message remained stuck in the outbox.
+  - `SOFT SUCCESS` caught the message in DOM, declared success, wrote `.gsd/last_success.date`, exited with return code 0, and closed the browser context.
+  - Because it exited with code 0 and wrote `last_success.date`, the 10:00 AM fallback retry skipped execution, and closing the browser destroyed the background WebSocket connection while the message was still queued in the local outbox.
+
+### Verification
+- [x] Examined `diag_delivery_failed_COP_USD Notifier_1814.png` showing messages stuck with clock icon `🕒`.
+- [x] Verified logs for Aug 12, 13, 14 all ending in `SOFT SUCCESS` despite non-delivery.
+
+### Handoff Notes
+Ready to implement hotfix `v1.1.23` in `broadcaster.py`:
+1. Add clock/pending outbox locators (`span[data-icon="msg-time"]`, `span[data-icon="time"]`, `span[aria-label*="Pending"]`, `span[aria-label*="Pendiente"]`).
+2. Require that `SOFT SUCCESS` ONLY triggers if NO outbox clock icon is present.
+3. If clock icon is present, trigger session recovery/reload or raise failure to force fallback retry.
+
+---
+
+## Session: 2026-08-05 19:45 (COT)
+
+### Objective
+Fetch remote logs from GCP VM, analyze manual execution failure for v1.1.22, and diagnose root cause.
+
+### Accomplished
+- ✅ **Remote Log Sync**: Pulled `notifier_2026-08-05.log`, `vm_run.log`, and diagnostic screenshots via `scripts/fetch-logs.ps1`.
+- ✅ **Real-Time DOM Probing**: Executed custom Playwright probe on the GCP VM to inspect browser state during auth loop.
+- ✅ **Root Cause Diagnosis**: Confirmed that the WhatsApp Web session in `./whatsapp_session` on the VM has expired/been logged out (`Scan the QR code with your phone's cam`). When `broadcaster.py` starts, it detects the QR login screen, closes the context (`context.close()`), and triggers page close recovery loops.
+- ✅ **Code Health Confirmed**: Code logic in `v1.1.22` is healthy and functioning properly.
+
+### Verification
+- [x] Empirical log evidence retrieved and parsed.
+- [x] Real-time DOM inspection probe output confirmed `Scan the QR code...` text present on VM.
+
+### Handoff Notes
+Execute the standard "Zip and Ship" protocol:
+1. Run local authenticator: `.\venv\Scripts\python.exe auth.py`
+2. Scan QR code and wait for status to say **Active** in phone.
+3. Zip session: `Compress-Archive -Path whatsapp_session -DestinationPath whatsapp_session.zip -Force`
+4. SCP to VM: `gcloud compute scp whatsapp_session.zip nposadaa111@trm-notifier:/home/nposadaa111/wa_trm_notifier/`
+5. On VM: `rm -f .gsd/needs_maintenance && unzip -q -o whatsapp_session.zip && chmod -R 777 whatsapp_session/`
+6. Run broadcast on VM: `bash scripts/run_vm.sh --force`
+
+---
+
 ## Session: 2026-08-05 14:00 (COT)
 
 ### Objective

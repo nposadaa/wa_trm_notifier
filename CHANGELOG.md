@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.23] - 2026-08-14
+> **Status**: Released. Hotfix for outbox clock-icon false-positive delivery verification and soft-success guard.
+
+### Fixed
+- **Outbox Clock-Icon Soft-Success Guard**: Expanded outbox pending clock locators (`msg-time`, `time`, `[aria-label*="Pending"]`, `[aria-label*="Pendiente"]`). Configured `broadcaster.py` to strictly prohibit `SOFT SUCCESS` (BUG-048) whenever a message is stuck in the local outbox pending state, preventing false-positive success logging on slow or disconnected VM sessions.
+- **Session Maintenance Trigger on Outbox Hang**: Ensured outbox stalls mark profile maintenance (`needs_maintenance = True`) to trigger profile clean-up on fallback runs.
+
 ## [1.1.22] - 2026-08-05
 > **Status**: Released. Hotfix for DOM virtualization row recovery and soft-success checkmark verification.
 
