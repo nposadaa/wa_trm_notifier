@@ -2,22 +2,24 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-- **Sprint**: Hotfix: Outbox Clock-Icon False-Positive & Delivery Verification (v1.1.23)
-- **Status**: Release Complete (2026-08-14T09:21:00-05:00)
+- **Sprint**: Hotfix: Deduplication Outbox Clock Guard & Maintenance Variable Scope (v1.1.24)
+- **Status**: Release Complete (2026-08-14T09:39:00-05:00)
 
 ## Current Position
 - **Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-- **Task**: 3-Day Non-Delivery Root Cause Analysis & Soft-Success False Positive Fix (v1.1.23)
-- **Status**: Release Complete (2026-08-14T09:21:00-05:00)
+- **Task**: Deduplication Outbox Clock Guard & Maintenance Variable Scope Fix (v1.1.24)
+- **Status**: Release Complete (2026-08-14T09:39:00-05:00)
 
 ## Last Session Summary
 - Resumed session to analyze 3-day non-delivery issue (Aug 12, Aug 13, Aug 14).
 - Synced remote VM logs (`notifier_2026-08-12.log`, `notifier_2026-08-13.log`, `notifier_2026-08-14.log`, `vm_run.log`) via `fetch-logs.ps1`.
 - **Root Cause Identified**: `v1.1.22` introduced `SOFT SUCCESS` (BUG-048), which treats any message matched in the DOM as delivered if the composer is empty after 2 minutes. When WhatsApp Web is slow/disconnected, typed messages sit in the local DOM outbox with a **CLOCK ICON** (`🕒`). `SOFT SUCCESS` misclassified these pending outbox messages as successfully delivered, wrote `.gsd/last_success.date`, exited with code 0 (preventing the 10:00 AM retry), and immediately closed the browser context—killing the background socket queue before the message could leave the outbox.
 - **Implemented Hotfix v1.1.23**: Expanded outbox clock locators (`msg-time`, `time`, `[aria-label*="Pending"]`, `[aria-label*="Pendiente"]`), blocked `SOFT SUCCESS` whenever a message is stuck in outbox clock icon state, and marked profile maintenance (`needs_maintenance = True`) on outbox stalls.
+- **Implemented Hotfix v1.1.24**: Updated Deduplication Guard to check for outbox clock icons on matching last rows so unsent outbox messages do not cause deduplication skips. Initialized `needs_maintenance = False` at `run_broadcaster` entry to fix `UnboundLocalError`.
 
 ## In-Progress Work
-- None. v1.1.23 release protocol complete and pushed to GitHub `origin/master`.
+- None. v1.1.24 release protocol complete and pushed to GitHub `origin/master`.
+
 
 ## Blockers
 - None.

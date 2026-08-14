@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.24] - 2026-08-14
+> **Status**: Released. Hotfix for deduplication outbox clock-icon guard and maintenance variable scope initialization.
+
+### Fixed
+- **Deduplication Guard Outbox Clock Check**: Updated Deduplication Guard in `broadcaster.py` to inspect the matching last message row for outbox clock icons (`msg-time`, `time`, `[aria-label*="Pending"]`, `[aria-label*="Pendiente"]`). If an outbox clock icon is visible on the last row, deduplication is bypassed so the bot attempts a clean resend instead of incorrectly skipping.
+- **Maintenance Variable Scope Fix**: Initialized `needs_maintenance = False` at function entry in `run_broadcaster()` to eliminate `UnboundLocalError` on early return paths.
+
 ## [1.1.23] - 2026-08-14
 > **Status**: Released. Hotfix for outbox clock-icon false-positive delivery verification and soft-success guard.
 
