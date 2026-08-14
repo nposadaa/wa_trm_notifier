@@ -2,6 +2,12 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.25] - 2026-08-14
+> **Status**: Released. Hotfix for checkmark-verified deduplication guard.
+
+### Fixed
+- **Checkmark-Verified Deduplication Guard**: Hardened Deduplication Guard in `broadcaster.py` to require positive proof of delivery (`msg-check`, `msg-dblcheck`, `Delivered`, `Sent`, `Entregado`, etc.) on matching last message rows. Unconfirmed messages or messages stuck in outbox pending state (`🕒`) will no longer trigger false-positive deduplication skips, ensuring a clean resend is attempted.
+
 ## [1.1.24] - 2026-08-14
 > **Status**: Released. Hotfix for deduplication outbox clock-icon guard and maintenance variable scope initialization.
 

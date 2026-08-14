@@ -569,20 +569,26 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     last_row_text = last_row.inner_text()
                     last_row_norm = re.sub(r'\s+', ' ', last_row_text).strip()
                     if msg_snippet_norm and msg_snippet_norm in last_row_norm:
-                        # Check if last row is stuck in outbox (clock icon)
-                        clock_in_last_row = last_row.locator(
-                            'span[data-testid="msg-clock"], span[data-icon="msg-clock"],'
-                            ' span[data-testid="msg-time"], span[data-icon="msg-time"],'
-                            ' span[data-testid="time"], span[data-icon="time"],'
-                            ' [aria-label*="Pending"], [aria-label*="Pendiente"], [aria-label*="Clock"]'
-                        ).is_visible(timeout=1000)
-                        
-                        if clock_in_last_row:
-                            print(f"  [Deduplication] Message snippet matches last row BUT it has a CLOCK icon (stuck in outbox). Resending...")
-                            already_sent = False
-                        else:
-                            print(f"  [Deduplication] Last message in chat already matches our message snippet! Skipping send.")
+                        # Ensure the matching row has a confirmed delivery checkmark indicator
+                        has_checkmark = False
+                        try:
+                            has_checkmark = last_row.locator(
+                                'span[data-icon="msg-check"], span[data-icon="msg-dblcheck"], span[data-icon="msg-dblcheck-ack"],'
+                                ' span[data-icon="status-check"], span[data-icon="status-dblcheck"],'
+                                ' span[data-testid="msg-check"], span[data-testid="msg-dblcheck"],'
+                                ' span[data-icon*="check"],'
+                                ' [aria-label="Delivered"], [aria-label="Sent"], [aria-label="Read"],'
+                                ' [aria-label="Entregado"], [aria-label="Leído"], [aria-label="Enviado"]'
+                            ).first.is_visible(timeout=2000)
+                        except Exception as check_err:
+                            print(f"  [Deduplication Checkmark Error] {check_err}")
+
+                        if has_checkmark:
+                            print(f"  [Deduplication] Last message in chat matches snippet AND has confirmed checkmark. Skipping send.")
                             already_sent = True
+                        else:
+                            print(f"  [Deduplication] Message snippet matches last row BUT no checkmark detected (stuck in outbox/pending). Resending...")
+                            already_sent = False
             except Exception as e:
                 print(f"  [Deduplication Warning] Failed to check last message for duplication: {e}")
 

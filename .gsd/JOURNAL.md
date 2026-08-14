@@ -13,15 +13,13 @@ Resume session and analyze why the broadcast job has not sent for the past 3 day
   - Checkmark verification timed out after 2 minutes because the message remained stuck in the outbox.
   - `SOFT SUCCESS` caught the message in DOM, declared success, wrote `.gsd/last_success.date`, exited with return code 0, and closed the browser context.
   - Because it exited with code 0 and wrote `last_success.date`, the 10:00 AM fallback retry skipped execution, and closing the browser destroyed the background WebSocket connection while the message was still queued in the local outbox.
-- ✅ **Released Hotfix v1.1.23**: Added clock icon locators to block `SOFT SUCCESS` on outbox pending states and trigger profile maintenance.
-- ✅ **Released Hotfix v1.1.24**:
-  - Fixed Deduplication Guard false-positive where unsent outbox messages with clock icons matched the target text, causing the bot to skip typing/resending.
-  - Initialized `needs_maintenance = False` at `run_broadcaster` entry to eliminate `UnboundLocalError`.
+- ✅ **Released Hotfix v1.1.25**:
+  - Hardened Deduplication Guard to require visible checkmarks (`msg-check`, `msg-dblcheck`, `Delivered`, etc.) on matching last rows before skipping send. Unconfirmed outbox messages will no longer trigger false-positive deduplication skips.
 
 ### Verification
 - [x] Tested unit suite (`pytest` passed 3/3).
 - [x] Verified `main.py --dry-run` runs cleanly.
-- [x] Released v1.1.24 with complete release protocol.
+- [x] Released v1.1.25 with complete release protocol.
 
 ### Handoff Notes
 Ready to implement hotfix `v1.1.23` in `broadcaster.py`:
