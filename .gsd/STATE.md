@@ -3,27 +3,26 @@
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
 - **Sprint**: Hotfix: Non-Destructive Outbox Polling & Connection Stabilization (v1.1.27)
-- **Status**: Active (2026-08-26T13:50:00-05:00)
+- **Status**: Paused at 2026-08-26T13:57:00-05:00
 
 ## Current Position
 - **Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-- **Task**: Release Hotfix v1.1.27 (Remove Destructive Reload, Extend Verification to 300s, Stabilize Socket)
-- **Status**: Ready to Deploy
+- **Task**: VM Broadcast Execution & Verification of v1.1.27
+- **Status**: Paused (v1.1.27 Live on GitHub origin/master)
 
 ## Last Session Summary
-- Analyzed VM logs after run failure: Enter key fallback successfully dispatched message into chat DOM.
-- Identified that outbox clock polling triggered a destructive `safe_reload(page)` after 60s, destroying the active WebSocket connection in flight and causing HTTP 410 errors.
-- Removed destructive reload from outbox verification.
-- Extended delivery verification timeout to 300s (5m) and added 15s post-sync socket stabilization.
-- Synced remote VM logs (`notifier_2026-08-12.log`, `notifier_2026-08-13.log`, `notifier_2026-08-14.log`, `vm_run.log`) via `fetch-logs.ps1`.
-- **Root Cause Identified**: `v1.1.22` introduced `SOFT SUCCESS` (BUG-048), which treated outbox messages stuck with a **CLOCK ICON** (`🕒`) as delivered, suppressing fallback retries and closing browser context prematurely.
-- **Implemented Hotfix v1.1.23**: Blocked `SOFT SUCCESS` on outbox clock states.
-- **Implemented Hotfix v1.1.24**: Fixed `needs_maintenance` scope bug.
-- **Implemented Hotfix v1.1.25**: Hardened Deduplication Guard to require visible checkmarks (`msg-check`, `msg-dblcheck`, `Delivered`, etc.) before skipping sends.
-- Completed release protocol for `v1.1.25`, ran test suite (`pytest` 3/3 passed), and pushed release tag `v1.1.25` to GitHub `origin/master`. Cleaned up local scratch directory.
+- Resumed session, fetched logs, and analyzed recent VM execution failures.
+- Confirmed VM session was logged out/invalidated on Aug 17.
+- User performed local authentication (`auth.py`) and Zip-n-Ship transfer to GCP VM (`trm-notifier`).
+- Investigated post-zip-n-ship broadcast runs:
+  - First run: Login succeeded! Search succeeded. Send button click timed out; Enter fallback was missing and DOM virtualization caused a false-empty composer assumption.
+  - Released `v1.1.26`: Added Enter key fallback and initialized `is_stuck_in_outbox` in verification scope.
+  - Second run: Message dispatched into DOM, but showed Clock icon (`🕒` / outbox pending). The code triggered a destructive `safe_reload(page)` after 60s, destroying the in-flight WebSocket connection and causing HTTP 410 errors.
+  - Released `v1.1.27`: Removed destructive page reload during outbox polling, extended verification deadline to 300s (5m), and added 15s post-sync socket stabilization. Updated README.md and release protocol rules.
+  - Tested test suite (`pytest` 3/3 passed) and pushed `v1.1.27` commit and tag to GitHub `origin/master`.
 
 ## In-Progress Work
-- None. Working tree is clean. `v1.1.25` is live on GitHub `origin/master`.
+- None. Working tree is clean. `v1.1.27` is live on GitHub `origin/master`.
 
 ## Blockers
 - None.
@@ -31,30 +30,17 @@
 ## Context Dump
 
 ### Decisions Made
-- Deduplication Guard must require positive checkmark verification to skip sends, preventing unsent outbox messages from triggering false deduplication skips.
-- Strict constraint enforced: No `scp` commands or file transfers to VM. All code deployment is via GitHub `origin/master`.
+- `DEC-030`: Outbox pending state (`🕒`) on slow e2-micro VMs must NOT trigger page reloads, as reloading the page destroys active WebSockets and triggers HTTP 410 errors. Instead, poll for up to 300s to allow normal network flush.
+- `DEC-031`: Mandatory release protocol checklist strictly requires updating `README.md` version banner alongside `VERSION` and `CHANGELOG.md`.
 
 ### Files of Interest
-- `broadcaster.py`: Broadcaster engine logic & delivery verification (v1.1.25).
-- `VERSION`: `1.1.25`.
+- `broadcaster.py`: Broadcaster engine logic & non-destructive delivery verification (v1.1.27).
+- `VERSION`: `1.1.27`.
+- `README.md`: Updated with `v1.1.27` version banner.
 - `CHANGELOG.md`: Full release history.
 
 ## Next Steps
-1. Execute `git pull origin master` on the GCP VM.
-2. Remove `.gsd/last_success.date` and `.gsd/needs_maintenance` on the VM.
-3. Run `bash scripts/run_vm.sh --force` on the VM to deliver today's TRM broadcast.
-
-
-## Context Dump
-
-### Current Hypothesis
-- Code v1.1.23 strictly prevents false-positive soft success when messages are stuck in local outbox pending state. If a slow session stalls in outbox state, the failure is correctly recorded, setting `needs_maintenance = True` and allowing subsequent fallback runs to clean and retry successfully.
-
-### Files of Interest
-- `broadcaster.py`: Broadcaster engine logic & delivery verification (v1.1.23).
-- `main.py`: Runner entrypoint & `last_success.date` handling.
-
-## Next Steps
-1. Push git tag `v1.1.23` and `master` branch to GitHub `origin/master`.
-
-
+1. On the GCP VM, pull the latest code: `git pull origin master`
+2. Clear any lingering maintenance/success flags: `rm -f .gsd/last_success.date .gsd/needs_maintenance`
+3. Execute the broadcast manually: `bash scripts/run_vm.sh --force`
+4. Confirm message delivery in the WhatsApp group.
