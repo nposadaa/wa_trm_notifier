@@ -1,5 +1,7 @@
 # 🚀 WhatsApp TRM Notifier
 
+> **Current Version**: `v1.1.26` (2026-08-26)
+
 An automated daily service that scrapes the Colombian Peso (COP) to USD exchange rate (TRM) and broadcasts notifications directly to configured WhatsApp groups and contacts.
 
 ## 🌟 Vision
@@ -102,7 +104,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current version**: `v1.1.20` — WhatsApp Session Recovery & VM Stability Hotfix
+> **Current version**: `v1.1.26` — Send Button Click Recovery & Scope Hardening Hotfix
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*

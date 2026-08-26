@@ -164,16 +164,20 @@ type(scope): description
 
 ## Release Protocol
 
-When a release is requested (e.g., "add a release", "release v1.1.4"), the following MUST be completed in a single session:
+When a release or hotfix is prepared/completed (e.g., "add a release", "release v1.1.4", or completing a hotfix sprint), the following **MUST** all be updated synchronously in a single session before tagging/pushing:
 
-1. **Changelog**: Update `CHANGELOG.md` with the new version block, status, and categorized changes.
-2. **Readme**: Update `README.md` (specifically the "Current Version" badge/text and any new architecture/features).
-3. **State**: Update `.gsd/STATE.md` (mark current task as completed, update current position).
-4. **Version**: Update the `VERSION` file.
-5. **Journal**: Add a final session entry to `.gsd/JOURNAL.md` summarizing the release objective and verification.
-6. **Commit**: Git commit all changes with a `feat: release vX.Y.Z` or `fix: release vX.Y.Z` message.
-7. **Tag**: Create a git tag `vX.Y.Z`.
-8. **Push**: Push the commit and tag to the remote repository (`git push origin HEAD && git push --tags`).
+| # | File | Required Action | Verification Rule |
+|---|------|-----------------|-------------------|
+| 1 | `VERSION` | Update to `X.Y.Z` | Must match target tag exactly |
+| 2 | `CHANGELOG.md` | Add `## [X.Y.Z] - YYYY-MM-DD` block with `### Fixed`/`### Added` entries | Must reference tracked `BUG-NNN` IDs |
+| 3 | `README.md` | Update **both** the top version banner and the bottom `> **Current version**` line | **MANDATORY**: Never omit `README.md` on any release or hotfix |
+| 4 | `.gsd/STATE.md` | Update current sprint/position to `X.Y.Z` and summarize changes | Keep position current |
+| 5 | `.gsd/JOURNAL.md` | Add session log entry with release notes and verification results | Include objective & verification |
+| 6 | Git Commit & Tag | Commit (`fix: release vX.Y.Z` or `feat: release vX.Y.Z`) and tag `vX.Y.Z` | One atomic release commit |
+| 7 | Git Push | Push commit and tag (`git push origin master && git push --tags`) | Verify remote synchronization |
+
+> [!CAUTION]
+> **Strict Release Gate**: No release commit or git tag may be created without synchronously updating `README.md`, `VERSION`, and `CHANGELOG.md`.
 
 ---
 
