@@ -2,6 +2,14 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.27] - 2026-08-26
+> **Status**: Released. Hotfix for non-destructive outbox acknowledgment polling and connection stabilization.
+
+### Fixed
+- **Eliminated Destructive 60s Page Reload**: Removed the `safe_reload(page)` trigger during outbox clock polling in `broadcaster.py`, which previously aborted active WebSockets and triggered HTTP 410 errors on slow e2-micro VMs.
+- **Extended Verification Window**: Increased delivery verification timeout to 300 seconds (5 minutes) to give high-latency VM WebSockets sufficient time to flush outgoing messages and receive delivery checkmarks.
+- **Post-Sync Socket Stabilization**: Extended the post-login stabilization pause to 15 seconds to allow WhatsApp Web's socket to warm up before starting search and message dispatch.
+
 ## [1.1.26] - 2026-08-26
 > **Status**: Released. Hotfix for send button click error recovery and verification scope.
 

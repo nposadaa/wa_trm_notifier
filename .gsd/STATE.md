@@ -2,20 +2,19 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-- **Sprint**: Hotfix: Send Button Click Recovery & Scope Hardening (v1.1.26)
-- **Status**: Active (2026-08-26T13:25:00-05:00)
+- **Sprint**: Hotfix: Non-Destructive Outbox Polling & Connection Stabilization (v1.1.27)
+- **Status**: Active (2026-08-26T13:50:00-05:00)
 
 ## Current Position
 - **Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-- **Task**: Release Hotfix v1.1.26 (Send Button Enter Fallback & Verification Engine Scope)
+- **Task**: Release Hotfix v1.1.27 (Remove Destructive Reload, Extend Verification to 300s, Stabilize Socket)
 - **Status**: Ready to Deploy
 
 ## Last Session Summary
-- Analyzed VM logs after Zip-n-Ship authentication.
-- Confirmed Zip-n-Ship was completely successful — session is valid and logged in.
-- Identified that `send_button.click()` timed out, and the error handler falsely assumed message dispatch due to DOM re-rendering when historical chat rows loaded.
-- Fixed `broadcaster.py` to fall back to `page.keyboard.press("Enter")` on click failure.
-- Fixed `is_stuck_in_outbox` variable scope prior to the verification `try` block.
+- Analyzed VM logs after run failure: Enter key fallback successfully dispatched message into chat DOM.
+- Identified that outbox clock polling triggered a destructive `safe_reload(page)` after 60s, destroying the active WebSocket connection in flight and causing HTTP 410 errors.
+- Removed destructive reload from outbox verification.
+- Extended delivery verification timeout to 300s (5m) and added 15s post-sync socket stabilization.
 - Synced remote VM logs (`notifier_2026-08-12.log`, `notifier_2026-08-13.log`, `notifier_2026-08-14.log`, `vm_run.log`) via `fetch-logs.ps1`.
 - **Root Cause Identified**: `v1.1.22` introduced `SOFT SUCCESS` (BUG-048), which treated outbox messages stuck with a **CLOCK ICON** (`🕒`) as delivered, suppressing fallback retries and closing browser context prematurely.
 - **Implemented Hotfix v1.1.23**: Blocked `SOFT SUCCESS` on outbox clock states.

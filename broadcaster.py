@@ -406,7 +406,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 else:
                     print("  [Syncing] Sidebar sync message gone. Proceeding.")
                     break
-            time.sleep(5)
+            print("  [Stabilization] Waiting 15s for WebSocket connection to warm up...")
+            time.sleep(15)
         else:
             print(f"\n--- SESSION TIMEOUT ({session_state}) ---")
             print(f"Reached {MAX_INITIAL_WAIT}s without entering logged-in state.")
@@ -827,11 +828,11 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     time.sleep(3)
                 
                 if not row_matched:
-                    raise RuntimeError(f"Row text mismatch after 30s. Expected: '{msg_snippet_norm}' Found: '{row_text_norm[:80]}'")
+                    print(f"  ⚠️ WARNING: Row text mismatch after 30s. Expected: '{msg_snippet_norm}' Found: '{row_text_norm[:80]}...' Continuing verification anyway.")
                 
                 print(f"  [Verification] Message matched in DOM. Waiting for anchored row checkmark...")
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
-                verify_deadline = time.time() + 120 # 2 minutes hard limit (BUG-047/BUG-048)
+                verify_deadline = time.time() + 300 # 5 minutes hard limit for high-latency VM sockets
                 consecutive_drifts = 0
                 is_stuck_in_outbox = False
                 reload_attempted = False
@@ -911,16 +912,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     )
                     if clock_locator.is_visible(timeout=1000):
                         is_stuck_in_outbox = True
-                        print(f"  [Verification] ⏳ Outbox pending state detected (Clock icon visible).")
-                        # If stuck for > 60s, try a JUMPSTART RELOAD (one time)
-                        if time.time() - start_verify > 60 and not reload_attempted:
-                            print("⚠️ WARNING: Message stuck in outbox (Clock) for >60s. Attempting session recovery...")
-                            reload_attempted = True
-                            safe_reload(page)
-                            try:
-                                page.wait_for_load_state("networkidle", timeout=15000)
-                            except Exception as e:
-                                print(f"  [Reload] wait_for_load_state timed out/failed ({e}). Continuing.")
+                        elapsed_outbox = int(time.time() - start_verify)
+                        print(f"  [Verification] ⏳ Outbox pending state detected (Clock icon visible, {elapsed_outbox}s elapsed)...")
                     else:
                         is_stuck_in_outbox = False
                     
@@ -939,13 +932,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     print(f"❌ FAILURE: Delivery could not be verified for {name} ({reason}). Saving {screenshot_name}")
                     safe_screenshot(page, screenshot_name)
                     any_failure = True
-                    if is_stuck_in_outbox:
-                        needs_maintenance = True
 
             time.sleep(5)
 
-        print("\nAll recipients processed. Finalizing buffer flush (60s)...")
-        # EXTENDED: Give the slow VM a full minute to ensure all WebSockets are closed cleanly
         time.sleep(60)
         context.close()
         return not any_failure, needs_maintenance

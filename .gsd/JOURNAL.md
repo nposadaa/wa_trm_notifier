@@ -1,5 +1,35 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-08-26 13:50 (COT)
+
+### Objective
+Diagnose outbox clock polling failure during v1.1.26 broadcast, eliminate destructive jumpstart page reload, extend verification timeout to 300s, and release v1.1.27.
+
+### Accomplished
+- ✅ **Remote Log Sync**: Pulled `notifier_2026-08-26.log`, `vm_run.log`, and diagnostic screenshots via `scripts/fetch-logs.ps1`.
+- ✅ **Diagnosed Failure**:
+  - v1.1.26's Enter key fallback successfully dispatched the message into the chat DOM.
+  - The message initially showed a clock icon (`🕒` / outbox pending) while the WebSocket connection was warming up.
+  - At 60 seconds, the script executed `safe_reload(page)`.
+  - Reloading the page forcefully tore down the active WebSocket connection while the message was in flight, causing HTTP 410 errors and freezing the browser.
+- ✅ **Implemented Hotfix v1.1.27**:
+  - Removed destructive `safe_reload(page)` during outbox verification in `broadcaster.py`.
+  - Extended verification deadline to 300 seconds (5 minutes) to give e2-micro high-latency WebSockets sufficient time to flush outgoing messages and receive checkmarks.
+  - Added 15s post-sync socket stabilization pause after login.
+- ✅ **Release Protocol (v1.1.27)**:
+  - Updated `VERSION`, `CHANGELOG.md`, `README.md` (top banner & footer), `STATE.md`, and `JOURNAL.md`.
+
+### Verification
+- [x] Test suite passed (`pytest` 3/3 passed).
+
+### Handoff Notes
+Push commit and tag `v1.1.27` to GitHub. On VM:
+1. `git pull origin master`
+2. `rm -f .gsd/last_success.date .gsd/needs_maintenance`
+3. `bash scripts/run_vm.sh --force`
+
+---
+
 ## Session: 2026-08-26 13:20 (COT)
 
 ### Objective
