@@ -1,5 +1,37 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-08-26 13:20 (COT)
+
+### Objective
+Diagnose the August 26 manual broadcast failure after successful Zip-n-Ship re-authentication, fix send button click timeout recovery and verification error handling, and release v1.1.26.
+
+### Accomplished
+- ✅ **Remote Log Sync**: Pulled `notifier_2026-08-26.log`, `vm_run.log`, and diagnostic screenshots via `scripts/fetch-logs.ps1`.
+- ✅ **Diagnosed Session Health**: Confirmed Zip-n-Ship authentication was **100% successful** — WhatsApp Web logged in and stabilized on the VM (`[571s] Login successful! Chat UI detected`).
+- ✅ **Diagnosed Send Button Failure**:
+  - Broadcaster located `COP/USD Notifier` and typed the 102-char TRM message into the composer.
+  - `send_button.click()` timed out (5000ms/15000ms) on headless Chrome.
+  - The exception handler checked if `chat_input.inner_text()` was empty. Because WhatsApp Web dynamically mounted 26 older chat rows in `#main` at that exact instant, the composer was detached/re-rendered, causing a false detection of "empty composer".
+  - The bot proceeded to verification without sending, encountered the previous chat message row, and failed row matching.
+  - The verification exception triggered an `UnboundLocalError` due to uninitialized `is_stuck_in_outbox`.
+- ✅ **Implemented Hotfix v1.1.26**:
+  - Hardened send button click error handling in `broadcaster.py`: If `send_button.click()` fails or times out, immediately focus composer and send `page.keyboard.press("Enter")`.
+  - Initialized `is_stuck_in_outbox = False` before the verification `try` block.
+- ✅ **Release Protocol (v1.1.26)**:
+  - Bumped `VERSION` to `1.1.26`.
+  - Updated `CHANGELOG.md`, `.gsd/STATE.md`, and `.gsd/JOURNAL.md`.
+
+### Verification
+- [x] Unit test suite passed (`pytest` 3/3 passed).
+- [x] Validated variable scopes and exception handling paths.
+
+### Handoff Notes
+Push commit and tag `v1.1.26` to GitHub. On VM:
+1. `git pull origin master`
+2. `bash scripts/run_vm.sh --force`
+
+---
+
 ## Session: 2026-08-14 09:16 (COT)
 
 ### Objective
@@ -21,11 +53,15 @@ Resume session and analyze why the broadcast job has not sent for the past 3 day
 - [x] Verified `main.py --dry-run` runs cleanly.
 - [x] Released v1.1.25 with complete release protocol.
 
+### Paused Because
+User requested session pause after completing release protocol for v1.1.25.
+
 ### Handoff Notes
-Ready to implement hotfix `v1.1.23` in `broadcaster.py`:
-1. Add clock/pending outbox locators (`span[data-icon="msg-time"]`, `span[data-icon="time"]`, `span[aria-label*="Pending"]`, `span[aria-label*="Pendiente"]`).
-2. Require that `SOFT SUCCESS` ONLY triggers if NO outbox clock icon is present.
-3. If clock icon is present, trigger session recovery/reload or raise failure to force fallback retry.
+v1.1.25 is live on GitHub `origin/master`. To test on the GCP VM:
+1. `cd /home/nposadaa111/wa_trm_notifier`
+2. `git pull origin master`
+3. `rm -f .gsd/last_success.date .gsd/needs_maintenance`
+4. `bash scripts/run_vm.sh --force`
 
 ---
 

@@ -2,6 +2,13 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.26] - 2026-08-26
+> **Status**: Released. Hotfix for send button click error recovery and verification scope.
+
+### Fixed
+- **Send Button Click Recovery**: Hardened send dispatch in `broadcaster.py` to immediately fall back to `page.keyboard.press("Enter")` if `send_button.click()` times out or fails, preventing false assumptions of message delivery caused by virtualized DOM re-rendering.
+- **Verification Engine Scope Fix**: Initialized `is_stuck_in_outbox = False` prior to the delivery verification `try` block, eliminating `UnboundLocalError` when row verification exceptions occur.
+
 ## [1.1.25] - 2026-08-14
 > **Status**: Released. Hotfix for checkmark-verified deduplication guard.
 

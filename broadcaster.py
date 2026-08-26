@@ -670,23 +670,18 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     send_button = page.locator('span[data-icon="send"], button:has(span[data-testid="send"]), [data-testid="send"], button[aria-label="Send"], button[aria-label="Enviar"]').first
                     try:
                         if send_button.is_visible(timeout=5000):
-                            send_button.click(timeout=15000, no_wait_after=True)
+                            send_button.click(timeout=5000, no_wait_after=True)
                             print(f"  [Attempt {attempt+1}/2] Send button clicked.")
                         else:
                             page.keyboard.press("Enter")
                             print(f"  [Attempt {attempt+1}/2] Enter pressed.")
                     except Exception as click_err:
-                        print(f"  [Attempt {attempt+1}/2] Send button click action encountered error: {click_err}")
-                        # Double check if message was dispatched anyway by verifying if composer is now empty
-                        time.sleep(1.0)
-                        composer_text = ""
-                        try: composer_text = chat_input.inner_text().strip()
-                        except: pass
-                        if not composer_text:
-                            print(f"  [Attempt {attempt+1}/2] Composer is empty. Message was likely dispatched successfully despite the click error!")
-                        else:
-                            # Re-raise the exception if the composer is still full, meaning it actually failed to send
-                            raise click_err
+                        print(f"  [Attempt {attempt+1}/2] Send button click error ({click_err}). Falling back to Enter key...")
+                        try:
+                            chat_input.focus()
+                        except Exception:
+                            pass
+                        page.keyboard.press("Enter")
                     
                     time.sleep(2)
                     
@@ -739,6 +734,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"Verifying delivery to {name} (Watching last row for acknowledgment)...")
             delivery_verified = False
             message_confirmed_in_dom = False
+            is_stuck_in_outbox = False
             start_verify = time.time()
             
             try:
