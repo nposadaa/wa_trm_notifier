@@ -3,12 +3,12 @@
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
 - **Sprint**: Hotfix: Resilient TRM Scraper with Exponential Backoff (v1.1.29)
-- **Status**: Ready for Deployment (v1.1.29)
+- **Status**: Paused at 2026-09-02 13:16 COT
 
 ## Current Position
 - **Phase**: Phase 5 — Live Support & Stability (Hotfixes)
 - **Task**: VM Broadcast Execution & Verification of v1.1.29
-- **Status**: Ready for Deployment
+- **Status**: Paused at 2026-09-02 13:16 COT
 
 ## Last Session Summary
 - Analyzed VM logs after v1.1.28 deployment. Confirmed VM pulled v1.1.28 and preserved Service Worker caches.
@@ -20,9 +20,11 @@
   - Added unit test suite `tests/test_scraper_retry.py` covering first-try success, 503 recovery, and retry exhaustion (6/6 tests passing).
   - Validated dry-run execution (`main.py --dry-run`).
 - Completed full release protocol (updated `VERSION`, `CHANGELOG.md`, `README.md`, `STATE.md`, `JOURNAL.md`).
+- Pushed release commit and tag `v1.1.29` to GitHub `origin/master`.
 
 ## In-Progress Work
-- Ready to commit, tag, and push `v1.1.29` to GitHub `origin/master`.
+- None (working directory clean, v1.1.29 committed, tagged, and pushed to origin/master).
+- Tests status: Passing (6/6 tests passing).
 
 ## Blockers
 - None.
@@ -44,10 +46,9 @@
 - `CHANGELOG.md`: Full release history.
 
 ## Next Steps
-1. Push commit and tag `v1.1.29` to GitHub `origin/master`.
-2. On the GCP VM, pull the latest code: `git pull origin master`
-3. Clear any lingering maintenance/success flags: `rm -f .gsd/last_success.date .gsd/needs_maintenance`
-4. Execute the broadcast manually: `bash scripts/run_vm.sh --force`
-5. Confirm message delivery in the WhatsApp group.
+1. On the GCP VM, pull the latest code: `git pull origin master`
+2. Clear any lingering maintenance/success flags: `rm -f .gsd/last_success.date .gsd/needs_maintenance`
+3. Execute the broadcast manually: `bash scripts/run_vm.sh --force`
+4. Confirm message delivery in the WhatsApp group.
 
 

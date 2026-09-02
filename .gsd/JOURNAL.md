@@ -22,8 +22,11 @@ Diagnose transient 503 error on Socrata TRM API after v1.1.28 deployment, add ex
 - [x] Test suite passed (`pytest` 6/6 passed).
 - [x] Dry-run validation passed (`main.py --dry-run`).
 
+### Paused Because
+v1.1.29 release is complete, tagged, and pushed to GitHub `origin/master`. Ready for manual or autonomous execution on the VM.
+
 ### Handoff Notes
-Commit, tag `v1.1.29`, and push to GitHub `origin/master`. On GCP VM:
+v1.1.29 is live on GitHub `origin/master`. To execute on the GCP VM:
 1. `git pull origin master`
 2. `rm -f .gsd/last_success.date .gsd/needs_maintenance`
 3. `bash scripts/run_vm.sh --force`
