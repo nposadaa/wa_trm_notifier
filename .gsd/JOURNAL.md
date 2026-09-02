@@ -1,6 +1,37 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-09-02 13:00 (COT)
+
+### Objective
+Diagnose transient 503 error on Socrata TRM API after v1.1.28 deployment, add exponential backoff retries to scraper.py, and release v1.1.29.
+
+### Accomplished
+- ✅ **Remote Log Analysis**:
+  - Pulled `notifier_2026-09-02.log` and `vm_run.log` from GCP VM.
+  - Confirmed VM pulled v1.1.28 and cleanly preserved Service Worker caches (DEC-032).
+  - Identified root cause of failure at 17:08/17:11 UTC: `datos.gov.co` returned a transient HTTP 503 Service Unavailable error.
+  - Confirmed live API recovery (HTTP 200 OK returning TRM 3,184.00 COP).
+- ✅ **Implemented Hotfix v1.1.29**:
+  - **scraper.py**: Added automatic retries (up to 3 attempts) with exponential backoff (3s, 6s) and an extended 15s timeout to absorb transient 502/503 errors and network spikes (DEC-033).
+  - **tests/test_scraper_retry.py**: Added unit tests covering first-attempt success, 503 recovery on second attempt, and full retry exhaustion.
+- ✅ **Release Protocol (v1.1.29)**:
+  - Bumped `VERSION` to `1.1.29`.
+  - Updated `CHANGELOG.md`, `README.md` (top header & footer badges), `STATE.md`, and `JOURNAL.md`.
+
+### Verification
+- [x] Test suite passed (`pytest` 6/6 passed).
+- [x] Dry-run validation passed (`main.py --dry-run`).
+
+### Handoff Notes
+Commit, tag `v1.1.29`, and push to GitHub `origin/master`. On GCP VM:
+1. `git pull origin master`
+2. `rm -f .gsd/last_success.date .gsd/needs_maintenance`
+3. `bash scripts/run_vm.sh --force`
+
+---
+
 ## Session: 2026-09-02 12:00 (COT)
+
 
 ### Objective
 Diagnose and resolve the root cause of outbox hang (clock icon `🕒`) and false-positive SOFT SUCCESS on GCP VM, and release v1.1.28.

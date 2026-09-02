@@ -2,6 +2,12 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.29] - 2026-09-02
+> **Status**: Released. Resilient TRM scraper with exponential backoff for transient 502/503 errors.
+
+### Fixed
+- **(BUG-052) Unhandled Transient 503 Gateway Errors Abort Broadcast**: The Superfinanciera Open Data API (`datos.gov.co` Socrata endpoint) occasionally returns transient HTTP 502/503 errors or connection timeouts during peak traffic or server maintenance. Previously, `scraper.py` executed a single attempt without retries, immediately causing `main.py` to trigger an API failure alert. Added automatic retries (up to 3 attempts) with exponential backoff (3s, 6s) and an extended 15s timeout to seamlessly absorb transient network and server blips.
+
 ## [1.1.28] - 2026-09-02
 > **Status**: Released. Root-cause fix for outbox hang and false-positive SOFT SUCCESS.
 
