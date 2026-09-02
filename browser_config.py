@@ -47,13 +47,17 @@ def clean_browser_locks():
     return deep_clean_run
 
 def clean_browser_bloat():
-    """Removes Cache and Code Cache directories to prevent profile bloat on e2-micro."""
+    """Removes Cache and Code Cache directories to prevent profile bloat on e2-micro.
+    
+    IMPORTANT (DEC-032): Service Worker CacheStorage and ScriptCache are intentionally
+    preserved. Deleting them breaks WhatsApp Web's background sync engine, causing
+    messages to get stuck in the local outbox (clock icon) and never flush to servers.
+    """
     bloat_paths = [
         os.path.join(USER_DATA_DIR, "Default", "Cache"),
         os.path.join(USER_DATA_DIR, "Default", "Code Cache"),
         os.path.join(USER_DATA_DIR, "Default", "GPUCache"),
-        os.path.join(USER_DATA_DIR, "Default", "Service Worker", "CacheStorage"),
-        os.path.join(USER_DATA_DIR, "Default", "Service Worker", "ScriptCache"),
+        # NOTE: Service Worker/CacheStorage and ScriptCache intentionally NOT cleaned (DEC-032)
         os.path.join(USER_DATA_DIR, "Default", "Blob Storage"),
         os.path.join(USER_DATA_DIR, "GrShaderCache"),
         os.path.join(USER_DATA_DIR, "ShaderCache"),
@@ -93,7 +97,8 @@ def get_browser_context(playwright, headless=True):
         "--js-flags='--max-old-space-size=640'", 
         "--disable-setuid-sandbox",
         "--no-first-run",
-        "--disable-background-networking",
+        # NOTE: --disable-background-networking intentionally removed (DEC-032)
+        # It suppresses WebSocket reconnection needed by WhatsApp Web's sync engine
         "--disable-background-timer-throttling",
         "--disable-renderer-backgrounding",
         "--disable-web-security",

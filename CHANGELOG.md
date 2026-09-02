@@ -2,6 +2,18 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.28] - 2026-09-02
+> **Status**: Released. Root-cause fix for outbox hang and false-positive SOFT SUCCESS.
+
+### Fixed
+- **(BUG-049) Service Worker Cache Destruction Breaks WebSocket Sync**: Removed `Service Worker/CacheStorage` and `Service Worker/ScriptCache` from `clean_browser_bloat()` in `browser_config.py`. These caches are critical for WhatsApp Web's background sync engine — deleting them on every run caused WhatsApp Web to enter an offline-resume timeout state, preventing messages from flushing to the server (clock icon `🕒`).
+- **(BUG-050) Chrome Flag Suppresses Background Networking**: Removed the `--disable-background-networking` Chromium launch flag from `browser_config.py`. This flag suppressed WebSocket reconnection timers and Service Worker push events that WhatsApp Web relies on for real-time message delivery.
+- **(BUG-051) False-Positive SOFT SUCCESS on Outbox Hang**: Introduced `outbox_ever_detected` sticky flag in `broadcaster.py` verification loop. Previously, `is_stuck_in_outbox` would reset to `False` when DOM row-drift prevented the clock icon check from executing, allowing SOFT SUCCESS to fire on messages that were clearly stuck in the outbox. The sticky flag ensures that once a clock icon is detected, SOFT SUCCESS is permanently blocked for that delivery attempt.
+
+### Added
+- **Pre-Type WebSocket Health Check (DEC-032)**: Added `navigator.onLine` probe before typing the message into the composer. If the browser reports offline, attempts a Service Worker ping to wake up the connection before proceeding.
+- **Non-Destructive Outbox Recovery (DEC-032)**: When the outbox clock icon persists for >45 seconds, dispatches `window.dispatchEvent(new Event('online'))` and a Service Worker ping to wake up WhatsApp Web's sync engine without destroying the session via page reload.
+
 ## [1.1.27] - 2026-08-26
 > **Status**: Released. Hotfix for non-destructive outbox acknowledgment polling and connection stabilization.
 

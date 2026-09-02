@@ -1,5 +1,37 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-09-02 12:00 (COT)
+
+### Objective
+Diagnose and resolve the root cause of outbox hang (clock icon `🕒`) and false-positive SOFT SUCCESS on GCP VM, and release v1.1.28.
+
+### Accomplished
+- ✅ **Diagnosed Root Causes from Aug 28 Logs**:
+  - `clean_browser_bloat()` was deleting `Service Worker/CacheStorage` and `Service Worker/ScriptCache` on every run, breaking WhatsApp Web's background sync engine and causing `[offline-resume] offline resume finished by timeout` errors.
+  - `--disable-background-networking` in Chromium launch arguments suppressed WebSocket background sync.
+  - When DOM row-drift occurred during polling, `is_stuck_in_outbox` was reset, allowing `SOFT SUCCESS` to incorrectly fire on outbox-pending messages and mark the day as completed.
+- ✅ **Implemented Hotfix v1.1.28**:
+  - **browser_config.py**: Preserved Service Worker caches in `clean_browser_bloat()` (DEC-032).
+  - **browser_config.py**: Removed `--disable-background-networking` flag (DEC-032).
+  - **broadcaster.py**: Added `navigator.onLine` pre-type health check with Service Worker wake-up ping.
+  - **broadcaster.py**: Added sticky `outbox_ever_detected` flag to prevent drift resets and permanently block `SOFT SUCCESS` on hung outbox messages.
+  - **broadcaster.py**: Added non-destructive JS-based socket wake-up (`online` event + Service Worker ping) after 45s of outbox pending state.
+- ✅ **Release Protocol (v1.1.28)**:
+  - Bumped `VERSION` to `1.1.28`.
+  - Updated `CHANGELOG.md`, `README.md` (top header & footer badges), `STATE.md`, and `JOURNAL.md`.
+
+### Verification
+- [x] Unit test suite passed (`pytest` 3/3 passed).
+- [x] Dry-run validation passed (`main.py --dry-run`).
+
+### Handoff Notes
+Commit and tag `v1.1.28`, push to GitHub `origin/master`. On GCP VM:
+1. `git pull origin master`
+2. `rm -f .gsd/last_success.date .gsd/needs_maintenance`
+3. `bash scripts/run_vm.sh --force`
+
+---
+
 ## Session: 2026-08-26 13:50 (COT)
 
 ### Objective

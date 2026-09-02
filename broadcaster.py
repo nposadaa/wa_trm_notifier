@@ -552,6 +552,26 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
 
             time.sleep(3.0) # Stability buffer
 
+            # --- Pre-type WebSocket Health Check (DEC-032) ---
+            # Verify the browser's network socket is alive before typing.
+            # WhatsApp Web can accept input while offline, but messages will hang in outbox.
+            try:
+                is_online = page.evaluate("() => navigator.onLine")
+                if not is_online:
+                    print("  [Health Check] ⚠️ Browser reports OFFLINE. Attempting socket recovery...")
+                    # Trigger WhatsApp Web's internal reconnection by navigating the ServiceWorker
+                    page.evaluate("() => { if (navigator.serviceWorker && navigator.serviceWorker.controller) { navigator.serviceWorker.controller.postMessage({type: 'ping'}); } }")
+                    time.sleep(10)
+                    is_online = page.evaluate("() => navigator.onLine")
+                    if not is_online:
+                        print("  [Health Check] ❌ Still OFFLINE after recovery attempt. Proceeding anyway (message may queue).")
+                    else:
+                        print("  [Health Check] ✅ Browser is back ONLINE.")
+                else:
+                    print("  [Health Check] ✅ Browser reports ONLINE.")
+            except Exception as health_err:
+                print(f"  [Health Check] Warning: Could not verify online status ({health_err}).")
+
             # 3. Target the chat input box (Locator-First / DEC-021)
             print(f"Finding input box for {name}...")
             chat_input = page.locator('#main div[contenteditable="true"], footer div[contenteditable="true"]').first
@@ -835,7 +855,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 verify_deadline = time.time() + 300 # 5 minutes hard limit for high-latency VM sockets
                 consecutive_drifts = 0
                 is_stuck_in_outbox = False
-                reload_attempted = False
+                outbox_ever_detected = False  # DEC-032: Sticky flag — True if clock was EVER seen during this verification
+                outbox_recovery_attempted = False  # DEC-032: Only attempt non-destructive recovery once
                 
                 while time.time() < verify_deadline:
                     # Find our message row (robust to virtualization/drifts)
@@ -912,8 +933,31 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     )
                     if clock_locator.is_visible(timeout=1000):
                         is_stuck_in_outbox = True
+                        outbox_ever_detected = True  # DEC-032: Sticky — never resets to False
                         elapsed_outbox = int(time.time() - start_verify)
                         print(f"  [Verification] ⏳ Outbox pending state detected (Clock icon visible, {elapsed_outbox}s elapsed)...")
+                        
+                        # DEC-032: Non-destructive socket wake-up after 45s of outbox hang
+                        # Instead of reloading the page (which destroys the WebSocket), send
+                        # a JS ping to wake up WhatsApp Web's internal sync engine.
+                        if elapsed_outbox > 45 and not outbox_recovery_attempted:
+                            outbox_recovery_attempted = True
+                            print("  [Outbox Recovery] Attempting non-destructive socket wake-up...")
+                            try:
+                                page.evaluate("""
+                                    () => {
+                                        // Trigger online event to wake WA's socket reconnection
+                                        window.dispatchEvent(new Event('online'));
+                                        // Ping Service Worker if available
+                                        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                                            navigator.serviceWorker.controller.postMessage({type: 'ping'});
+                                        }
+                                    }
+                                """)
+                                print("  [Outbox Recovery] Socket wake-up dispatched. Waiting 15s for sync...")
+                                time.sleep(15)
+                            except Exception as wake_err:
+                                print(f"  [Outbox Recovery] Wake-up failed: {wake_err}")
                     else:
                         is_stuck_in_outbox = False
                     
@@ -923,11 +967,14 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 print(f"❌ FAILURE: Verification engine crashed ({e})")
 
             if not delivery_verified:
-                if message_confirmed_in_dom and interaction_success and not is_stuck_in_outbox:
-                    print(f"⚠️ SOFT SUCCESS: Checkmark not detected for {name}, but message IS in DOM and composer was emptied. Treating as delivered (BUG-048).")
+                # DEC-032: Use outbox_ever_detected (sticky) instead of is_stuck_in_outbox
+                # to prevent row-drift from accidentally resetting the outbox flag and
+                # letting SOFT SUCCESS fire on messages that were clearly stuck in outbox.
+                if message_confirmed_in_dom and interaction_success and not outbox_ever_detected:
+                    print(f"⚠️ SOFT SUCCESS: Checkmark not detected for {name}, but message IS in DOM, composer was emptied, and NO outbox clock was ever seen. Treating as delivered (BUG-048).")
                     delivery_verified = True
                 else:
-                    reason = "Message stuck in outbox (Clock icon detected)" if is_stuck_in_outbox else "Checkmark not detected"
+                    reason = "Message was stuck in outbox (Clock icon detected during verification)" if outbox_ever_detected else "Checkmark not detected"
                     screenshot_name = f"diag_delivery_failed_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
                     print(f"❌ FAILURE: Delivery could not be verified for {name} ({reason}). Saving {screenshot_name}")
                     safe_screenshot(page, screenshot_name)
