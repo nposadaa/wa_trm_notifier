@@ -3,26 +3,25 @@
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
 - **Sprint**: Hotfix: Service Worker Preservation & Auth Loop Recovery (v1.1.30)
-- **Status**: Completed at 2026-09-09 08:58 COT
+- **Status**: Paused at 2026-09-09 09:37 COT
 
 ## Current Position
 - **Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-- **Task**: VM Broadcast Execution & Verification of v1.1.30
-- **Status**: Completed at 2026-09-09 08:58 COT
+- **Task**: Post-Deployment Observation of v1.1.30
+- **Status**: Paused at 2026-09-09 09:37 COT
 
 ## Last Session Summary
-- Fetched remote GCP logs via `scripts/fetch-logs.ps1` and direct SSH.
-- Diagnosed 4+ day broadcast failure timeline (Sep 2 – Sep 9):
-  - Sep 2–3: Outbox pending stalls due to WebSocket sync delay.
-  - Sep 4–9: `needs_maintenance` flag triggered `deep_clean_profile()`, which deleted `Default/Service Worker`. Deleting `Service Worker` corrupted WhatsApp Web's database engine, causing page crashes during auth loop on every run and re-triggering `needs_maintenance` in an infinite loop.
+- Fetched remote GCP logs and diagnosed 4+ day broadcast failure loop (Sep 2 – Sep 9).
+- Identified root cause: `deep_clean_profile()` deleted `./whatsapp_session/Default/Service Worker` on maintenance flags, corrupting WhatsApp Web's database and causing Chrome page crashes during authentication.
 - Released `v1.1.30`:
   - Updated `deep_clean_profile()` in `browser_config.py` to preserve `Service Worker` and `IndexedDB` sync directories (DEC-034).
   - Added unit test `test_deep_clean_preserves_service_worker` to `tests/test_broadcaster_recovery.py` (7/7 tests passing).
-  - Completed full release protocol (updated `VERSION`, `CHANGELOG.md`, `README.md`, `STATE.md`, `JOURNAL.md`).
-  - Committed and tagged `v1.1.30`.
+  - Completed release protocol (`VERSION`, `CHANGELOG.md`, `README.md`, `STATE.md`, `JOURNAL.md`, tag `v1.1.30`).
+- User executed Zip & Ship protocol locally to deploy a fresh authenticated session zip to the GCP VM.
+- VM manual broadcast execution succeeded.
 
 ## In-Progress Work
-- None (working directory clean, v1.1.30 committed and tagged).
+- None (working directory clean, v1.1.30 deployed to GCP VM).
 - Tests status: Passing (7/7 tests passing).
 
 ## Blockers
@@ -45,9 +44,8 @@
 - `CHANGELOG.md`: Full release history.
 
 ## Next Steps
-1. On the GCP VM, pull the latest code: `git pull origin master`
-2. Clear any lingering maintenance/success flags: `rm -f .gsd/last_success.date .gsd/needs_maintenance`
-3. Execute the broadcast manually: `bash scripts/run_vm.sh --force`
-4. Confirm message delivery in the WhatsApp group.
+1. Observe tomorrow morning's automated CRON run on the GCP VM (12:00 UTC / 7:00 AM COT).
+2. Fetch logs with `.\scripts\fetch-logs.ps1` to confirm delivery success and outbox status.
+3. Resume roadmap work for Phase 6 (Friday Weekly Summary Message feature).
 
 
