@@ -2,6 +2,12 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.30] - 2026-09-09
+> **Status**: Released. Hotfix for WhatsApp Web Service Worker preservation during maintenance deep clean (DEC-034).
+
+### Fixed
+- **(BUG-053) Maintenance Deep Clean Destroys Service Worker Directory**: When `.gsd/needs_maintenance` was set, `deep_clean_profile()` in `browser_config.py` deleted `./whatsapp_session/Default/Service Worker`. Deleting the Service Worker directory corrupts WhatsApp Web's background database sync engine, causing Chrome page crashes during the authentication splash loop on every subsequent run. Updated `deep_clean_profile()` to strictly preserve `Service Worker` and `IndexedDB` sync directories (DEC-034), purging only safe non-session ephemeral files (`Session Storage`, `Blob Storage`).
+
 ## [1.1.29] - 2026-09-02
 > **Status**: Released. Resilient TRM scraper with exponential backoff for transient 502/503 errors.
 

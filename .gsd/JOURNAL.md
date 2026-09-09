@@ -1,5 +1,33 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-09-09 08:58 (COT)
+
+### Objective
+Fetch remote GCP logs, diagnose the 4+ day broadcast failure, hotfix `deep_clean_profile()` to preserve Service Worker directories, and execute release protocol for v1.1.30.
+
+### Accomplished
+- ✅ **Remote GCP Log Retrieval & Multi-Day Diagnostics**:
+  - Pulled remote logs and diagnostic screenshots via `scripts/fetch-logs.ps1` and direct SSH (`notifier_2026-09-02.log` through `notifier_2026-09-09.log`, `vm_run.log`).
+  - Identified the primary root cause:
+    1. Sep 2–3: Message sends hung in Outbox (Clock icon `🕒`) due to WebSocket sync latencies.
+    2. Sep 4: Session error set `.gsd/needs_maintenance`.
+    3. Sep 4–9: `clean_browser_locks()` invoked `deep_clean_profile()`, which deleted `Default/Service Worker`. Deleting `Service Worker` destroyed WhatsApp Web's IndexedDB background sync database engine, causing Chrome page crashes (`Page close event fired`, `Database has been closed`) on every subsequent launch during the authentication splash loop, which re-set `needs_maintenance` on every run in an infinite failure loop.
+- ✅ **Implemented Hotfix v1.1.30**:
+  - **browser_config.py**: Updated `deep_clean_profile()` to strictly preserve `Service Worker` and `IndexedDB` sync directories (DEC-034), restricting maintenance cleanups to non-session ephemeral paths (`Session Storage`, `Blob Storage`).
+  - **tests/test_broadcaster_recovery.py**: Added `test_deep_clean_preserves_service_worker` unit test verifying Service Worker preservation (7/7 tests passing).
+- ✅ **Release Protocol (v1.1.30)**:
+  - Bumped `VERSION` to `1.1.30`.
+  - Updated `CHANGELOG.md` (referencing BUG-053), `README.md` (top header & footer badges), `STATE.md`, and `JOURNAL.md`.
+
+### Verification
+- [x] Test suite passed (`pytest` 7/7 passed).
+- [x] Service Worker preservation verified via unit test.
+
+### Handoff Notes
+v1.1.30 is released and ready to be pulled and run on the GCP VM.
+
+---
+
 ## Session: 2026-09-02 13:00 (COT)
 
 ### Objective

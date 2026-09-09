@@ -71,15 +71,22 @@ def clean_browser_bloat():
                 print(f"[config] Bloat cleanup warning for {path}: {e}")
 
 def deep_clean_profile():
-    """Removes Service Worker to force a fresh sync (preserves IndexedDB and LocalStorage session)."""
-    deep_paths = [
-        os.path.join(USER_DATA_DIR, "Default", "Service Worker"),
+    """Maintenance protocol: Purges non-session locks and ephemeral temp data.
+    
+    IMPORTANT (DEC-032, DEC-034): Service Worker and IndexedDB must NEVER be removed.
+    Deleting Service Worker corrupts WhatsApp Web's IndexedDB background sync engine
+    and causes Chrome page crash loops on startup.
+    """
+    print("[config] DEEP CLEAN: Preserving Service Worker & IndexedDB sync engine (DEC-034).")
+    ephemeral_paths = [
+        os.path.join(USER_DATA_DIR, "Default", "Session Storage"),
+        os.path.join(USER_DATA_DIR, "Default", "Blob Storage"),
     ]
-    for path in deep_paths:
+    for path in ephemeral_paths:
         if os.path.exists(path):
             try:
                 shutil.rmtree(path)
-                print(f"[config] DEEP CLEAN: Removed {path}")
+                print(f"[config] DEEP CLEAN: Purged ephemeral path {path}")
             except Exception as e:
                 print(f"[config] DEEP CLEAN warning for {path}: {e}")
 
