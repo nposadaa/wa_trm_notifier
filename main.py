@@ -63,12 +63,7 @@ def main():
         logger.error(f"Error scraping TRM: {error_msg}")
         
         # If API is down, send a status update instead of just failing
-        current_hour = get_cot_now().hour
-        retry_msg = ""
-        if current_hour < 14: # Usually the first run is at 12:00 UTC (7:00 COT)
-            retry_msg = " A second attempt is scheduled for 10:00 AM COT (3 hours from now)."
-            
-        status_update = f"⚠️ *Aviso de Sistema*\n\nLa API de la Superfinanciera no responde (Error: {error_msg}).{retry_msg}\n\n_El bot reintentará automáticamente._"
+        status_update = f"⚠️ *Aviso de Sistema*\n\nLa API de la Superfinanciera no responde (Error: {error_msg})."
         
         if not args.dry_run:
             # Only send the failure notification once per day

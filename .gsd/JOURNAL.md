@@ -1,5 +1,27 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-09-28 13:20 (COT)
+
+### Objective
+Fetch remote GCP logs, diagnose today's execution failure, clean up outdated API failure notification schedule text in `main.py`, and execute release protocol for v1.1.31.
+
+### Accomplished
+- ✅ **Remote GCP Log Analysis**:
+  - Synced and inspected `notifier_2026-09-28.log` and `vm_run.log`.
+  - Identified root cause of failure: Superfinanciera Open Data API (`datos.gov.co`) returned HTTP 503 Server Error, triggering the automated system alert path in `main.py`.
+  - Confirmed authentication and WhatsApp Web login succeeded (no logout issue).
+- ✅ **Implemented Hotfix v1.1.31**:
+  - **main.py**: Removed obsolete text referencing a secondary 10:00 AM COT CRON retry schedule (`"A second attempt is scheduled for 10:00 AM COT (3 hours from now). El bot reintentará automáticamente."`) from the `status_update` message template.
+- ✅ **Release Protocol (v1.1.31)**:
+  - Bumped `VERSION` to `1.1.31`.
+  - Updated `CHANGELOG.md`, `README.md` (top header & footer badges), `STATE.md`, and `JOURNAL.md`.
+
+### Verification
+- [x] Test suite passed (`pytest` 7/7 passed).
+- [x] Dry-run validation passed (`main.py --dry-run`).
+
+---
+
 ## Session: 2026-09-09 08:58 (COT)
 
 ### Objective

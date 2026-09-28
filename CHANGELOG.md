@@ -2,6 +2,12 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.1.31] - 2026-09-28
+> **Status**: Released. Cleaned up obsolete 10:00 AM COT retry schedule text from API failure notification template.
+
+### Fixed
+- **API Failure Notification Outdated Retry Message**: Removed obsolete text (`"A second attempt is scheduled for 10:00 AM COT (3 hours from now). El bot reintentará automáticamente."`) from the API failure notification message template in `main.py`. Since secondary 10:00 AM COT CRON scheduling was previously removed, API failure alerts now state cleanly: `⚠️ *Aviso de Sistema*\n\nLa API de la Superfinanciera no responde (Error: <error_msg>).`
+
 ## [1.1.30] - 2026-09-09
 > **Status**: Released. Hotfix for WhatsApp Web Service Worker preservation during maintenance deep clean (DEC-034).
 

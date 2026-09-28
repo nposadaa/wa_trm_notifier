@@ -2,26 +2,25 @@
 
 > **Current Milestone**: v1.1.0 — Financial Intelligence
 > **Current Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-- **Sprint**: Hotfix: Service Worker Preservation & Auth Loop Recovery (v1.1.30)
-- **Status**: Paused at 2026-09-09 09:37 COT
+- **Sprint**: Hotfix: API Failure Notification Template Cleanup (v1.1.31)
+- **Status**: Active (resumed 2026-09-28 13:20 COT)
 
 ## Current Position
 - **Phase**: Phase 5 — Live Support & Stability (Hotfixes)
-- **Task**: Post-Deployment Observation of v1.1.30
-- **Status**: Paused at 2026-09-09 09:37 COT
+- **Task**: API Failure Notification Template Cleanup (v1.1.31)
+- **Status**: Completed (released 2026-09-28 13:20 COT)
 
 ## Last Session Summary
-- Fetched remote GCP logs and diagnosed 4+ day broadcast failure loop (Sep 2 – Sep 9).
-- Identified root cause: `deep_clean_profile()` deleted `./whatsapp_session/Default/Service Worker` on maintenance flags, corrupting WhatsApp Web's database and causing Chrome page crashes during authentication.
-- Released `v1.1.30`:
-  - Updated `deep_clean_profile()` in `browser_config.py` to preserve `Service Worker` and `IndexedDB` sync directories (DEC-034).
-  - Added unit test `test_deep_clean_preserves_service_worker` to `tests/test_broadcaster_recovery.py` (7/7 tests passing).
-  - Completed release protocol (`VERSION`, `CHANGELOG.md`, `README.md`, `STATE.md`, `JOURNAL.md`, tag `v1.1.30`).
-- User executed Zip & Ship protocol locally to deploy a fresh authenticated session zip to the GCP VM.
-- VM manual broadcast execution succeeded.
+- Fetched remote GCP logs (`notifier_2026-09-28.log`, `vm_run.log`) and analyzed today's execution.
+- Diagnosed morning failure: Superfinanciera Open Data API (`datos.gov.co`) returned HTTP 503 Server Error, triggering the automated system failure notification path in `main.py`.
+- Identified outdated template text in `main.py` referencing a secondary 10:00 AM COT CRON schedule that was previously removed.
+- Released `v1.1.31`:
+  - Updated `status_update` string in `main.py` to remove obsolete retry message text.
+  - Verified test suite (`python -m pytest`, 7/7 passed).
+  - Completed release protocol (`VERSION`, `CHANGELOG.md`, `README.md`, `STATE.md`, `JOURNAL.md`, tag `v1.1.31`).
 
 ## In-Progress Work
-- None (working directory clean, v1.1.30 deployed to GCP VM).
+- None (working directory clean, v1.1.31 ready for deployment).
 - Tests status: Passing (7/7 tests passing).
 
 ## Blockers
