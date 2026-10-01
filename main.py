@@ -42,6 +42,7 @@ def main():
     parser.add_argument("--discovery", action="store_true", help="List available WhatsApp chats")
     parser.add_argument("--dry-run", action="store_true", help="Print message and exit without sending")
     parser.add_argument("--force", action="store_true", help="Force broadcast even if already sent today")
+    parser.add_argument("--friday", action="store_true", help="Force Friday weekly summary (for testing)")
     args = parser.parse_args()
 
     logger.info("--- Starting TRM Notifier ---")
@@ -114,6 +115,38 @@ def main():
     delta_str = f" ({sign} ${delta:,.2f})" if delta > 0 else ""
 
     message_text = f"{trend_emoji} *TRM Oficial - {trm_date}*\n\n💵 Valor: ${trm_value:,.2f} COP{delta_str}. Fuente: www.superfinanciera.gov.co{stale_disclaimer}"
+
+    # --- Friday Weekly Intelligence Summary ---
+    is_friday = get_cot_now().weekday() == 4 or args.friday
+    if is_friday:
+        logger.info("Friday detected — fetching weekly TRM data...")
+        weekly_data = scrape_trm(limit=7)
+        if "weekly_max" in weekly_data:
+            wk_max = weekly_data["weekly_max"]
+            wk_min = weekly_data["weekly_min"]
+            wk_change = weekly_data["weekly_change"]
+            wk_pct = weekly_data["weekly_change_pct"]
+
+            if wk_change > 0:
+                wk_trend = "📈"
+                wk_sign = "+"
+            elif wk_change < 0:
+                wk_trend = "📉"
+                wk_sign = "-"
+            else:
+                wk_trend = "➖"
+                wk_sign = ""
+
+            weekly_block = (
+                f"\n\n📊 *Resumen Semanal TRM*\n"
+                f"🔹 Máximo semana: ${wk_max:,.2f} COP\n"
+                f"🔹 Mínimo semana: ${wk_min:,.2f} COP\n"
+                f"{wk_trend} Variación semanal: {wk_sign}${abs(wk_change):,.2f} ({wk_pct:+.2f}%)"
+            )
+            message_text += weekly_block
+        else:
+            logger.warning("Weekly data unavailable — skipping Friday summary block.")
+
     logger.info(f"Prepared Message:\n{message_text}")
 
     if args.dry_run:
