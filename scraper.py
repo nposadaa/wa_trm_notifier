@@ -6,9 +6,10 @@ import requests
 
 logger = logging.getLogger("trm_notifier")
 
-def scrape_trm(max_retries: int = 3, retry_delay: float = 3.0):
+def scrape_trm(max_retries: int = 3, retry_delay: float = 3.0, limit: int = 2):
     # Official SuperFinanciera TRM Open Data via Socrata
-    url = "https://www.datos.gov.co/resource/mcec-87by.json?$limit=2&$order=vigenciadesde DESC"
+    # limit controls how many trading days to fetch (2 = daily, 7 = weekly)
+    url = f"https://www.datos.gov.co/resource/mcec-87by.json?$limit={limit}&$order=vigenciadesde DESC"
     
     last_error = None
     for attempt in range(1, max_retries + 1):
@@ -40,6 +41,22 @@ def scrape_trm(max_retries: int = 3, retry_delay: float = 3.0):
                 "date": reported_date,
                 "scraped_at": datetime.now().isoformat()
             }
+            
+            # 4. Weekly aggregation when more than 2 records are requested
+            if limit > 2 and len(data) > 1:
+                values = [float(entry["valor"]) for entry in data]
+                weekly_start = values[-1]  # oldest entry in the window
+                result["weekly_max"] = max(values)
+                result["weekly_min"] = min(values)
+                result["weekly_start"] = weekly_start
+                result["weekly_change"] = round(trm_value - weekly_start, 2)
+                result["weekly_change_pct"] = round(
+                    ((trm_value - weekly_start) / weekly_start) * 100, 4
+                )
+                result["history"] = [
+                    {"date": entry["vigenciadesde"].split("T")[0], "value": float(entry["valor"])}
+                    for entry in data
+                ]
             
             return result
 
