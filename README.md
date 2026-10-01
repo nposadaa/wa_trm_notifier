@@ -1,6 +1,6 @@
 # 🚀 WhatsApp TRM Notifier
 
-> **Current Version**: `v1.1.31` (2026-09-28)
+> **Current Version**: `v1.2.0` (2026-10-01)
 
 An automated daily service that scrapes the Colombian Peso (COP) to USD exchange rate (TRM) and broadcasts notifications directly to configured WhatsApp groups and contacts.
 
@@ -23,6 +23,16 @@ datos.gov.co (Datos Abiertos) → scraper.py → main.py → broadcaster.py → 
 - **Self-Healing Interaction**: Uses Playwright **Locators** (DEC-021) to automatically recover if the DOM re-renders during slow cloud syncs.
 - **Zero-Cost**: Runs entirely on a GCP "Always Free" e2-micro instance.
 - **Diagnostic-First**: Includes robust remote logging and failure-screenshot sync tools.
+
+## ✨ Spotlight: Friday Weekly Summary
+Every Friday, the bot gives the crew a tiny market check-in with a cheerful little financial pulse:
+
+> 📊 *Resumen Semanal TRM*
+> 🔹 Máximo semana: $3,349.63 COP
+> 🔹 Mínimo semana: $3,208.66 COP
+> 📈 Variación semanal: +$140.97 (4.39%)
+
+It’s the project’s “good morning, here’s the market mood” moment: a compact weekly snapshot built from the last 7 trading days, without disturbing the normal daily TRM broadcast. Small, useful, and just a bit adorable.
 
 ## 📁 Project Documentation
 For detailed guides on specific modules, refer to:
@@ -104,7 +114,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current version**: `v1.1.31` — API Failure Notification Schedule Text Cleanup
+> **Current version**: `v1.2.0` — Friday Weekly Intelligence Spotlight
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*

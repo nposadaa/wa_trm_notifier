@@ -2,6 +2,17 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.2.0] - 2026-10-01
+> **Status**: Released. Friday Weekly Intelligence gets a bright little spotlight and a proud new release badge.
+
+### Added
+- **Friday Weekly Summary Spotlight**: `main.py` now detects Friday runs and appends a friendly weekly TRM intelligence block with the week’s max, min, and change.
+- **Manual Friday Override**: Added `--friday` CLI flag for dry-run testing and operator-triggered weekly summaries outside the calendar day.
+- **Weekly Data Aggregation**: `scraper.py` now supports `limit`-based historical TRM windows while preserving the default single-day response for everyday runs.
+
+### Changed
+- **Project messaging upgrade**: The notification flow now produces a slightly more polished Friday summary voice for the daily COP bulletins without disturbing normal weekday broadcasts.
+
 ## [1.1.31] - 2026-09-28
 > **Status**: Released. Cleaned up obsolete 10:00 AM COT retry schedule text from API failure notification template.
 

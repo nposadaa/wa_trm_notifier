@@ -1,27 +1,27 @@
 # STATE.md - Project Memory
 
-> **Current Milestone**: v1.1.0 — Financial Intelligence
+> **Current Milestone**: v1.2.0 — Financial Intelligence Spotlight
 > **Current Phase**: Phase 3 — Weekly Intelligence (Friday Summary)
-- **Sprint**: Phase 3 Execution Planning
-- **Status**: Ready for execution
+- **Sprint**: Phase 3 Release Finalization
+- **Status**: Released (2026-10-01 COT)
 
 ## Current Position
 - **Phase**: Phase 3 — Weekly Intelligence
-- **Task**: Planning complete (Plans 3.1 & 3.2 created)
-- **Status**: Ready for execution
+- **Task**: Friday Weekly Summary feature finalized and release metadata synced
+- **Status**: Complete and ready for deployment
 
 ## Last Session Summary
-- Fetched remote GCP logs (`notifier_2026-09-28.log`, `vm_run.log`) and analyzed today's execution.
-- Diagnosed morning failure: Superfinanciera Open Data API (`datos.gov.co`) returned HTTP 503 Server Error, triggering the automated system failure notification path in `main.py`.
-- Identified outdated template text in `main.py` referencing a secondary 10:00 AM COT CRON schedule that was previously removed.
-- Released `v1.1.31`:
-  - Updated `status_update` string in `main.py` to remove obsolete retry message text.
-  - Verified test suite (`python -m pytest`, 7/7 passed).
-  - Completed release protocol (`VERSION`, `CHANGELOG.md`, `README.md`, `STATE.md`, `JOURNAL.md`, tag `v1.1.31`).
+- Finished Phase 3 implementation for weekly TRM aggregation and Friday summary formatting.
+- Verified the feature set through the live test suite: `16 passed in 0.75s`.
+- Updated the release metadata for **v1.2.0**:
+  - Bumped `VERSION` to `1.2.0`.
+  - Added release notes in `CHANGELOG.md`.
+  - Refreshed the README top banner and version footer with a friendly Friday spotlight.
+  - Recorded the release in `.gsd/JOURNAL.md` and refreshed project state.
 
 ## In-Progress Work
-- None (working directory clean, v1.1.31 ready for deployment).
-- Tests status: Passing (7/7 tests passing).
+- None. The Friday Weekly Intelligence release is complete.
+- Tests status: Passing (16/16 unit tests passing).
 
 ## Blockers
 - None.
@@ -36,15 +36,15 @@
 - `DEC-034`: Maintenance deep clean (`deep_clean_profile()`) must NEVER delete `Default/Service Worker` or `IndexedDB`. Purging Service Worker files destroys WhatsApp Web's sync database and causes Chrome page crashes during authentication. Maintenance cleanups must be restricted to ephemeral non-session files (`Session Storage`, `Blob Storage`).
 
 ### Files of Interest
-- `browser_config.py`: Hardened Chrome launch config strictly preserving Service Worker directories during deep clean (v1.1.30).
-- `tests/test_broadcaster_recovery.py`: Unit test suite verifying Service Worker preservation (v1.1.30).
-- `VERSION`: `1.1.30`.
-- `README.md`: Updated with `v1.1.30` version banners.
+- `main.py`: Friday weekly summary trigger and formatted TRM intelligence block.
+- `scraper.py`: Weekly TRM aggregation with backward-compatible default behavior.
+- `.gsd/phases/3/3-1-PLAN.md`: Weekly TRM Aggregation implementation plan.
+- `.gsd/phases/3/3-2-PLAN.md`: Friday Summary Message formatting and trigger logic.
+- `VERSION`: `1.2.0`.
+- `README.md`: Updated with the new Friday weekly intelligence spotlight.
 - `CHANGELOG.md`: Full release history.
 
 ## Next Steps
-1. Observe tomorrow morning's automated CRON run on the GCP VM (12:00 UTC / 7:00 AM COT).
-2. Fetch logs with `.\scripts\fetch-logs.ps1` to confirm delivery success and outbox status.
-3. Resume roadmap work for Phase 6 (Friday Weekly Summary Message feature).
-
-
+1. Deploy the v1.2.0 release to the GCP VM (`git pull origin master`).
+2. Run a production Friday check or manual `--friday` dry run to validate the weekly block in context.
+3. Continue to the next backlog milestone or prepare the next feature branch.

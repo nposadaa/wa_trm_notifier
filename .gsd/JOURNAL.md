@@ -1,5 +1,27 @@
 # JOURNAL.md - Project Log
 
+## Session: 2026-10-01 14:00 (COT)
+
+### Objective
+Finalize the Phase 3 Friday Weekly Intelligence feature set, verify the implementation with the project test suite, and complete release protocol for v1.2.0.
+
+### Accomplished
+- ✅ **Implemented Phase 3 Weekly Intelligence**:
+  - Extended `scraper.py` to compute weekly max, min, change, percentage change, and history for `limit=7` data windows while preserving default daily behavior.
+  - Added `--friday` flag support and Friday detection in `main.py` for the weekly message block.
+- ✅ **Verified the Release Candidate**:
+  - Ran the full project test suite through the repo venv.
+  - Confirmed `16/16` tests pass.
+- ✅ **Release Protocol (v1.2.0)**:
+  - Bumped `VERSION` to `1.2.0`.
+  - Updated `CHANGELOG.md`, `README.md`, `.gsd/STATE.md`, and `.gsd/JOURNAL.md` in a single release pass.
+
+### Verification
+- [x] Test suite passed (`.\venv\Scripts\python.exe -m pytest -q` → `16 passed in 0.75s`).
+- [x] README release banner and footer synchronized with the new version.
+
+---
+
 ## Session: 2026-09-28 13:20 (COT)
 
 ### Objective

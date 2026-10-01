@@ -6,7 +6,7 @@
 ## Must-Haves
 - [ ] Trend Indicator Emoji (📈/📉)
 - [ ] Weekday-only CRON Schedule
-- [ ] Friday Weekly Summary Message
+- [x] Friday Weekly Summary Message
 
 ## Phases (Milestone v1.1.0)
 
@@ -23,10 +23,10 @@
 - [x] Implement emoji logic in `main.py`.
 
 ### Phase 3: Weekly Intelligence
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Create a specialized summary message for Fridays.
-- [ ] Build weekly aggregator for High/Low/Trend.
-- [ ] Implement Friday-specific broadcast logic.
+- [x] Build weekly aggregator for High/Low/Trend.
+- [x] Implement Friday-specific broadcast logic.
 
 ### Phase 4: Historical Deep-Dive
 **Status**: ⬜ Not Started
