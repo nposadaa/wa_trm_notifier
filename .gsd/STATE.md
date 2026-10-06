@@ -2,22 +2,23 @@
 
 > **Current Milestone**: v1.3.0 — Dual Broadcast (Morning TRM & Market Close Spot)
 > **Last Completed Milestone**: v1.2.0 — Financial Intelligence (2026-10-06)
-- **Status**: Milestone planned, ready for Phase 1
+- **Status**: Phase 1 planned, ready for execution
 
 ## Current Position
 - **Milestone**: v1.3.0 — Dual Broadcast
-- **Phase**: Not started
-- **Status**: Milestone planned
+- **Phase**: 1 — SET-FX Spot Market Scraper
+- **Task**: Planning complete (Plan 1.1 ready)
+- **Status**: Ready for execution
 - **Test Suite**: 16/16 passing
-
-## In-Progress Work
-- None. Ready to plan and execute Phase 1 (SET-FX Spot Market Scraper).
 
 ## Non-Negotiable Guardrails
 - **Friday Weekly Summary Non-Regression**: The weekly TRM intelligence summary added in v1.2.0 (High/Low/Variation) must remain intact and functional in the morning broadcast, and all tests in `tests/test_friday_summary.py` must pass at every stage.
 
+## In-Progress Work
+- Ready to execute Plan 1.1 (`scrape_spot_market()` implementation and unit tests).
+
 ## Blockers
-- None. Official SET-ICAP delay API (`proxy.icap.com.co/api/v1/ws/public/delay/snapshot?market=71`) identified and validated.
+- None.
 
 ## Context Dump
 
@@ -27,11 +28,11 @@
 - Deduplication files will be separated to prevent collision: `.gsd/last_success_morning.date` and `.gsd/last_success_closing.date`.
 
 ### Files of Interest
-- `scraper.py`: Will include `scrape_spot_market()` or new scraper function.
-- `main.py`: CLI entry point to support `--edition morning|closing`.
+- `.gsd/phases/1/1-PLAN.md`: Active Phase 1 execution plan.
+- `.gsd/phases/1/RESEARCH.md`: API schema and parsing research.
+- `scraper.py`: Target for `scrape_spot_market()`.
+- `tests/test_spot_scraper.py`: New unit tests for spot market scraper.
 - `tests/test_friday_summary.py`: Existing 7 tests that must not regress.
-- `scripts/run_vm.sh`: VM runner to pass arguments (e.g. `--edition "$@"`).
-- `docs/CRON_SETUP.md`: Crontab instructions for dual schedule.
 
 ## Next Steps
-1. Run `/plan 1` to create Phase 1 execution plans.
+1. Run `/execute 1` to execute Phase 1 plan.
