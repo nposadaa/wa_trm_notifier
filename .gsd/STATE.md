@@ -1,40 +1,33 @@
 # STATE.md - Project Memory
 
-> **Current Milestone**: None — ready for next milestone
+> **Current Milestone**: v1.3.0 — Dual Broadcast (Morning TRM & Market Close Spot)
 > **Last Completed Milestone**: v1.2.0 — Financial Intelligence (2026-10-06)
-- **Status**: Milestone complete, awaiting next milestone
+- **Status**: Milestone planned, ready for Phase 1
 
 ## Current Position
-- **Milestone**: v1.2.0 completed and archived
-- **Version**: 1.2.0
+- **Milestone**: v1.3.0 — Dual Broadcast
+- **Phase**: Not started
+- **Status**: Milestone planned
 - **Test Suite**: 16/16 passing
 
-## Last Session Summary
-- Completed milestone v1.2.0 (Financial Intelligence).
-- All 3 phases verified and archived to `.gsd/milestones/v1.2.0/`.
-- Phase 4 (Historical Deep-Dive) cancelled — no longer needed.
-- DECISIONS.md and JOURNAL.md reset for next milestone.
-- Architecture and stack documentation refreshed.
-- Final test run: 16/16 passing (0.43s).
-
 ## In-Progress Work
-- None. Project is between milestones.
+- None. Ready to plan and execute Phase 1 (SET-FX Spot Market Scraper).
 
 ## Blockers
-- None.
+- None. Official SET-ICAP delay API (`proxy.icap.com.co/api/v1/ws/public/delay/snapshot?market=71`) identified and validated.
 
 ## Context Dump
 
-### Key Decisions (Archived)
-All milestone v1.2.0 decisions (DEC-030 through DEC-034) archived in `.gsd/milestones/v1.2.0/DECISIONS.md`.
+### Architectural Insights & API Discovery
+- Verified that SET-ICAP public snapshot endpoint returns real-time / 15-min delayed spot data for `USD/COP` including `Apertura`, `Cierre`, `Promedio`, `Precio mínimo`, `Precio máximo`, and `Monto Acumulado`.
+- Dual broadcasts will use `--edition morning` (7:00 AM COT, Superfinanciera TRM) and `--edition closing` (1:15 PM COT, SET-FX Spot Close).
+- Deduplication files will be separated to prevent collision: `.gsd/last_success_morning.date` and `.gsd/last_success_closing.date`.
 
 ### Files of Interest
-- `main.py`: CLI entry point with Friday summary trigger and trend emoji formatting.
-- `scraper.py`: TRM scraper with weekly aggregation and exponential backoff retries.
-- `broadcaster.py`: WhatsApp Web automation with deduplication guard and self-healing sync.
-- `browser_config.py`: Shared Chromium hardening and session management.
-- `VERSION`: `1.2.0`.
+- `scraper.py`: Will include `scrape_spot_market()` or new scraper function.
+- `main.py`: CLI entry point to support `--edition morning|closing`.
+- `scripts/run_vm.sh`: VM runner to pass arguments (e.g. `--edition "$@"`).
+- `docs/CRON_SETUP.md`: Crontab instructions for dual schedule.
 
 ## Next Steps
-1. Run `/new-milestone` to start the next milestone.
-2. Deploy v1.2.0 to GCP VM if not yet deployed (`git pull origin master`).
+1. Run `/plan 1` to create Phase 1 execution plans.

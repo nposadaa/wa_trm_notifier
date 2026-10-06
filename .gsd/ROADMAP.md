@@ -1,11 +1,27 @@
 # ROADMAP.md
 
-> **Current Milestone**: None — ready for next milestone
-> **Previous Milestone**: v1.2.0 — Financial Intelligence ✅
+> **Current Milestone**: v1.3.0 — Dual Broadcast (Morning TRM & Market Close Spot)
+> **Goal**: Enable dual daily WhatsApp broadcasts: morning official TRM (7:00 AM COT) and Colombian market closing spot rate (1:00 PM COT / SET-FX close) with dedicated edition flags, state deduplication, and cron scheduling.
+
+## Must-Haves
+- [ ] **SET-FX Spot Scraper**: Fetch intraday spot indicators (Cierre, Apertura, Promedio, Mínimo, Máximo) from SET-ICAP official API with unit tests.
+- [ ] **Dual Edition CLI & Deduplication**: Support `--edition morning|closing` with independent deduplication guards (`last_success_morning.date` & `last_success_closing.date`) so neither blocks the other.
+- [ ] **Closing Message Template**: Format market close message with spot close, intraday spread (Min/Max), and change vs open.
+- [ ] **Dual Cron VM Configuration**: Update VM runner script and documentation for 7:00 AM COT (12:00 UTC) and 1:15 PM COT (18:15 UTC) scheduling.
 
 ## Phases
 
-_No active phases. Run `/new-milestone` to start the next milestone._
+### Phase 1: SET-FX Spot Market Scraper
+**Status**: ⬜ Not Started
+**Objective**: Build and unit-test a robust spot scraper targeting the official SET-ICAP public endpoint (`proxy.icap.com.co`) for USD/COP spot market indicators.
+
+### Phase 2: Dual Edition CLI & Deduplication
+**Status**: ⬜ Not Started
+**Objective**: Refactor `main.py` with `--edition morning|closing` support, independent deduplication state files, and distinct message templates for morning vs close.
+
+### Phase 3: Integration, VM Scheduling & Verification
+**Status**: ⬜ Not Started
+**Objective**: Update `scripts/run_vm.sh`, update `docs/CRON_SETUP.md`, and verify end-to-end functionality via dry-run and test suite.
 
 ---
 
