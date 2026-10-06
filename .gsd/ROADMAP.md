@@ -4,7 +4,7 @@
 > **Goal**: Enable dual daily WhatsApp broadcasts: morning official TRM (7:00 AM COT) and Colombian market closing spot rate (1:00 PM COT / SET-FX close) with dedicated edition flags, state deduplication, and cron scheduling — with zero regression to Friday weekly intelligence.
 
 ## Must-Haves
-- [ ] **SET-FX Spot Scraper**: Fetch intraday spot indicators (Cierre, Apertura, Promedio, Mínimo, Máximo) from SET-ICAP official API (`proxy.icap.com.co`) with unit tests.
+- [x] **SET-FX Spot Scraper**: Fetch intraday spot indicators (Cierre, Apertura, Promedio, Mínimo, Máximo) from SET-ICAP official API (`proxy.icap.com.co`) with unit tests.
 - [ ] **Dual Edition CLI & Deduplication**: Support `--edition morning|closing` with independent deduplication guards (`last_success_morning.date` & `last_success_closing.date`) so neither blocks the other.
 - [ ] **Zero Regression for Friday Weekly Summary**: Ensure the Friday weekly TRM intelligence summary (High/Low/Variation) remains fully operational and tested in the morning edition with all 7 `test_friday_summary.py` tests passing.
 - [ ] **Closing Message Template**: Format market close message with spot close, intraday spread (Min/Max), and change vs open.
@@ -13,7 +13,7 @@
 ## Phases
 
 ### Phase 1: SET-FX Spot Market Scraper
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Build and unit-test a robust spot scraper targeting the official SET-ICAP public endpoint (`proxy.icap.com.co`) for USD/COP spot market indicators.
 
 ### Phase 2: Dual Edition CLI & Deduplication (Zero-Regression)
