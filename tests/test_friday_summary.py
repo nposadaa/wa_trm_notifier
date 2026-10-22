@@ -15,6 +15,7 @@ import main
 def _make_args(**overrides):
     """Create a mock args namespace with sensible defaults."""
     defaults = {
+        "edition": "morning",
         "headless": False,
         "discovery": False,
         "dry_run": True,
