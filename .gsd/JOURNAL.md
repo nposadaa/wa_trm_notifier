@@ -105,10 +105,11 @@ Complete release notes and README updates after token exhaustion, perform a comp
 - [x] Closing dry-run: `main.py --edition closing --dry-run` succeeded with live SET-ICAP spot rate (`(-0.16% vs apertura)`).
 - [x] Friday override dry-run: `main.py --edition morning --dry-run --friday` verified weekly intelligence summary non-regression.
 - [x] Full test suite: **25/25 passing** (0 failures).
-- [x] Clean working tree and updated annotated tag `v1.3.0`.
+### Paused Because
+v1.3.0 release is fully completed, audited, tagged, and pushed to GitHub. User requested `/pause` while operating on the VM.
 
 ### Handoff Notes
-v1.3.0 is complete, audited, and tagged. Next steps:
-1. Push git commits and tags: `git push origin master --tags`.
-2. Deploy to GCP VM and update crontab with the dual entries documented in `docs/CRON_SETUP.md`.
-3. (Optional) Refresh `whatsapp_session.zip` if VM authentication needs rotation.
+v1.3.0 is complete, audited, tagged, and pushed to origin. When resuming:
+1. On GCP VM: `git fetch --tags && git pull origin master`.
+2. On GCP VM: update crontab with dual entries (`docs/CRON_SETUP.md` §2).
+3. In local session: run `/complete-milestone` to archive v1.3.0 and initialize the next roadmap milestone.
