@@ -2,6 +2,27 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.3.0] - 2026-10-22
+> **Status**: Released. The notifier now wakes up twice a day — morning TRM at 7 AM and market close spot rate at 1 PM.
+
+### Added
+- **Dual Edition CLI** (`--edition morning|closing`): `main.py` now accepts an explicit `--edition` flag to select which broadcast to run. Default is `morning` for full backward compatibility with existing cron jobs and scripts.
+- **SET-FX Market Close Broadcast**: New `closing` edition scrapes the official SET-ICAP delayed snapshot API (`proxy.icap.com.co`) at 1:15 PM COT and broadcasts a formatted spot market close message with Cierre, Máximo, Mínimo, Apertura, and % change vs open.
+- **Independent Deduplication Guards**: Each edition tracks its own last-success date file (`.gsd/last_success_morning.date` and `.gsd/last_success_closing.date`), so a morning send never blocks the 1 PM close and vice versa. Legacy `.gsd/last_success.date` is kept in sync with morning for backward compatibility.
+- **SET-FX Spot Market Scraper** (`scrape_spot_market()` in `scraper.py`): Fetches intraday USD/COP spot indicators (Cierre, Apertura, Promedio, Mínimo, Máximo, volume) from the SET-ICAP public API with exponential backoff retry (3 attempts) and case-insensitive key normalization.
+- **Dual Cron VM Schedule** (`docs/CRON_SETUP.md`): Documented the two-cron setup — morning at `0 12 * * 1-5` (12:00 UTC / 7:00 AM COT) and closing at `15 18 * * 1-5` (18:15 UTC / 1:15 PM COT).
+
+### Changed
+- **`main.py` refactored into edition-aware message builders**: Extracted `build_morning_message()` and `build_closing_message()` for clean separation of scraping logic and message templates. Friday weekly intelligence summary is scoped exclusively to the morning edition.
+- **`scripts/run_vm.sh`**: Added edition label to log headers (`RUN START [MORNING]` / `RUN START [CLOSING]`) for easier log triaging. Documented `--edition` passthrough in the script header comment.
+- **`docs/CRON_SETUP.md`**: Full rewrite — dual-cron schedule table, deduplication state file reference, manual execution commands, and troubleshooting guide for common failure modes.
+
+### Tests
+- Added `tests/test_spot_scraper.py`: 7 unit tests covering happy path, key variations, division-by-zero guard, retry-on-transient-error, and fatal connection error.
+- Updated `tests/test_friday_summary.py`: added `edition="morning"` to `_make_args()` defaults for compatibility with the new flag.
+- Updated `tests/test_main_duplicate_prevention.py`: patched new split dedup file names; added legacy file assertion.
+- Full suite: **23/23 passing**.
+
 ## [1.2.0] - 2026-10-01
 > **Status**: Released. Friday Weekly Intelligence gets a bright little spotlight and a proud new release badge.
 
