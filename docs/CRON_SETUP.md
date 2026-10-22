@@ -27,17 +27,78 @@ The script:
 
 ## 2. Configuring Crontab
 
-Open the cron editor on the VM:
+You can configure crontab using either **Method A (Interactive via Nano)** or **Method B (One-Click Command Line)**.
+
+---
+
+### Method A: Interactive Editor (`nano`)
+
+1. **Open the crontab editor:**
+   ```bash
+   crontab -e
+   ```
+   *(If prompted to choose an editor for the first time, select `nano` by pressing `1` and `Enter`.)*
+
+2. **Delete existing / old lines:**
+   - Use the arrow keys to place your cursor on any previous TRM notifier line.
+   - Press **`Ctrl + K`** (Cut/Delete line) to remove the entire line.
+   - Repeat **`Ctrl + K`** for each old or comment line until all previous TRM configuration lines are cleared.
+
+3. **Add the new dual-broadcast schedule:**
+   - Move the cursor to the bottom of the file (or an empty line).
+   - Copy the block below and paste it into the terminal (in Windows PowerShell SSH or browser SSH, **Right-Click** or press **`Ctrl + Shift + V`**):
+
+   ```cron
+   # TRM Notifier — Dual Daily Broadcast
+   # Morning TRM (7:00 AM COT = 12:00 UTC) — Monday through Friday
+   0 12 * * 1-5 cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh --edition morning
+
+   # Market Close Spot (1:15 PM COT = 18:15 UTC) — Monday through Friday
+   15 18 * * 1-5 cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh --edition closing
+   ```
+
+4. **Save and exit:**
+   - Press **`Ctrl + O`** (Write Out / Save).
+   - Press **`Enter`** to confirm the destination filename.
+   - Press **`Ctrl + X`** to exit the editor.
+
+   The terminal will output: `crontab: installing new crontab`.
+
+---
+
+### Method B: One-Liner (Automatic Clean & Install — Recommended)
+
+If you prefer to avoid manual text editing, paste and run this single command directly in your VM terminal. It automatically removes any previous `wa_trm_notifier` entries and installs the clean dual schedule:
+
 ```bash
-crontab -e
+(crontab -l 2>/dev/null | grep -v 'wa_trm_notifier' | grep -v 'TRM Notifier'; cat << 'EOF'
+# TRM Notifier — Dual Daily Broadcast
+# Morning TRM (7:00 AM COT = 12:00 UTC) — Monday through Friday
+0 12 * * 1-5 cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh --edition morning
+
+# Market Close Spot (1:15 PM COT = 18:15 UTC) — Monday through Friday
+15 18 * * 1-5 cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh --edition closing
+EOF
+) | crontab -
 ```
-*(If prompted to choose an editor, select `nano` by pressing '1'.)*
 
-### Dual-Broadcast Schedule
+---
 
-Paste **both lines** at the bottom of the file:
+> **⚠️ Timezone Reminder:** GCP VMs run on UTC. COT is UTC−5.
+> - 7:00 AM COT → **12:00 UTC**
+> - 1:15 PM COT → **18:15 UTC**
 
+---
+
+## 3. Verify the Schedule
+
+Run:
 ```bash
+crontab -l
+```
+
+You should see both lines cleanly installed:
+```text
 # TRM Notifier — Dual Daily Broadcast
 # Morning TRM (7:00 AM COT = 12:00 UTC) — Monday through Friday
 0 12 * * 1-5 cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh --edition morning
@@ -46,25 +107,7 @@ Paste **both lines** at the bottom of the file:
 15 18 * * 1-5 cd /home/nposadaa111/wa_trm_notifier && bash scripts/run_vm.sh --edition closing
 ```
 
-> **⚠️ Timezone:** GCP VMs run on UTC. COT is UTC−5.
-> - 7:00 AM COT → **12:00 UTC**
-> - 1:15 PM COT → **18:15 UTC**
-
-Save and exit using these **Nano** shortcuts:
-1. **`Ctrl + O`** then **`Enter`** — save (Write Out).
-2. **`Ctrl + X`** — exit.
-
-The terminal will display `crontab: installing new crontab`.
-
----
-
-## 3. Verify the Schedule
-
-```bash
-crontab -l
-```
-
-You should see both lines at the bottom. If you see `no crontab for [user]`, the save was not successful — repeat step 2.
+If you see `no crontab for [user]` or old lines remain, repeat step 2.
 
 ---
 
