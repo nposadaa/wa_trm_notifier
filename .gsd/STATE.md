@@ -2,7 +2,7 @@
 
 > **Current Milestone**: v1.3.0 — Dual Broadcast (Morning TRM & Market Close Spot) ✅ Released (2026-10-22)
 > **Last Completed Milestone**: v1.2.0 — Financial Intelligence (2026-10-06)
-- **Status**: Released — tag `v1.3.0` created, pending push to GitHub and VM deployment
+- **Status**: Released — tag `v1.3.0` pushed to GitHub, pending VM pull & deployment
 
 ## Current Position
 - **Milestone**: v1.3.0 — Dual Broadcast (Morning TRM & Market Close Spot) ✅ Complete
