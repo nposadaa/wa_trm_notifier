@@ -30,3 +30,58 @@ User requested pause after completing and verifying Phase 1.
 
 ### Handoff Notes
 Next session should run `/resume` and then `/plan 2` to refactor `main.py` with the `--edition` flags, independent deduplication files, and market close message template.
+
+---
+
+## Session: 2026-10-09 09:05 COT
+
+### Objective
+Fetch and analyze execution logs for today's non-delivery failure, inspect manual GCP run, and provide root cause diagnosis and mitigation steps.
+
+### Accomplished
+- Synced GCP VM logs locally using `.\scripts\fetch-logs.ps1`.
+- Analyzed `logs/notifier_2026-10-09.log` and `logs/vm_run.log`.
+- Identified root cause: WhatsApp Web outbox clock icon stall (300s timeout) caused by degraded VM profile session credentials (HTTP 403 / offline resume timeout) or linked phone connectivity.
+- Documented manual execution commands and session refresh protocol.
+
+### Verification
+- [x] GCP VM log sync via `.\scripts\fetch-logs.ps1`.
+- [x] Unit test suite passing (`.\venv\Scripts\python.exe -m pytest` -> 23 passed).
+- [ ] Session refresh on GCP VM (`whatsapp_session.zip`).
+- [ ] Phase 2: Dual edition CLI refactor (pending).
+
+### Paused Because
+User requested session pause (`/pause`).
+
+### Handoff Notes
+Next session can run `/resume` followed by `/plan 2` to create execution plans for Phase 2 (Dual Edition CLI & Deduplication).
+
+---
+
+## Session: 2026-10-22 09:23 COT
+
+### Objective
+Execute Phase 2 — refactor `main.py` with `--edition morning|closing` CLI support, independent deduplication state files, and closing market message template. Zero regression on Friday summary.
+
+### Accomplished
+- Added `--edition morning|closing` flag to `main.py` (default: `morning` for full backward compat).
+- Split deduplication: `last_success_morning.date` and `last_success_closing.date` (legacy `last_success.date` kept in sync on morning success).
+- Extracted `build_morning_message()` (TRM + Friday weekly summary, unchanged logic).
+- Added `build_closing_message()` — spot Cierre, Max, Min, Apertura, % change vs open from SET-ICAP.
+- Friday weekly intelligence summary scoped to morning edition only.
+- Updated `test_friday_summary.py`: added `edition="morning"` to `_make_args()` defaults.
+- Updated `test_main_duplicate_prevention.py`: patched new dedup file names; added legacy file assertion.
+- Dry-run confirmed with live data for both editions.
+
+### Verification
+- [x] Morning dry-run: `$3,191.47 COP (+ $27.71)` — live TRM from Superfinanciera.
+- [x] Closing dry-run: `$3,191.20 COP (--0.06% vs apertura)` — live spot from SET-ICAP.
+- [x] Full test suite: 23/23 passing (0 failures).
+- [x] Friday non-regression: `test_friday_summary.py` → 7/7 passed.
+- [x] Committed: `feat(phase2): dual-edition CLI with independent deduplication`
+
+### Paused Because
+Phase 2 fully complete. Stopping before Phase 3 for user review.
+
+### Handoff Notes
+Next session: `/resume` then `/execute 3` to update `scripts/run_vm.sh` and `docs/CRON_SETUP.md` with dual-cron scheduling (7:00 AM & 1:15 PM COT). Also consider refreshing the GCP VM `whatsapp_session` if outbox clock issues persist from 2026-10-09.
