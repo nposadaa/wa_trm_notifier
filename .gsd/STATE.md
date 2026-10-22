@@ -9,19 +9,19 @@
 - **Phase**: Phase 3 (VM Scheduling & Verification) completed & verified
 - **Task**: All phases complete — milestone ready for production deployment
 - **Status**: Active (2026-10-22 COT)
-- **Test Suite**: 23/23 passing
+- **Test Suite**: 25/25 passing
 
 ## Last Session Summary
 1. Executed Phase 3: updated `scripts/run_vm.sh` and `docs/CRON_SETUP.md`.
 2. `run_vm.sh`: added edition label to log header; documented `--edition` passthrough.
 3. `CRON_SETUP.md`: full rewrite — dual-cron table (morning 12:00 UTC / closing 18:15 UTC), deduplication state file reference, manual execution guide, troubleshooting.
-4. Verified 23/23 tests passing. Committed as `feat(phase3): dual-cron VM scheduling and updated docs`.
+4. Verified 25/25 tests passing.
 5. All 3 phases of v1.3.0 complete.
 
 ## In-Progress Work
 - Working tree clean.
 - All phases verified and committed.
-- Test status: 23/23 passing.
+- Test status: 25/25 passing.
 
 ## Non-Negotiable Guardrails
 - **Friday Weekly Summary Non-Regression**: Weekly TRM intelligence summary (High/Low/Variation) must remain functional in morning edition and all 7 tests in `tests/test_friday_summary.py` must pass at every stage.

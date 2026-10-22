@@ -20,8 +20,8 @@ All notable changes to the WhatsApp TRM Notifier project will be documented in t
 ### Tests
 - Added `tests/test_spot_scraper.py`: 7 unit tests covering happy path, key variations, division-by-zero guard, retry-on-transient-error, and fatal connection error.
 - Updated `tests/test_friday_summary.py`: added `edition="morning"` to `_make_args()` defaults for compatibility with the new flag.
-- Updated `tests/test_main_duplicate_prevention.py`: patched new split dedup file names; added legacy file assertion.
-- Full suite: **23/23 passing**.
+- Updated `tests/test_main_duplicate_prevention.py`: patched new split dedup file names, added legacy file assertion, and added closing edition deduplication and closing message formatting tests.
+- Full suite: **25/25 passing**.
 
 ## [1.2.0] - 2026-10-01
 > **Status**: Released. Friday Weekly Intelligence gets a bright little spotlight and a proud new release badge.

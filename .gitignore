@@ -16,4 +16,3 @@ logs/
 *.png
 .planning/
 tmp_*.py
-tests/test_main_duplicate_prevention.py

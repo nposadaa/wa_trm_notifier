@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import logging
 import argparse
@@ -147,18 +147,21 @@ def build_closing_message(spot_data: dict) -> str:
     fecha    = spot_data.get("fecha", "")
 
     if change > 0:
-        trend_emoji, sign = "📈", "+"
+        trend_emoji = "📈"
+        pct_str = f"{pct:+.2f}%"
     elif change < 0:
-        trend_emoji, sign = "📉", "-"
+        trend_emoji = "📉"
+        pct_str = f"{pct:+.2f}%"
     else:
-        trend_emoji, sign = "➖", ""
+        trend_emoji = "➖"
+        pct_str = "0.00%"
 
     # Date label: prefer API-provided fecha, fall back to COT today
     date_label = fecha if fecha else get_cot_now().strftime("%Y-%m-%d")
 
     message_text = (
         f"{trend_emoji} *Cierre Mercado USD/COP - {date_label}*\n\n"
-        f"💵 Cierre: ${cierre:,.2f} COP ({sign}{pct:+.2f}% vs apertura)\n"
+        f"💵 Cierre: ${cierre:,.2f} COP ({pct_str} vs apertura)\n"
         f"🔼 Máximo: ${maximo:,.2f} COP\n"
         f"🔽 Mínimo: ${minimo:,.2f} COP\n"
         f"📊 Apertura: ${apertura:,.2f} COP\n\n"
