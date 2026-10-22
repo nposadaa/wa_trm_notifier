@@ -1,6 +1,14 @@
 #!/bin/bash
 
 # run_vm.sh — Memory-Safe execution for TRM Notifier on 1GB RAM VM
+#
+# Usage:
+#   bash scripts/run_vm.sh                        # morning edition (default)
+#   bash scripts/run_vm.sh --edition morning      # explicit morning
+#   bash scripts/run_vm.sh --edition closing      # market close edition
+#
+# All arguments are forwarded directly to main.py, so --force, --dry-run,
+# --headless, etc. all work as normal.
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_DIR"
@@ -36,15 +44,24 @@ pkill -f Xvfb || true
 pkill -f chromium || true
 sudo rm -f /tmp/.X99-lock || true
 
-# 4. Run Synchronously (Foreground)
+# 4. Detect edition label for logging (cosmetic only — main.py enforces logic)
+EDITION_LABEL="morning"
+for arg in "$@"; do
+    if [ "$arg" = "closing" ]; then
+        EDITION_LABEL="closing"
+        break
+    fi
+done
+
+# 5. Run Synchronously (Foreground)
 echo "------------------------------------------------"
-echo "🚀 Starting TRM Notifier..."
+echo "🚀 Starting TRM Notifier [${EDITION_LABEL^^} edition]..."
 echo "------------------------------------------------"
 
 export PYTHONUNBUFFERED=1
 echo "" >> logs/vm_run.log
 echo "==========================================================" >> logs/vm_run.log
-echo "🚀 RUN START: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> logs/vm_run.log
+echo "🚀 RUN START [${EDITION_LABEL^^}]: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> logs/vm_run.log
 echo "==========================================================" >> logs/vm_run.log
 xvfb-run --server-args="-screen 0 1280x1024x24" python3 main.py --headless "$@" 2>&1 | tee -a logs/vm_run.log
 
