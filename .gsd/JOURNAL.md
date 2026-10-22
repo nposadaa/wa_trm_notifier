@@ -85,3 +85,30 @@ Phase 2 fully complete. Stopping before Phase 3 for user review.
 
 ### Handoff Notes
 Next session: `/resume` then `/execute 3` to update `scripts/run_vm.sh` and `docs/CRON_SETUP.md` with dual-cron scheduling (7:00 AM & 1:15 PM COT). Also consider refreshing the GCP VM `whatsapp_session` if outbox clock issues persist from 2026-10-09.
+
+---
+
+## Session: 2026-10-22 10:07 COT
+
+### Objective
+Complete release notes and README updates after token exhaustion, perform a comprehensive audit of all v1.3.0 deliverables, fix any lingering bugs, and finalize the release.
+
+### Accomplished
+- **README.md Recovery & Polish**: Fixed encoding corruption and incomplete tail edits left during previous token cut-off. Updated architecture diagram, feature matrix, spotlights (Friday summary + new 1:15 PM SET-FX spot close), local dry-run commands, and dual-cron scheduling table.
+- **Audit & Bugfix in `main.py`**: Discovered double-sign formatting bug in `build_closing_message()` where `({sign}{pct:+.2f}%)` yielded `--0.16%`. Fixed using signed percentage format string (`pct_str = f"{pct:+.2f}%"`, with `0.00%` for flat), producing clean `(-0.16% vs apertura)`.
+- **Git Tracking Fix**: Discovered `tests/test_main_duplicate_prevention.py` had been masked by `.gitignore` since June 2026. Removed it from `.gitignore` so tests are versioned.
+- **Unit Test Coverage Expansion**: Added `test_closing_edition_success_marker` and `test_build_closing_message_formatting` (testing positive, negative, and flat spreads) to `tests/test_main_duplicate_prevention.py`. Expanded test suite from 23 to 25 passing tests.
+- **Documentation & Release Sync**: Updated `CHANGELOG.md`, `README.md`, `.gsd/STATE.md`, and refreshed git tag `v1.3.0`.
+
+### Verification
+- [x] Morning dry-run: `main.py --edition morning --dry-run` succeeded with live Superfinanciera TRM.
+- [x] Closing dry-run: `main.py --edition closing --dry-run` succeeded with live SET-ICAP spot rate (`(-0.16% vs apertura)`).
+- [x] Friday override dry-run: `main.py --edition morning --dry-run --friday` verified weekly intelligence summary non-regression.
+- [x] Full test suite: **25/25 passing** (0 failures).
+- [x] Clean working tree and updated annotated tag `v1.3.0`.
+
+### Handoff Notes
+v1.3.0 is complete, audited, and tagged. Next steps:
+1. Push git commits and tags: `git push origin master --tags`.
+2. Deploy to GCP VM and update crontab with the dual entries documented in `docs/CRON_SETUP.md`.
+3. (Optional) Refresh `whatsapp_session.zip` if VM authentication needs rotation.
