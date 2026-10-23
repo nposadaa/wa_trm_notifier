@@ -2,6 +2,19 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.3.1] - 2026-10-23
+> **Status**: Released. Hotfix for WhatsApp Web delivery verification engine and Spanish accent handling.
+
+### Fixed
+- **(BUG-054) Non-ASCII Accent Stripping Causes Verification Failure**: The market close broadcast template includes accented words (`Máximo`, `Mínimo`). The verification snippet engine previously stripped all characters outside `[\x00-\x7F]`, converting `Máximo` into `Mximo`, causing an immediate false-positive mismatch against WhatsApp Web's DOM row and raising a `RuntimeError`. Implemented `normalize_message_text()` and `extract_message_snippet()` in `broadcaster.py` to strip only emoji symbols (`So`, `Sk`, `Cs`) while strictly preserving Spanish accents (`á`, `é`, `í`, `ó`, `ú`, `ñ`) and formatting boundaries.
+- **(BUG-055) `UnboundLocalError` on Verification Engine Exception**: `outbox_ever_detected`, `message_confirmed_in_dom`, and loop variables were previously declared inside the verification loop. Any exception thrown prior to that loop caused the outer exception handler to reference uninitialized variables, crashing Python and terminating Chromium before the WebSocket buffer flushed. Moved variable declarations to the outer verification scope.
+- **Brittle Single-Shot Send Check**: Removed the non-polling immediate check that threw `RuntimeError` 1 second after send, letting the resilient 30-second DOM polling loop handle slow VM rendering gracefully.
+- **Deduplication Normalization Sync**: Updated pre-send in-chat deduplication to use `extract_message_snippet()` and `normalize_message_text()` so duplicate checks on accented messages behave identically.
+
+### Tests
+- Added 3 unit tests in `tests/test_broadcaster_recovery.py` covering Spanish accent preservation, emoji stripping, and DOM row snippet matching for morning and closing templates.
+- Full test suite: **28/28 passing**.
+
 ## [1.3.0] - 2026-10-22
 > **Status**: Released. The notifier now wakes up twice a day — morning TRM at 7 AM and market close spot rate at 1 PM.
 

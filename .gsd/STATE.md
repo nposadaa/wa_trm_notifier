@@ -1,26 +1,26 @@
 # STATE.md - Project Memory
 
-> **Current Milestone**: v1.3.0 — Dual Broadcast (Morning TRM & Market Close Spot) ✅ Released (2026-10-22)
-> **Last Completed Milestone**: v1.2.0 — Financial Intelligence (2026-10-06)
-- **Status**: Released — tag `v1.3.0` pushed to GitHub, pending VM pull & deployment
+> **Current Milestone**: v1.3.1 — Hotfix: Spanish Accent Verification & Scoping ✅ Released (2026-10-23)
+> **Last Completed Milestone**: v1.3.0 — Dual Broadcast (2026-10-22)
+- **Status**: Released — tag `v1.3.1` tagged and ready for VM pull
 
 ## Current Position
-- **Milestone**: v1.3.0 — Dual Broadcast (Morning TRM & Market Close Spot) ✅ Complete
-- **Phase**: Phase 3 (VM Scheduling & Verification) completed & verified
-- **Status**: Paused (2026-10-22 10:46 COT) — v1.3.0 released and pushed
-- **Test Suite**: 25/25 passing
+- **Milestone**: v1.3.1 — Hotfix: Spanish Accent Verification & Scoping ✅ Complete
+- **Status**: Released (2026-10-23 14:10 COT)
+- **Test Suite**: 28/28 passing
 
 ## Last Session Summary
-1. Executed Phase 3: updated `scripts/run_vm.sh` and `docs/CRON_SETUP.md`.
-2. `run_vm.sh`: added edition label to log header; documented `--edition` passthrough.
-3. `CRON_SETUP.md`: full rewrite — dual-cron table (morning 12:00 UTC / closing 18:15 UTC), deduplication state file reference, manual execution guide, troubleshooting.
-4. Verified 25/25 tests passing.
-5. All 3 phases of v1.3.0 complete.
+1. Diagnosed first closing broadcast failure at 1:15 PM COT: `Máximo` accent was stripped by legacy non-ASCII regex, causing false-positive verification crash and `UnboundLocalError`.
+2. Implemented `normalize_message_text()` and `extract_message_snippet()` in `broadcaster.py`: preserves Spanish accents (`á`, `é`, `í`, `ó`, `ú`, `ñ`), strips emojis, normalizes unicode (NFC), collapses whitespace.
+3. Scoped verification variables in outer scope to permanently eliminate `UnboundLocalError`.
+4. Replaced single-shot crash on new row with resilient 30-second DOM polling loop.
+5. Added 3 unit tests in `tests/test_broadcaster_recovery.py` (28/28 passing).
+6. Confirmed live morning and closing dry-runs.
 
 ## In-Progress Work
-- Working tree clean.
-- All phases verified and committed.
-- Test status: 25/25 passing.
+- Fix committed: `280f47d`.
+- Pending push to origin and `git pull` on GCP VM.
+- Test status: 28/28 passing.
 
 ## Non-Negotiable Guardrails
 - **Friday Weekly Summary Non-Regression**: Weekly TRM intelligence summary (High/Low/Variation) must remain functional in morning edition and all 7 tests in `tests/test_friday_summary.py` must pass at every stage.

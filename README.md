@@ -1,6 +1,6 @@
 # 🚀 WhatsApp TRM Notifier
 
-> **Current Version**: `v1.3.0` (2026-10-22)
+> **Current Version**: `v1.3.1` (2026-10-23)
 
 An automated daily service that scrapes the Colombian Peso (COP) to USD exchange rate (TRM) and the SET-FX spot market close, then broadcasts notifications directly to configured WhatsApp groups and contacts — **twice a day**.
 

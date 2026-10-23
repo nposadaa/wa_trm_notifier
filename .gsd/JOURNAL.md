@@ -113,3 +113,44 @@ v1.3.0 is complete, audited, tagged, and pushed to origin. When resuming:
 1. On GCP VM: `git fetch --tags && git pull origin master`.
 2. On GCP VM: update crontab with dual entries (`docs/CRON_SETUP.md` §2).
 3. In local session: run `/complete-milestone` to archive v1.3.0 and initialize the next roadmap milestone.
+
+---
+
+## Session: 2026-10-23 13:30 COT
+
+### Objective
+Diagnose failure of the first market close broadcast (1:00 PM / 1:15 PM COT), fetch GCP logs, analyze root causes, fix the delivery verification engine in `broadcaster.py`, and expand unit test coverage.
+
+### Accomplished
+- **Log Diagnostic via `fetch-logs.ps1`**: Fetched `vm_run.log` and `notifier_2026-10-23.log` from GCP VM.
+- **Root Cause Identified**:
+  1. The closing message template contains Spanish accented letters (`Máximo`, `Mínimo`).
+  2. Legacy snippet extraction used `re.sub(r'[^\x00-\x7F]+', '', message_text[:100])` which stripped all non-ASCII characters, turning `Máximo` into `Mximo`.
+  3. The DOM row text in WhatsApp preserved the accent `Máximo`, triggering a false-positive `RuntimeError("Row text mismatch: new row doesn't contain our message")` 1 second after `Enter` was pressed.
+  4. The outer error handler referenced `outbox_ever_detected` which was scoped inside the polling loop, triggering an uncaught `UnboundLocalError` that crashed Python and abruptly killed Chromium before the WebSocket buffer flushed.
+- **Engine Refactoring in `broadcaster.py`**:
+  - Implemented `normalize_message_text(text)`: strips markdown formatting (`*`, `_`), strips emoji symbols (Unicode categories `So`, `Sk`, `Cs`), while strictly preserving alphanumeric characters (including Spanish accents `á`, `é`, `í`, `ó`, `ú`, `ñ`), numbers, currency, and punctuation with canonical `NFC` normalization.
+  - Implemented `extract_message_snippet(message_text, max_chars=80)`: cleanly extracts snippet at word boundaries.
+  - Scoped `outbox_ever_detected`, `message_confirmed_in_dom`, `is_stuck_in_outbox`, `consecutive_drifts` before `try:` to permanently prevent `UnboundLocalError`.
+  - Replaced the brittle immediate `RuntimeError` on step 1 with the resilient 30-second DOM polling loop.
+  - Applied the same accent-safe and emoji-safe normalization to in-chat deduplication guard.
+- **Expanded Test Coverage**:
+  - Added 3 unit tests in `tests/test_broadcaster_recovery.py` covering Spanish accent preservation, emoji stripping, and DOM row snippet matching for both morning and closing templates.
+  - Expanded test suite from 25 to **28 passing tests** (0 failures).
+- **Dry-run Validations**:
+  - Verified morning dry-run (`main.py --edition morning --dry-run`): passed with live Superfinanciera TRM and Friday weekly intelligence summary.
+  - Verified closing dry-run (`main.py --edition closing --dry-run`): passed with live SET-ICAP spot rate.
+
+### Verification
+- [x] Remote GCP log fetch and analysis.
+- [x] Spanish accent normalization fix in `broadcaster.py`.
+- [x] UnboundLocalError scoping fix in `broadcaster.py`.
+- [x] Full test suite: **28/28 passing** (`pytest`).
+- [x] Live morning and closing dry-runs confirmed.
+- [x] Committed to git: `fix(broadcaster): preserve Spanish accents in snippet matching and prevent UnboundLocalError`.
+
+### Handoff Notes
+Deploy the fix to the GCP VM:
+1. On GCP VM: `git pull origin master` (after pushing).
+2. Broadcast test on VM: `bash scripts/run_vm.sh --edition closing --force` or await the next scheduled cron run.
+
