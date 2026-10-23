@@ -3,6 +3,7 @@ import time
 import json
 import re
 import logging
+import unicodedata
 from datetime import datetime
 from playwright.sync_api import sync_playwright
 from browser_config import get_browser_context, clean_browser_locks, apply_stealth_overrides
@@ -64,6 +65,43 @@ def chat_name_matches_target(candidate, target):
         return re.sub(r"\s+", " ", value).strip()
 
     return normalize(candidate) == normalize(target)
+
+
+def normalize_message_text(text: str) -> str:
+    """Normalize text for robust matching between message templates and WhatsApp DOM inner_text.
+    
+    Removes markdown formatting (*, _), strips emoji symbols (Unicode categories 'So', 'Sk', 'Cs')
+    while strictly preserving alphanumeric characters (including Spanish accents á, é, í, ó, ú, ñ),
+    numbers, currency, math symbols, and standard punctuation, with whitespace collapsed.
+    """
+    if not text:
+        return ""
+    text = unicodedata.normalize("NFC", str(text))
+    text = text.replace("*", "").replace("_", "")
+    cleaned = []
+    for ch in text:
+        cat = unicodedata.category(ch)
+        if cat in ("So", "Sk", "Cs"):
+            continue
+        cleaned.append(ch)
+    return re.sub(r"\s+", " ", "".join(cleaned)).strip()
+
+
+def extract_message_snippet(message_text: str, max_chars: int = 80) -> str:
+    """Extract a clean, normalized snippet from message_text for verification matching.
+    
+    Cuts at a word boundary within max_chars to avoid splitting words or numbers.
+    """
+    if not message_text:
+        return ""
+    norm = normalize_message_text(message_text)
+    if len(norm) <= max_chars:
+        return norm
+    cut = norm[:max_chars]
+    last_space = cut.rfind(" ")
+    if last_space > 30:
+        return cut[:last_space].strip()
+    return cut.strip()
 
 
 # Redefine print to route to logger
@@ -579,8 +617,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             # --- Anti-duplicate Deduplication Guard (BUG-020/BUG-039 Hardening) ---
             # If the last row in the chat already contains our message snippet, we skip sending
             # to prevent duplicate posts during retry / fallback / verification-recovery runs.
-            msg_snippet = re.sub(r'\s+', ' ', re.sub(r'[^\x00-\x7F]+', '', message_text[:100])).strip().replace("*", "")
-            msg_snippet_norm = re.sub(r'\s+', ' ', msg_snippet).strip()
+            msg_snippet = extract_message_snippet(message_text)
+            msg_snippet_norm = msg_snippet
             
             already_sent = False
             try:
@@ -588,7 +626,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 last_row = page.locator('#main div[role="row"], #main div[data-id]').last
                 if last_row.count() > 0:
                     last_row_text = last_row.inner_text()
-                    last_row_norm = re.sub(r'\s+', ' ', last_row_text).strip()
+                    last_row_norm = normalize_message_text(last_row_text)
                     if msg_snippet_norm and msg_snippet_norm in last_row_norm:
                         # Ensure the matching row has a confirmed delivery checkmark indicator
                         has_checkmark = False
@@ -756,6 +794,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             delivery_verified = False
             message_confirmed_in_dom = False
             is_stuck_in_outbox = False
+            outbox_ever_detected = False  # DEC-032: Sticky flag — outer scope initialization prevents UnboundLocalError
+            outbox_recovery_attempted = False
+            consecutive_drifts = 0
             start_verify = time.time()
             
             try:
@@ -764,9 +805,9 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 row_added = False
                 post_send_row_count = pre_send_row_count
                 
-                # Strip non-ASCII (emojis) and normalize whitespace for robust matching (BUG-011/BUG-012)
-                msg_snippet = re.sub(r'\s+', ' ', re.sub(r'[^\x00-\x7F]+', '', message_text[:100])).strip().replace("*", "")
-                msg_snippet_norm = re.sub(r'\s+', ' ', msg_snippet).strip()
+                # Extract clean normalized snippet (accent-safe & emoji-stripped)
+                msg_snippet = extract_message_snippet(message_text)
+                msg_snippet_norm = msg_snippet
                 
                 for verify_attempt in range(10): # Increased to 10 iterations (30s max) for VM rendering
                     post_send_row_count = page.locator('#main div[role="row"], #main div[data-id]').count()
@@ -789,8 +830,8 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         except: pass
                     
                     # Normalize whitespace for comparison
-                    last_row_norm = re.sub(r'\s+', ' ', last_row_text).strip()
-                    pre_row_norm = re.sub(r'\s+', ' ', pre_send_last_row_text).strip()
+                    last_row_norm = normalize_message_text(last_row_text)
+                    pre_row_norm = normalize_message_text(pre_send_last_row_text)
                     
                     # A new row is successfully added if:
                     # A. The DOM row count increased (direct append without virtualization unmounting)
@@ -814,49 +855,32 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         print(f"  Send CONFIRMED FAILED. Aborting verification to prevent false-positive.")
                         raise RuntimeError(f"Send failed: no new row/text change (before={pre_send_row_count}, after={post_send_row_count})")
                 
-                # Fetch final last row for checkmark verification
-                last_row = page.locator('#main div[role="row"], #main div[data-id]').last
-                row_text = ""
-                try: row_text = last_row.inner_text()
-                except: pass
-                
-                row_text_check = re.sub(r'\s+', ' ', row_text).strip()
-                if msg_snippet and msg_snippet not in row_text_check:
-                    print(f"⚠️ WARNING: Last row text does not match our message.")
-                    print(f"  Expected snippet: '{msg_snippet}'")
-                    print(f"  Found in row: '{row_text_check[:80]}...'")
-                    raise RuntimeError(f"Row text mismatch: new row doesn't contain our message")
                 # 2. Verify message presence and wait for checkmark
                 print(f"  [Verification] Waiting for message to appear in DOM...")
                 
                 # Poll the last row text for up to 30s to allow slow VMs to render the new message
-                row_matched = False
-                msg_snippet_norm = re.sub(r'\s+', ' ', msg_snippet).strip()
-                
-                for _ in range(10): # 10 * 3s = 30 seconds max
+                for verify_text_attempt in range(10): # 10 * 3s = 30 seconds max
                     last_row = page.locator('#main div[role="row"], #main div[data-id]').last
                     final_row_text = ""
                     try: final_row_text = last_row.inner_text()
                     except: pass
                     
-                    row_text_norm = re.sub(r'\s+', ' ', final_row_text).strip()
+                    row_text_norm = normalize_message_text(final_row_text)
                     if msg_snippet_norm and msg_snippet_norm in row_text_norm:
-                        row_matched = True
                         message_confirmed_in_dom = True
                         break
                     
                     time.sleep(3)
                 
-                if not row_matched:
+                if not message_confirmed_in_dom:
                     print(f"  ⚠️ WARNING: Row text mismatch after 30s. Expected: '{msg_snippet_norm}' Found: '{row_text_norm[:80]}...' Continuing verification anyway.")
+                else:
+                    print(f"  [Verification] Message matched in DOM. Waiting for anchored row checkmark...")
                 
-                print(f"  [Verification] Message matched in DOM. Waiting for anchored row checkmark...")
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
                 verify_deadline = time.time() + 300 # 5 minutes hard limit for high-latency VM sockets
                 consecutive_drifts = 0
                 is_stuck_in_outbox = False
-                outbox_ever_detected = False  # DEC-032: Sticky flag — True if clock was EVER seen during this verification
-                outbox_recovery_attempted = False  # DEC-032: Only attempt non-destructive recovery once
                 
                 while time.time() < verify_deadline:
                     # Find our message row (robust to virtualization/drifts)
@@ -867,7 +891,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     current_row_text = ""
                     try: current_row_text = last_row.inner_text()
                     except: pass
-                    row_text_norm = re.sub(r'\s+', ' ', current_row_text).strip()
+                    row_text_norm = normalize_message_text(current_row_text)
                     
                     if msg_snippet_norm in row_text_norm:
                         target_row = last_row
@@ -878,7 +902,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                             all_rows = page.locator('#main div[role="row"], #main div[data-id]').all()
                             for r in reversed(all_rows):
                                 try:
-                                    r_text = re.sub(r'\s+', ' ', r.inner_text()).strip()
+                                    r_text = normalize_message_text(r.inner_text())
                                     if msg_snippet_norm in r_text:
                                         target_row = r
                                         break
