@@ -1,6 +1,6 @@
 # 🚀 WhatsApp TRM Notifier
 
-> **Current Version**: `v1.3.1` (2026-10-23)
+> **Current Version**: `v1.3.2` (2026-10-27)
 
 An automated daily service that scrapes the Colombian Peso (COP) to USD exchange rate (TRM) and the SET-FX spot market close, then broadcasts notifications directly to configured WhatsApp groups and contacts — **twice a day**.
 
@@ -142,7 +142,7 @@ Post-deployment reliability work is managed in **time-boxed sprints** rather tha
 | [SPRINT.md](.gsd/SPRINT.md) | Current sprint scope and task status |
 | [CHANGELOG.md](CHANGELOG.md) | Release history — every fix referenced by `BUG-NNN` ID |
 
-> **Current version**: `v1.3.0` — Dual Broadcast (Morning TRM & Market Close Spot)
+> **Current version**: `v1.3.2` — WhatsApp Outbox Diagnostics
 
 ---
 *Built with the **Get Shit Done (GSD)** methodology.*

@@ -2,6 +2,21 @@
 
 All notable changes to the WhatsApp TRM Notifier project will be documented in this file.
 
+## [1.3.2] - 2026-10-27
+> **Status**: Released. Adds privacy-safe diagnostics and maintenance classification for WhatsApp outbox delivery failures.
+
+### Added
+- **Sanitized network diagnostics**: Log HTTP failures and failed requests without request paths, query strings, or payloads.
+- **WhatsApp WebSocket lifecycle diagnostics**: Record socket open, close, and error events to help distinguish browser network status from WhatsApp connectivity.
+
+### Changed
+- **Persistent pending-outbox handling**: An outgoing message that remains unacknowledged now requests the existing profile-maintenance cleanup on the next run. An explicit WhatsApp send-failure status does not trigger cleanup.
+- **Connectivity guidance**: Clarified that `navigator.onLine` does not confirm WhatsApp connectivity or successful message delivery.
+
+### Tests
+- Added coverage for sanitized network diagnostics, WebSocket lifecycle events, and maintenance classification.
+- Full test suite: **32/32 passing**.
+
 ## [1.3.1] - 2026-10-23
 > **Status**: Released. Hotfix for WhatsApp Web delivery verification engine and Spanish accent handling.
 

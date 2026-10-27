@@ -177,3 +177,19 @@ Fetch and analyze recent GCP broadcast logs, identify recurring WhatsApp deliver
 
 ### Handoff Notes
 No VM changes or broadcasts were made. Deploy the diagnostics before relying on the new network event records; a future run with a persistent outbox failure will request the existing profile-maintenance cleanup on the subsequent run.
+
+---
+
+## Release: v1.3.2 — 2026-10-27
+
+### Accomplished
+- Updated `VERSION`, `CHANGELOG.md`, `README.md`, and `.gsd/STATE.md` for the formal `v1.3.2` patch release.
+- Published the annotated `v1.3.2` tag and GitHub Release for commit `9aa50a1` plus release metadata.
+- Kept deployment out of scope; the GCP VM was not changed.
+
+### Verification
+- [x] Full Python test suite: **32 passed**.
+- [x] `git diff --check` passed.
+
+### Handoff Notes
+Before any manual retry, check recipient chats for messages still pending in the outbox. The GCP VM can be updated separately by pulling the `v1.3.2` release.

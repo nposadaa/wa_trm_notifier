@@ -1,26 +1,25 @@
 # STATE.md - Project Memory
 
-> **Current Milestone**: v1.3.1 — Hotfix: Spanish Accent Verification & Scoping ✅ Released (2026-10-23)
-> **Last Completed Milestone**: v1.3.0 — Dual Broadcast (2026-10-22)
-- **Status**: Released — tag `v1.3.1` tagged and ready for VM pull
+> **Current Milestone**: v1.3.2 — WhatsApp Outbox Diagnostics ✅ Released (2026-10-27)
+> **Last Completed Milestone**: v1.3.1 — Hotfix: Spanish Accent Verification & Scoping (2026-10-23)
+- **Status**: Released — tag `v1.3.2` published to GitHub; VM deployment pending
 
 ## Current Position
-- **Milestone**: v1.3.1 — Hotfix: Spanish Accent Verification & Scoping ✅ Complete
-- **Status**: Released (2026-10-23 14:10 COT)
-- **Test Suite**: 28/28 passing
+- **Milestone**: v1.3.2 — WhatsApp Outbox Diagnostics ✅ Complete
+- **Status**: Released (2026-10-27)
+- **Test Suite**: 32/32 passing
 
 ## Last Session Summary
-1. Diagnosed first closing broadcast failure at 1:15 PM COT: `Máximo` accent was stripped by legacy non-ASCII regex, causing false-positive verification crash and `UnboundLocalError`.
-2. Implemented `normalize_message_text()` and `extract_message_snippet()` in `broadcaster.py`: preserves Spanish accents (`á`, `é`, `í`, `ó`, `ú`, `ñ`), strips emojis, normalizes unicode (NFC), collapses whitespace.
-3. Scoped verification variables in outer scope to permanently eliminate `UnboundLocalError`.
-4. Replaced single-shot crash on new row with resilient 30-second DOM polling loop.
-5. Added 3 unit tests in `tests/test_broadcaster_recovery.py` (28/28 passing).
-6. Confirmed live morning and closing dry-runs.
+1. Analyzed Oct 26 morning and closing, and Oct 27 morning runs; all showed an outgoing message stuck pending in the WhatsApp outbox.
+2. Found the same symptom in weekday logs dating back to Oct 1; the Oct 27 HTTP 400 lacked a URL, so its request could not be identified.
+3. Added privacy-safe HTTP/request-failure logs and WhatsApp WebSocket lifecycle diagnostics; clarified that `navigator.onLine` is not proof of WhatsApp connectivity or delivery.
+4. Persistent unacknowledged outbox failures now request existing profile maintenance on the next run; explicit WhatsApp send-failure status does not.
+5. Updated the runbook and added diagnostic/recovery tests; full suite passes 32/32.
 
 ## In-Progress Work
-- Fix committed: `280f47d`.
-- Pending push to origin and `git pull` on GCP VM.
-- Test status: 28/28 passing.
+- Diagnostics are included in the published `v1.3.2` release.
+- GCP VM pull/deployment remains pending; no VM changes were made as part of this release.
+- Test status: 32/32 passing.
 
 ## Non-Negotiable Guardrails
 - **Friday Weekly Summary Non-Regression**: Weekly TRM intelligence summary (High/Low/Variation) must remain functional in morning edition and all 7 tests in `tests/test_friday_summary.py` must pass at every stage.
@@ -43,6 +42,6 @@
 - `scripts/run_vm.sh` & `docs/CRON_SETUP.md`: Targets for Phase 3 VM deployment and dual cron configuration.
 
 ## Next Steps
-1. ⚠️  Refresh GCP VM `whatsapp_session` if outbox clock issues persist (pending from 2026-10-09).
-2. Update VM crontab to dual-broadcast schedule (see `docs/CRON_SETUP.md` §2).
-3. Run `/complete-milestone` to archive v1.3.0 and plan v1.4.0.
+1. Before deployment or any manual retry, check recipient chats for messages still pending in the outbox to avoid a later duplicate.
+2. Pull the `v1.3.2` release on the GCP VM and review the next run's network and delivery-diagnosis logs.
+3. If outbox failures persist after the next-run profile maintenance, inspect the new diagnostics before refreshing the WhatsApp session.
