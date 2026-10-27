@@ -154,3 +154,26 @@ Deploy the fix to the GCP VM:
 1. On GCP VM: `git pull origin master` (after pushing).
 2. Broadcast test on VM: `bash scripts/run_vm.sh --edition closing --force` or await the next scheduled cron run.
 
+---
+
+## Session: 2026-10-27
+
+### Objective
+Fetch and analyze recent GCP broadcast logs, identify recurring WhatsApp delivery failure points, and improve delivery diagnostics and maintenance classification.
+
+### Accomplished
+- Fetched VM logs with `.\scripts\fetch-logs.ps1` and confirmed the Oct 26 morning, Oct 26 closing, and Oct 27 morning runs all timed out with an outgoing message stuck in the WhatsApp outbox.
+- Found the same pending-outbox symptom in weekday logs dating back to Oct 1; the Oct 27 HTTP 400 entry did not include a URL, so its request could not be identified.
+- Added privacy-safe logging for HTTP failures, failed requests, and WhatsApp WebSocket open/close/error events. Network logs omit request paths, query strings, and payloads.
+- Clarified that `navigator.onLine` is only a browser network signal, not proof of WhatsApp connection or delivery.
+- Classified an unacknowledged pending outbox as requiring profile maintenance on the next run; an explicit WhatsApp send-failure status does not trigger that cleanup.
+- Updated the runbook with the current 5-minute verification period, diagnostic log fields, and pending-message duplicate caution.
+
+### Verification
+- [x] Full Python test suite: **32 passed** (`.\venv\Scripts\python.exe -m pytest -q`).
+- [x] Pylance syntax check: no syntax errors in `broadcaster.py`.
+- [x] Playwright generated API confirmed `Page` WebSocket events and WebSocket `close`/`socketerror` event signatures.
+- [x] `git diff --check` passed.
+
+### Handoff Notes
+No VM changes or broadcasts were made. Deploy the diagnostics before relying on the new network event records; a future run with a persistent outbox failure will request the existing profile-maintenance cleanup on the subsequent run.

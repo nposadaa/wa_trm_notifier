@@ -5,6 +5,7 @@ import re
 import logging
 import unicodedata
 from datetime import datetime
+from urllib.parse import urlsplit
 from playwright.sync_api import sync_playwright
 from browser_config import get_browser_context, clean_browser_locks, apply_stealth_overrides
 from dotenv import load_dotenv
@@ -144,6 +145,115 @@ def safe_reload(page, timeout_ms=60000):
         print(f"  [Reload] WARNING: Reload encountered timeout/error ({e}). Proceeding anyway.")
 
 
+def _network_host(url):
+    try:
+        return urlsplit(url).hostname or "unknown-host"
+    except ValueError:
+        return "invalid-url"
+
+
+def _is_whatsapp_host(host):
+    return any(
+        host == domain or host.endswith(f".{domain}")
+        for domain in ("whatsapp.com", "whatsapp.net")
+    )
+
+
+def attach_network_diagnostics(page):
+    """Log network failures and WhatsApp WebSocket lifecycle without URL paths or payloads."""
+    seen_http_errors = set()
+    websocket_states = {}
+    websocket_counts = {"opened": 0, "closed": 0, "errors": 0}
+
+    def on_response(response):
+        try:
+            if response.status < 400:
+                return
+            request = response.request
+            host = _network_host(response.url)
+            method = request.method
+            resource_type = request.resource_type
+            event = ("http", response.status, host, method, resource_type)
+            if event in seen_http_errors:
+                return
+            seen_http_errors.add(event)
+            print(
+                f"[NETWORK] HTTP {response.status} {method} "
+                f"{resource_type} host={host}"
+            )
+        except Exception as error:
+            print(
+                "[NETWORK] Could not record HTTP response diagnostic "
+                f"({type(error).__name__})."
+            )
+
+    def on_request_failed(request):
+        try:
+            host = _network_host(request.url)
+            method = request.method
+            resource_type = request.resource_type
+            failure = str(request.failure or "")
+            match = re.search(r"net::ERR_[A-Z0-9_]+", failure)
+            error_code = match.group(0) if match else "unspecified"
+            event = ("request-failed", host, method, resource_type, error_code)
+            if event in seen_http_errors:
+                return
+            seen_http_errors.add(event)
+            print(
+                f"[NETWORK] Request failed {method} {resource_type} "
+                f"host={host} error={error_code}"
+            )
+        except Exception as error:
+            print(
+                "[NETWORK] Could not record failed-request diagnostic "
+                f"({type(error).__name__})."
+            )
+
+    def on_websocket(websocket):
+        host = _network_host(websocket.url)
+        if not _is_whatsapp_host(host):
+            return
+
+        websocket_id = id(websocket)
+        websocket_states[websocket_id] = "open"
+        websocket_counts["opened"] += 1
+        print(f"[NETWORK] WhatsApp WebSocket opened host={host}")
+
+        def on_close(closed_websocket):
+            websocket_states[websocket_id] = "closed"
+            websocket_counts["closed"] += 1
+            print(
+                f"[NETWORK] WhatsApp WebSocket closed "
+                f"host={_network_host(closed_websocket.url)}"
+            )
+
+        def on_socket_error(error):
+            websocket_counts["errors"] += 1
+            match = re.search(r"net::ERR_[A-Z0-9_]+", str(error))
+            error_code = match.group(0) if match else "unspecified"
+            print(f"[NETWORK] WhatsApp WebSocket error host={host} error={error_code}")
+
+        websocket.on("close", on_close)
+        websocket.on("socketerror", on_socket_error)
+
+    def snapshot():
+        return {
+            **websocket_counts,
+            "active": sum(state == "open" for state in websocket_states.values()),
+        }
+
+    page.on("response", on_response)
+    page.on("requestfailed", on_request_failed)
+    page.on("websocket", on_websocket)
+    return snapshot
+
+
+def requires_profile_maintenance(
+    delivery_verified, outbox_pending_seen, explicit_send_failure=False
+):
+    return not delivery_verified and outbox_pending_seen and not explicit_send_failure
+
+
 def find_search_box(page):
     """Locate the WhatsApp chat-search input across current UI variants."""
     selectors = [
@@ -258,6 +368,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
         def create_browser_session():
             context = get_browser_context(p, headless=headless)
             page = context.new_page()
+            network_diagnostics = attach_network_diagnostics(page)
 
             # --- HARDENING & STEALTH: Manual Navigator Overrides ---
             apply_stealth_overrides(page)
@@ -271,10 +382,10 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             except Exception:
                 pass
 
-            return context, page
+            return context, page, network_diagnostics
 
         # --- Browser Initialization ---
-        context, page = create_browser_session()
+        context, page, network_diagnostics = create_browser_session()
 
         print(f"Navigating to {WHATSAPP_URL}...")
 
@@ -312,7 +423,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                     context.close()
                 except Exception as close_err:
                     print(f"[RECOVERY] Failed to close dead context: {close_err}")
-                context, page = create_browser_session()
+                context, page, network_diagnostics = create_browser_session()
                 try:
                     page.goto(WHATSAPP_URL, timeout=60000, wait_until="domcontentloaded")
                 except Exception as nav_err:
@@ -590,23 +701,20 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
 
             time.sleep(3.0) # Stability buffer
 
-            # --- Pre-type WebSocket Health Check (DEC-032) ---
-            # Verify the browser's network socket is alive before typing.
-            # WhatsApp Web can accept input while offline, but messages will hang in outbox.
+            # --- Pre-type browser network signal (DEC-032) ---
             try:
                 is_online = page.evaluate("() => navigator.onLine")
                 if not is_online:
-                    print("  [Health Check] ⚠️ Browser reports OFFLINE. Attempting socket recovery...")
-                    # Trigger WhatsApp Web's internal reconnection by navigating the ServiceWorker
+                    print("  [Health Check] Browser navigator.onLine=False. Attempting app sync wake-up...")
                     page.evaluate("() => { if (navigator.serviceWorker && navigator.serviceWorker.controller) { navigator.serviceWorker.controller.postMessage({type: 'ping'}); } }")
                     time.sleep(10)
                     is_online = page.evaluate("() => navigator.onLine")
                     if not is_online:
-                        print("  [Health Check] ❌ Still OFFLINE after recovery attempt. Proceeding anyway (message may queue).")
+                        print("  [Health Check] navigator.onLine remains False; proceeding, but delivery may queue.")
                     else:
-                        print("  [Health Check] ✅ Browser is back ONLINE.")
+                        print("  [Health Check] navigator.onLine=True after app sync wake-up.")
                 else:
-                    print("  [Health Check] ✅ Browser reports ONLINE.")
+                    print("  [Health Check] navigator.onLine=True; this does not confirm WhatsApp WebSocket or delivery health.")
             except Exception as health_err:
                 print(f"  [Health Check] Warning: Could not verify online status ({health_err}).")
 
@@ -793,7 +901,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
             print(f"Verifying delivery to {name} (Watching last row for acknowledgment)...")
             delivery_verified = False
             message_confirmed_in_dom = False
-            is_stuck_in_outbox = False
+            message_failed = False
             outbox_ever_detected = False  # DEC-032: Sticky flag — outer scope initialization prevents UnboundLocalError
             outbox_recovery_attempted = False
             consecutive_drifts = 0
@@ -880,7 +988,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                 # Poll instead of pure wait to catch "Fail" or "Clock" states earlier
                 verify_deadline = time.time() + 300 # 5 minutes hard limit for high-latency VM sockets
                 consecutive_drifts = 0
-                is_stuck_in_outbox = False
                 
                 while time.time() < verify_deadline:
                     # Find our message row (robust to virtualization/drifts)
@@ -939,13 +1046,12 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         elapsed_verify = int(time.time() - start_verify)
                         print(f"✅ SUCCESS: Delivery Confirmed via anchored row checkmark (Ack took {elapsed_verify}s).")
                         delivery_verified = True
-                        is_stuck_in_outbox = False
                         break
                     
                     # Check for "Failed to send" (Red circle/exclamation)
                     if target_row.locator('span[data-icon="msg-exclamation"], [data-testid="msg-fail"], .status-error').first.is_visible(timeout=1000):
                         print("❌ FAILURE: Message failed to send (Red exclamation detected).")
-                        is_stuck_in_outbox = False
+                        message_failed = True
                         break
                         
                     # Check for "Clock" (Outbox hang / Pending state)
@@ -956,7 +1062,6 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         ' [aria-label*="Pending"], [aria-label*="Pendiente"], [aria-label*="Clock"]'
                     )
                     if clock_locator.is_visible(timeout=1000):
-                        is_stuck_in_outbox = True
                         outbox_ever_detected = True  # DEC-032: Sticky — never resets to False
                         elapsed_outbox = int(time.time() - start_verify)
                         print(f"  [Verification] ⏳ Outbox pending state detected (Clock icon visible, {elapsed_outbox}s elapsed)...")
@@ -966,7 +1071,7 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                         # a JS ping to wake up WhatsApp Web's internal sync engine.
                         if elapsed_outbox > 45 and not outbox_recovery_attempted:
                             outbox_recovery_attempted = True
-                            print("  [Outbox Recovery] Attempting non-destructive socket wake-up...")
+                            print("  [Outbox Recovery] Attempting client sync wake-up...")
                             try:
                                 page.evaluate("""
                                     () => {
@@ -978,29 +1083,54 @@ def run_broadcaster(message_text="", headless=False, discovery_mode=False):
                                         }
                                     }
                                 """)
-                                print("  [Outbox Recovery] Socket wake-up dispatched. Waiting 15s for sync...")
+                                print("  [Outbox Recovery] Wake-up event dispatched; waiting 15s for delivery acknowledgment.")
                                 time.sleep(15)
                             except Exception as wake_err:
                                 print(f"  [Outbox Recovery] Wake-up failed: {wake_err}")
-                    else:
-                        is_stuck_in_outbox = False
-                    
                     time.sleep(4)
 
             except Exception as e:
                 print(f"❌ FAILURE: Verification engine crashed ({e})")
 
             if not delivery_verified:
-                # DEC-032: Use outbox_ever_detected (sticky) instead of is_stuck_in_outbox
-                # to prevent row-drift from accidentally resetting the outbox flag and
-                # letting SOFT SUCCESS fire on messages that were clearly stuck in outbox.
+                # Keep the outbox observation sticky so row drift cannot make a
+                # message that was pending eligible for soft success.
                 if message_confirmed_in_dom and interaction_success and not outbox_ever_detected:
                     print(f"⚠️ SOFT SUCCESS: Checkmark not detected for {name}, but message IS in DOM, composer was emptied, and NO outbox clock was ever seen. Treating as delivered (BUG-048).")
                     delivery_verified = True
                 else:
-                    reason = "Message was stuck in outbox (Clock icon detected during verification)" if outbox_ever_detected else "Checkmark not detected"
+                    if message_failed:
+                        reason = "WhatsApp marked the message as failed"
+                    elif outbox_ever_detected:
+                        reason = "Message was stuck in outbox (Clock icon detected during verification)"
+                    else:
+                        reason = "Checkmark not detected"
                     screenshot_name = f"diag_delivery_failed_{name.replace('/', '_')}_{datetime.now().strftime('%H%M')}.png"
                     print(f"❌ FAILURE: Delivery could not be verified for {name} ({reason}). Saving {screenshot_name}")
+                    network_state = network_diagnostics()
+                    classification = (
+                        "send_failed"
+                        if message_failed
+                        else "outbox_pending"
+                        if outbox_ever_detected
+                        else "unconfirmed"
+                    )
+                    print(
+                        "[Delivery Diagnosis] "
+                        f"classification={classification} "
+                        f"websocket_opened={network_state['opened']} "
+                        f"websocket_closed={network_state['closed']} "
+                        f"websocket_errors={network_state['errors']} "
+                        f"websocket_active={network_state['active']}"
+                    )
+                    if requires_profile_maintenance(
+                        delivery_verified, outbox_ever_detected, message_failed
+                    ):
+                        needs_maintenance = True
+                        print(
+                            "[MAINTENANCE] Persistent outbox pending detected; "
+                            "requesting profile maintenance before the next run."
+                        )
                     safe_screenshot(page, screenshot_name)
                     any_failure = True
 

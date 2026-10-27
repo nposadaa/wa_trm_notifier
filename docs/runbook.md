@@ -133,8 +133,17 @@ Run the following command from your local PowerShell terminal to sync all logs a
 | :--- | :--- | :--- |
 | Stuck at `SPLASH` | CPU throttled during decryption. | Wait for percentage progress (e.g., `[19%]`). The script will wait up to 20m. |
 | Stuck at `SYNCING` | WebSocket hanging on slow VM. | The script now triggers a `page.reload()` after 180s to jumpstart the sync. |
-| Message has Clock Icon | Message in Outbox (Slow upload). | Patience Patch (DEC-021) now waits up to 3m for the checkmark. |
+| Message has Clock Icon | WhatsApp Web has not acknowledged the outgoing message. Composer clearing and `navigator.onLine=True` do not prove delivery. | The broadcaster waits up to 5m. A persistent outbox failure requests profile maintenance on the next run. Inspect `[NETWORK]` and `[Delivery Diagnosis]` entries; do not blindly retry while a pending message may still deliver. |
 | `TimeoutError` in typing | React re-rendered input box. | Automatic recovery via Self-Healing Locators (DEC-021). No action required. |
+
+### Outbox and Transport Diagnostics
+
+The broadcaster logs HTTP errors and failed requests with host, method, and resource type only; URL paths, query strings, and message payloads are intentionally omitted. WhatsApp WebSocket open, close, and error events are also recorded. These events help distinguish browser-level reachability from a WhatsApp delivery acknowledgment:
+
+- `navigator.onLine=True` only means the browser reports network availability; it does not confirm the WhatsApp WebSocket is healthy.
+- `[Delivery Diagnosis]` reports whether a pending outbox clock was observed and the WebSocket lifecycle counts at delivery timeout.
+- A persistent pending outbox is classified as a profile-maintenance issue. The next run performs the existing deep clean, which preserves the Service Worker and IndexedDB.
+- Check the recipient chat for pending messages before manually retrying; a queued message could deliver later and be duplicated by a retry.
 
 ### Manual Cleanup
 If you need to manually force the browser to release session locks on the VM:

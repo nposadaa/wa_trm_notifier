@@ -1,4 +1,29 @@
-from broadcaster import chat_name_matches_target, is_recoverable_browser_error
+from types import SimpleNamespace
+
+import broadcaster
+from broadcaster import (
+    attach_network_diagnostics,
+    chat_name_matches_target,
+    is_recoverable_browser_error,
+    requires_profile_maintenance,
+)
+
+
+class FakePage:
+    def __init__(self):
+        self.handlers = {}
+
+    def on(self, event, handler):
+        self.handlers[event] = handler
+
+
+class FakeWebSocket:
+    def __init__(self, url):
+        self.url = url
+        self.handlers = {}
+
+    def on(self, event, handler):
+        self.handlers[event] = handler
 
 
 def test_recovers_from_closed_page_errors():
@@ -12,6 +37,69 @@ def test_matches_chat_names_with_common_normalization():
     assert chat_name_matches_target("COP / USD Notifier", "COP/USD Notifier")
     assert chat_name_matches_target("COP USD Notifier", "COP/USD Notifier")
     assert not chat_name_matches_target("Some Other Group", "COP/USD Notifier")
+
+
+def test_network_diagnostics_log_http_failures_without_url_paths(monkeypatch):
+    messages = []
+    monkeypatch.setattr(
+        broadcaster,
+        "print",
+        lambda *args, **kwargs: messages.append(" ".join(str(arg) for arg in args)),
+    )
+    page = FakePage()
+    attach_network_diagnostics(page)
+    request = SimpleNamespace(method="POST", resource_type="xhr")
+    response = SimpleNamespace(
+        status=400,
+        request=request,
+        url="https://web.whatsapp.com/api/send?token=secret",
+    )
+
+    page.handlers["response"](response)
+    page.handlers["response"](response)
+
+    assert messages == ["[NETWORK] HTTP 400 POST xhr host=web.whatsapp.com"]
+    assert "secret" not in messages[0]
+    assert "/api/send" not in messages[0]
+
+    failed_request = SimpleNamespace(
+        url="https://web.whatsapp.com/api/send?token=secret",
+        method="POST",
+        resource_type="xhr",
+        failure="net::ERR_CONNECTION_RESET",
+    )
+    page.handlers["requestfailed"](failed_request)
+
+    assert messages[1] == (
+        "[NETWORK] Request failed POST xhr "
+        "host=web.whatsapp.com error=net::ERR_CONNECTION_RESET"
+    )
+    assert "secret" not in messages[1]
+    assert "/api/send" not in messages[1]
+
+
+def test_network_diagnostics_track_whatsapp_websocket_lifecycle(monkeypatch):
+    monkeypatch.setattr(broadcaster, "print", lambda *args, **kwargs: None)
+    page = FakePage()
+    snapshot = attach_network_diagnostics(page)
+    websocket = FakeWebSocket("wss://web.whatsapp.com/ws/chat?token=secret")
+
+    page.handlers["websocket"](websocket)
+    assert snapshot() == {"opened": 1, "closed": 0, "errors": 0, "active": 1}
+
+    websocket.handlers["socketerror"]("secret")
+    websocket.handlers["close"](websocket)
+
+    assert snapshot() == {"opened": 1, "closed": 1, "errors": 1, "active": 0}
+    page.handlers["websocket"](FakeWebSocket("wss://notwhatsapp.com/socket"))
+    assert snapshot() == {"opened": 1, "closed": 1, "errors": 1, "active": 0}
+
+
+def test_only_unacknowledged_outbox_failures_request_profile_maintenance():
+    assert requires_profile_maintenance(False, True)
+    assert not requires_profile_maintenance(True, True)
+    assert not requires_profile_maintenance(False, False)
+    assert not requires_profile_maintenance(False, True, explicit_send_failure=True)
 
 
 def test_deep_clean_preserves_service_worker(tmp_path, monkeypatch):
@@ -97,4 +185,3 @@ def test_extract_message_snippet_morning_trm():
     dom_normalized = normalize_message_text(dom_row_text)
 
     assert snippet in dom_normalized
-

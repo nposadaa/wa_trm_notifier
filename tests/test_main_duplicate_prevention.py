@@ -1,7 +1,9 @@
 from datetime import datetime
 import sys
+from types import SimpleNamespace
 
 import main
+import pytest
 
 
 def test_success_marker_uses_current_day_for_stale_trm_data(tmp_path, monkeypatch):
@@ -121,3 +123,35 @@ def test_build_closing_message_formatting():
     assert "➖ *Cierre Mercado USD/COP - 2026-10-22*" in msg_flat
     assert "💵 Cierre: $3,193.00 COP (0.00% vs apertura)" in msg_flat
 
+
+def test_failed_outbox_run_schedules_profile_maintenance(tmp_path, monkeypatch):
+    gsd_dir = tmp_path / ".gsd"
+    gsd_dir.mkdir()
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        main,
+        "get_cot_now",
+        lambda: datetime(2026, 6, 22, 7, 0, tzinfo=main.COT_TZ),
+    )
+    monkeypatch.setattr(
+        main,
+        "scrape_trm",
+        lambda **kwargs: {
+            "trm": 3459.53,
+            "previous_trm": 3439.91,
+            "date": "2026-06-22",
+        },
+    )
+    monkeypatch.setattr(main, "run_broadcaster", lambda *args, **kwargs: (False, True))
+    monkeypatch.setattr(
+        main,
+        "logger",
+        SimpleNamespace(info=lambda *args: None, error=lambda *args: None),
+    )
+    monkeypatch.setattr(sys, "argv", ["main.py"])
+
+    with pytest.raises(SystemExit) as exc_info:
+        main.main()
+
+    assert exc_info.value.code == 1
+    assert (gsd_dir / "needs_maintenance").read_text(encoding="utf-8")
